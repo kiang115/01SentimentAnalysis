@@ -17,13 +17,13 @@ CONFIG = {
     # 模型与数据路径
     "BERT_MODEL_PATH": r"../bert-base-chinese",
     "DATA_DIR": "../waimai.csv",
-    # 训练超参数（默认值会被实验预设覆盖）
+    # 训练超参数
     "EPOCHS": 5,
     "LEARNING_RATE": 3e-4,
     "BATCH_SIZE": 32,
     # 模型相关
     "MAX_LENGTH": 256,
-    "DROPOUT": 0.5,
+    "DROPOUT": 0.1,
     "NUM_CLASSES": 2,
     # 数据切分
     "TRAIN_RATIO": 0.8,
@@ -33,7 +33,7 @@ CONFIG = {
     "LORA_R": 8,
     "LORA_ALPHA": 16,
     "LORA_DROPOUT": 0.1,
-    "LORA_TARGET_MODULES": ["query", "value", "key", "dense"],
+    "LORA_TARGET_MODULES": ["query", "value"],
     # 优化器与冻结
     "WEIGHT_DECAY": 0.01,
     "FREEZE_BERT": False,
@@ -41,53 +41,8 @@ CONFIG = {
     "RANDOM_SEED": 42,
     "SAVE_PATH_ALL": "./bert_all_checkpoint",
     "SAVE_PATH_LORA": "./bert_lora_checkpoint",
+    "SAVE_PATH_NO": "./bert_no_checkpoint",
 }
-
-# ===============================
-# 实验预设（学术对照建议）
-# ===============================
-# 使用说明：
-# 1) 将 ACTIVE_EXPERIMENT 设为 "zero_shot" / "full_ft" / "lora_ft"
-# 2) 下面的 apply_experiment_config 会自动覆盖 CONFIG 中相关字段
-# 3) 训练/验证流程不变，仅改变配置
-ACTIVE_EXPERIMENT = "full_ft"
-
-EXPERIMENT_PRESETS = {
-    # Zero-shot baseline：冻结BERT，仅训练分类头
-    "zero_shot": {
-        "FREEZE_BERT": True,
-        "LEARNING_RATE": 3e-4,
-        "EPOCHS": 3,
-        "DROPOUT": 0.5,
-    },
-    # Full fine-tuning：全参数微调
-    "full_ft": {
-        "FREEZE_BERT": False,
-        "LEARNING_RATE": 3e-5,
-        "EPOCHS": 3,
-        "DROPOUT": 0.1,
-    },
-    # LoRA fine-tuning：低秩适配
-    "lora_ft": {
-        "FREEZE_BERT": False,
-        "LEARNING_RATE": 3e-4,
-        "EPOCHS": 5,
-        "DROPOUT": 0.5,
-    },
-}
-
-
-def apply_experiment_config(config: dict, experiment: str) -> None:
-    preset = EXPERIMENT_PRESETS.get(experiment)
-    if preset is None:
-        raise ValueError(
-            f"未知实验类型: {experiment}，请使用 "
-            f"{', '.join(EXPERIMENT_PRESETS.keys())}"
-        )
-    config.update(preset)
-
-
-apply_experiment_config(CONFIG, ACTIVE_EXPERIMENT)
 
 
 def get_save_path(exp_type: str) -> str:
@@ -95,6 +50,8 @@ def get_save_path(exp_type: str) -> str:
         return CONFIG["SAVE_PATH_ALL"]
     if exp_type.lower() == "lora":
         return CONFIG["SAVE_PATH_LORA"]
+    if exp_type.lower() == "no":
+        return CONFIG["SAVE_PATH_NO"]
     raise ValueError("exp_type 仅支持 all 或 lora")
 
 
@@ -139,6 +96,16 @@ def generate_data(
     seed: int,
 ):
     df = pd.read_csv(data_path)
+    train_ratio = CONFIG["TRAIN_RATIO"]
+    val_ratio = CONFIG["VAL_RATIO"]
+    test_ratio = CONFIG["TEST_RATIO"]
+
+    total_ratio = train_ratio + val_ratio + test_ratio
+    if not (0 < train_ratio < 1 and 0 < val_ratio < 1 and 0 < test_ratio < 1):
+        raise ValueError("TRAIN_RATIO/VAL_RATIO/TEST_RATIO 必须在 (0, 1) 范围内")
+    if abs(total_ratio - 1.0) > 1e-6:
+        raise ValueError("TRAIN_RATIO/VAL_RATIO/TEST_RATIO 之和必须为 1.0")
+    temp_ratio = val_ratio + test_ratio
 
     if mode == "train":
         print("=" * 50)
@@ -151,10 +118,13 @@ def generate_data(
         print(df.head(3))
 
     train_df, temp_df = train_test_split(
-        df, test_size=0.3, stratify=df["label"], random_state=seed
+        df, test_size=temp_ratio, stratify=df["label"], random_state=seed
     )
     val_df, test_df = train_test_split(
-        temp_df, test_size=0.5, stratify=temp_df["label"], random_state=seed
+        temp_df,
+        test_size=(test_ratio / temp_ratio),
+        stratify=temp_df["label"],
+        random_state=seed,
     )
 
     if mode == "train":
