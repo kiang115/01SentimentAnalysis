@@ -19,7 +19,7 @@ CONFIG = {
     "DATA_DIR": "../waimai.csv",
     # 训练超参数
     "EPOCHS": 5,
-    "LEARNING_RATE": 3e-4,
+    "LEARNING_RATE": 5e-5,
     "BATCH_SIZE": 32,
     # 模型相关
     "MAX_LENGTH": 256,
@@ -33,7 +33,7 @@ CONFIG = {
     "LORA_R": 8,
     "LORA_ALPHA": 16,
     "LORA_DROPOUT": 0.1,
-    "LORA_TARGET_MODULES": ["query", "value"],
+    "LORA_TARGET_MODULES": ["query","key","value","dense"],
     # 优化器与冻结
     "WEIGHT_DECAY": 0.01,
     "FREEZE_BERT": False,
@@ -42,6 +42,17 @@ CONFIG = {
     "SAVE_PATH_ALL": "./bert_all_checkpoint",
     "SAVE_PATH_LORA": "./bert_lora_checkpoint",
     "SAVE_PATH_NO": "./bert_no_checkpoint",
+    # 传统/非BERT模型统一超参数
+    "CLASSIC_MAX_FEATURES": 5000,
+    "CLASSIC_NGRAM_RANGE": (1, 2),
+    "CLASSIC_MIN_DF": 2,
+    "CLASSIC_MAX_DF": 0.95,
+    "CLASSIC_MAX_LENGTH_TOKENS": 128,
+    "CLASSIC_EMBED_DIM": 128,
+    "CLASSIC_HIDDEN_DIM": 128,
+    "CLASSIC_EPOCHS": 5,
+    "CLASSIC_BATCH_SIZE": 64,
+    "CLASSIC_LEARNING_RATE": 1e-3,
 }
 
 
@@ -141,3 +152,37 @@ def generate_data(
     if mode == "test":
         return TextDataset(test_df, tokenizer, max_length)
     raise ValueError("不支持的模式，请使用 train / val / test")
+
+
+def load_raw_data(data_path: str) -> pd.DataFrame:
+    df = pd.read_csv(data_path)
+    if "label" not in df.columns or "review" not in df.columns:
+        raise ValueError("数据需包含 label 与 review 两列")
+    return df
+
+
+def split_data(
+    df: pd.DataFrame,
+    seed: int,
+):
+    train_ratio = CONFIG["TRAIN_RATIO"]
+    val_ratio = CONFIG["VAL_RATIO"]
+    test_ratio = CONFIG["TEST_RATIO"]
+
+    total_ratio = train_ratio + val_ratio + test_ratio
+    if not (0 < train_ratio < 1 and 0 < val_ratio < 1 and 0 < test_ratio < 1):
+        raise ValueError("TRAIN_RATIO/VAL_RATIO/TEST_RATIO 必须在 (0, 1) 范围内")
+    if abs(total_ratio - 1.0) > 1e-6:
+        raise ValueError("TRAIN_RATIO/VAL_RATIO/TEST_RATIO 之和必须为 1.0")
+    temp_ratio = val_ratio + test_ratio
+
+    train_df, temp_df = train_test_split(
+        df, test_size=temp_ratio, stratify=df["label"], random_state=seed
+    )
+    val_df, test_df = train_test_split(
+        temp_df,
+        test_size=(test_ratio / temp_ratio),
+        stratify=temp_df["label"],
+        random_state=seed,
+    )
+    return train_df, val_df, test_df
