@@ -42,6 +42,8 @@ CONFIG = {
     "SAVE_PATH_ALL": "./bert_all_checkpoint",
     "SAVE_PATH_LORA": "./bert_lora_checkpoint",
     "SAVE_PATH_NO": "./bert_no_checkpoint",
+    "SAVE_PATH_LSTM": "./lstm_checkpoint",
+    "SAVE_PATH_TEXTCNN": "./textcnn_checkpoint",
     # 传统/非BERT模型统一超参数
     "CLASSIC_MAX_FEATURES": 5000,
     "CLASSIC_NGRAM_RANGE": (1, 2),
@@ -63,7 +65,11 @@ def get_save_path(exp_type: str) -> str:
         return CONFIG["SAVE_PATH_LORA"]
     if exp_type.lower() == "no":
         return CONFIG["SAVE_PATH_NO"]
-    raise ValueError("exp_type 仅支持 all 或 lora")
+    if exp_type.lower() == "lstm":
+        return CONFIG["SAVE_PATH_LSTM"]
+    if exp_type.lower() == "textcnn":
+        return CONFIG["SAVE_PATH_TEXTCNN"]
+    raise ValueError("exp_type 仅支持 all / lora / no / lstm / textcnn")
 
 
 def setup_seed(seed: int) -> None:
