@@ -19,7 +19,6 @@ CONFIG = {
     "DATA_DIR": "../waimai.csv",
     # 训练超参数
     "EPOCHS": 5,
-    "LEARNING_RATE": 5e-5,
     "BATCH_SIZE": 32,
     # 模型相关
     "MAX_LENGTH": 256,
@@ -29,16 +28,10 @@ CONFIG = {
     "TRAIN_RATIO": 0.8,
     "VAL_RATIO": 0.1,
     "TEST_RATIO": 0.1,
-    # LoRA 相关
-    "LORA_R": 8,
-    "LORA_ALPHA": 16,
-    "LORA_DROPOUT": 0.1,
-    "LORA_TARGET_MODULES": ["query","key","value","dense"],
-    # 优化器与冻结
+    # 优化器
     "WEIGHT_DECAY": 0.01,
-    "FREEZE_BERT": False,
     # 随机种子与保存
-    "RANDOM_SEED": 42,
+    "RANDOM_SEED": 40,
     "SAVE_PATH_ALL": "./bert_all_checkpoint",
     "SAVE_PATH_LORA": "./bert_lora_checkpoint",
     "SAVE_PATH_NO": "./bert_no_checkpoint",
@@ -50,11 +43,8 @@ CONFIG = {
     "CLASSIC_MIN_DF": 2,
     "CLASSIC_MAX_DF": 0.95,
     "CLASSIC_MAX_LENGTH_TOKENS": 128,
-    "CLASSIC_EMBED_DIM": 128,
-    "CLASSIC_HIDDEN_DIM": 128,
     "CLASSIC_EPOCHS": 5,
     "CLASSIC_BATCH_SIZE": 64,
-    "CLASSIC_LEARNING_RATE": 1e-3,
 }
 
 
