@@ -13,6 +13,8 @@ from transformers import BertTokenizer
 from sklearn.model_selection import train_test_split
 
 CONFIG = {
+    #名字
+    "NAME":"hotel",
     # 模型与数据路径
     "BERT_MODEL_PATH": r"../bert-base-chinese",
     "DATA_DIR": "../hotel.csv",
