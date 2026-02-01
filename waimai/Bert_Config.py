@@ -12,7 +12,6 @@ from torch.utils.data import Dataset
 from transformers import BertTokenizer
 from sklearn.model_selection import train_test_split
 
-
 CONFIG = {
     # 模型与数据路径
     "BERT_MODEL_PATH": r"../bert-base-chinese",
@@ -24,6 +23,11 @@ CONFIG = {
     "MAX_LENGTH": 256,
     "DROPOUT": 0.1,
     "NUM_CLASSES": 2,
+    # Lora相关
+    "LORA_R": 8,
+    "LORA_ALPHA": 16,
+    "LORA_DROPOUT": 0.1,
+    "LORA_TARGET_MODULES": ["query", "value", "key"],
     # 数据切分
     "TRAIN_RATIO": 0.8,
     "VAL_RATIO": 0.1,
@@ -96,11 +100,11 @@ class TextDataset(Dataset):
 
 
 def generate_data(
-    mode: str,
-    data_path: str,
-    tokenizer: BertTokenizer,
-    max_length: int,
-    seed: int,
+        mode: str,
+        data_path: str,
+        tokenizer: BertTokenizer,
+        max_length: int,
+        seed: int,
 ):
     df = pd.read_csv(data_path)
     train_ratio = CONFIG["TRAIN_RATIO"]
@@ -138,9 +142,9 @@ def generate_data(
         print("\n" + "=" * 50)
         print("数据分割结果")
         print("=" * 50)
-        print(f"训练集大小: {len(train_df)} ({len(train_df)/len(df)*100:.1f}%)")
-        print(f"验证集大小: {len(val_df)} ({len(val_df)/len(df)*100:.1f}%)")
-        print(f"测试集大小: {len(test_df)} ({len(test_df)/len(df)*100:.1f}%)")
+        print(f"训练集大小: {len(train_df)} ({len(train_df) / len(df) * 100:.1f}%)")
+        print(f"验证集大小: {len(val_df)} ({len(val_df) / len(df) * 100:.1f}%)")
+        print(f"测试集大小: {len(test_df)} ({len(test_df) / len(df) * 100:.1f}%)")
         print("\n✅ 数据加载和预处理完成")
         return TextDataset(train_df, tokenizer, max_length)
     if mode == "val":
@@ -158,8 +162,8 @@ def load_raw_data(data_path: str) -> pd.DataFrame:
 
 
 def split_data(
-    df: pd.DataFrame,
-    seed: int,
+        df: pd.DataFrame,
+        seed: int,
 ):
     train_ratio = CONFIG["TRAIN_RATIO"]
     val_ratio = CONFIG["VAL_RATIO"]
