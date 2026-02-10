@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.sentimentanalysis.mapper.InferenceTasksMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="org.example.sentimentanalysis.model.InferenceTasks">
+        <id column="task_id" property="taskId" />
+        <result column="initiator_id" property="initiatorId" />
+        <result column="inference_start_time" property="inferenceStartTime" />
+        <result column="inference_end_time" property="inferenceEndTime" />
+        <result column="inference_duration" property="inferenceDuration" />
+        <result column="processed_count" property="processedCount" />
+        <result column="avg_process_time" property="avgProcessTime" />
+        <result column="used_model_ids" property="usedModelIds" />
+        <result column="domain_ids" property="domainIds" />
+        <result column="process_status" property="processStatus" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        task_id, initiator_id, inference_start_time, inference_end_time, inference_duration, processed_count, avg_process_time, used_model_ids, domain_ids, process_status
+    </sql>
+
+</mapper>

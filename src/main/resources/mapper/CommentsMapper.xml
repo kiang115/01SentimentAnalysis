@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.sentimentanalysis.mapper.CommentsMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="org.example.sentimentanalysis.model.Comments">
+        <id column="comment_id" property="commentId" />
+        <result column="customer_id" property="customerId" />
+        <result column="content" property="content" />
+        <result column="domain_id" property="domainId" />
+        <result column="publish_time" property="publishTime" />
+        <result column="product_id" property="productId" />
+        <result column="merchant_id" property="merchantId" />
+        <result column="status" property="status" />
+        <result column="final_sentiment" property="finalSentiment" />
+        <result column="is_retrained" property="isRetrained" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        comment_id, customer_id, content, domain_id, publish_time, product_id, merchant_id, status, final_sentiment, is_retrained
+    </sql>
+
+</mapper>
