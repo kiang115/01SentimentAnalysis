@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.Fastjson2TypeHandler;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -12,6 +14,7 @@ import lombok.experimental.Accessors;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * <p>
@@ -19,13 +22,13 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author kiang
- * @since 2026-02-10
+ * @since 2026-02-11
  */
 @Getter
 @Setter
 @ToString
 @Accessors(chain = true)
-@TableName("inference_tasks")
+@TableName(value = "inference_tasks", autoResultMap = true)
 public class InferenceTasks implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -67,26 +70,26 @@ public class InferenceTasks implements Serializable {
     private Integer processedCount;
 
     /**
-     * 平均处理时间 (单位: 毫秒)
+     * 平均处理速度 (单位: 条/秒)
      */
-    @TableField("avg_process_time")
-    private BigDecimal avgProcessTime;
+    @TableField("avg_process_speed")
+    private BigDecimal avgProcessSpeed;
 
     /**
      * 使用模型 id json 存储，eg[1,2,3,4]
      */
-    @TableField("used_model_ids")
-    private String usedModelIds;
+    @TableField(value = "used_model_ids", typeHandler = Fastjson2TypeHandler.class)
+    private List<Long> usedModelIds;
 
     /**
      * 涉及领域id json存储eg[0,3,4]
      */
-    @TableField("domain_ids")
-    private String domainIds;
+    @TableField(value = "domain_ids", typeHandler = Fastjson2TypeHandler.class)
+    private List<Long> domainIds;
 
     /**
      * 处理状态 (0:待处理, 1:处理中, 2:成功, 3:失败)
      */
     @TableField("process_status")
-    private Byte processStatus;
+    private Integer processStatus;
 }

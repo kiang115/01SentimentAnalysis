@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * </p>
  *
  * @author kiang
- * @since 2026-02-10
+ * @since 2026-02-11
  */
 public interface InferenceRecordsService extends IService<InferenceRecords> {
 

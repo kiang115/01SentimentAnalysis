@@ -14,8 +14,8 @@ public class GlobalExceptionHandler {
     }
 
 // 将业务异常包装为响应对象返回
-    @ExceptionHandler(CustomExceptionHandler.class)
-    public Response handleCustomException(CustomExceptionHandler e) {
+    @ExceptionHandler(CustomBusinessException.class)
+    public Response handleCustomException(CustomBusinessException e) {
         return Response.fail(e.getCode(), e.getMessage());
     }
 }

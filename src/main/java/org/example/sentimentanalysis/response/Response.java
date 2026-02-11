@@ -38,7 +38,7 @@ public class Response<T> {
         return new Response<>(ResponseCode.SUCCESS.getCode(), message);
     }
 
-    public static <T> Response<T> success(T data) {
+    public static <T> Response<T> data(T data) {
         return new Response<>(ResponseCode.SUCCESS.getCode(), ResponseCode.SUCCESS.getMessage(), data);
     }
 

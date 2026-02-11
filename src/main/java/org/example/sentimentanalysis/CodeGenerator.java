@@ -2,6 +2,7 @@ package org.example.sentimentanalysis;
 
 import com.baomidou.mybatisplus.generator.FastAutoGenerator;
 import com.baomidou.mybatisplus.generator.config.OutputFile;
+import com.baomidou.mybatisplus.generator.config.converts.MySqlTypeConvert;
 import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
 import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
 
@@ -38,9 +39,7 @@ public class CodeGenerator {
                             .formatFileName("%s")
 
                             .mapperBuilder()
-//                            .enableFileOverride()// 覆盖已生成文件
-                            .enableBaseResultMap()  // 关键：//生成xml中的ResultMap
-                            .enableBaseColumnList() // 关键：xml中的ColumnList
+                            .enableFileOverride()// 覆盖已生成文件
                             .formatMapperFileName("%sMapper")
                             .formatXmlFileName("%sMapper")
 

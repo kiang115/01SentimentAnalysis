@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author kiang
- * @since 2026-02-10
+ * @since 2026-02-11
  */
 @Getter
 @Setter
@@ -51,7 +51,7 @@ public class Comments implements Serializable {
      * 评论所属领域：0=未知，1=外卖(waimai)，2=酒店(hotel)（后续扩展）
      */
     @TableField("domain_id")
-    private Short domainId;
+    private Integer domainId;
 
     /**
      * 评论发布时间
@@ -75,13 +75,13 @@ public class Comments implements Serializable {
      * 评论当前状态：0=待推理(pending)，1=推理中(inferring)，2=已推理(inferred)，3=审核中(reviewing)，4=已修正(corrected)，5=已拒绝(rejected)
      */
     @TableField("status")
-    private Byte status;
+    private Integer status;
 
     /**
      * 最终情感结果：1=好评(positive)，0=差评(negative)
      */
     @TableField("final_sentiment")
-    private Byte finalSentiment;
+    private Integer finalSentiment;
 
     /**
      * 是否被重训过

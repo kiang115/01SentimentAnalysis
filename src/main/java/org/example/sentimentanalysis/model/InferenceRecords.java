@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author kiang
- * @since 2026-02-10
+ * @since 2026-02-11
  */
 @Getter
 @Setter
@@ -58,7 +58,7 @@ public class InferenceRecords implements Serializable {
      * 评论所属领域
      */
     @TableField("domain_id")
-    private Short domainId;
+    private Integer domainId;
 
     /**
      * 模型推理的正面概率
@@ -76,7 +76,7 @@ public class InferenceRecords implements Serializable {
      * 模型判断结果
      */
     @TableField("model_sentiment")
-    private Byte modelSentiment;
+    private Integer modelSentiment;
 
     /**
      * 推理时间
