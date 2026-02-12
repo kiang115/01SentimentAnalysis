@@ -50,12 +50,10 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
                 .lambda() // 切换为 Lambda 模式，下面可以使用方法引用，防手误
                 .eq(Comments::getStatus, CommentStatusEnum.PENDING.getCode()) // status = 0
                 .groupBy(Comments::getDomainId); // GROUP BY domain_id
-
         // 2. 执行查询，返回 List<Map<String, Object>>
         // listMaps 是 MP 提供的专门用于返回 Map 的方法
         List<Map<String, Object>> resultList = commentsService.listMaps(wrapper);
-//        每一个map是一行数据 的所有字段名->字段值映射
-
+        //每一个map是一行数据 的所有字段名->字段值映射
         // 3. 转换结果为 Map<Long, Long>
         Map<Long, Long> resultMap = resultList.stream()
                 .collect(Collectors.toMap(

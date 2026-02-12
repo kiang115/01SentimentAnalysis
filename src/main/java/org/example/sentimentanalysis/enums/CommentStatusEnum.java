@@ -1,5 +1,8 @@
 package org.example.sentimentanalysis.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum CommentStatusEnum {
 
     // 定义枚举常量
@@ -10,6 +13,7 @@ public enum CommentStatusEnum {
     CORRECTED(4, "已修正(corrected)"),
     REJECTED(5, "已拒绝(rejected)");
 
+    // Getter 方法
     // 成员变量
     private final int code;
     private final String message;
@@ -18,15 +22,6 @@ public enum CommentStatusEnum {
     CommentStatusEnum(int code, String message) {
         this.code = code;
         this.message = message;
-    }
-
-    // Getter 方法
-    public int getCode() {
-        return code;
-    }
-
-    public String getMessage() {
-        return message;
     }
 
     /**

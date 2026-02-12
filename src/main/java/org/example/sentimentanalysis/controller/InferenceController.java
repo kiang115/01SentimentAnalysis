@@ -1,15 +1,15 @@
 package org.example.sentimentanalysis.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import org.example.sentimentanalysis.dto.requestDto.InferenceParaDto;
+import org.example.sentimentanalysis.dto.responseDto.InferenceDataDto;
 import org.example.sentimentanalysis.dto.responseDto.InferencePanelDto;
 import org.example.sentimentanalysis.dto.responseDto.InferenceTasksDto;
 import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.DomainsService;
 import org.example.sentimentanalysis.service.InferenceTasksService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -36,10 +36,9 @@ public class InferenceController {
 
     @Operation(summary = "使用推理配置")
     @PostMapping("/InferenceDataCheck")
-    public Response<String> InferenceDataCheck() {
-//        1.
-
-
-        return Response.success();
+    public Response<InferenceDataDto> InferenceDataCheck(@RequestBody InferenceParaDto inferenceParaDto) {
+//        1.根据参数配置找到对应的InferenceDataDto
+        InferenceDataDto inferenceDataDto = inferenceTasksService.getInferecneData(inferenceParaDto);
+        return Response.data(inferenceDataDto);
     }
 }

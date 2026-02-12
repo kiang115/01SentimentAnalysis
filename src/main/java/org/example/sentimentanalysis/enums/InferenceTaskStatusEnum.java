@@ -1,5 +1,8 @@
 package org.example.sentimentanalysis.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum InferenceTaskStatusEnum {
     /**
      * 待处理
@@ -22,11 +25,13 @@ public enum InferenceTaskStatusEnum {
     FAILED(3, "失败"),
 
     UNKNOWN(-1, "未知状态");
+    // 获取状态编码
     /**
      * 状态编码
      */
     private final Integer code;
 
+    // 获取状态名称
     /**
      * 状态名称
      */
@@ -37,16 +42,6 @@ public enum InferenceTaskStatusEnum {
     InferenceTaskStatusEnum(Integer code, String name) {
         this.code = code;
         this.name = name;
-    }
-
-    // 获取状态编码
-    public Integer getCode() {
-        return code;
-    }
-
-    // 获取状态名称
-    public String getName() {
-        return name;
     }
 
     /**

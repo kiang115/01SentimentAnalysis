@@ -25,7 +25,7 @@ public class InferencePanelDto {
     public static class InferencePanelDomainsDataDto { // 加上 public static
         private Long domainId;
         private String domainName;
-        private Long uninferencedReviewNums;
+        private Long uninferencedCommentNums;
         private List<DomainsModelDataDto> domainModelsDataList;
     }
 

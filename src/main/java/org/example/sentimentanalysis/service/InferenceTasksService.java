@@ -1,5 +1,7 @@
 package org.example.sentimentanalysis.service;
 
+import org.example.sentimentanalysis.dto.requestDto.InferenceParaDto;
+import org.example.sentimentanalysis.dto.responseDto.InferenceDataDto;
 import org.example.sentimentanalysis.dto.responseDto.InferenceTasksDto;
 import org.example.sentimentanalysis.model.InferenceTasks;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -17,4 +19,6 @@ import java.util.List;
 public interface InferenceTasksService extends IService<InferenceTasks> {
 
     List<InferenceTasksDto> listAllTasks();
+
+    InferenceDataDto getInferecneData(InferenceParaDto inferenceParaDto);
 }

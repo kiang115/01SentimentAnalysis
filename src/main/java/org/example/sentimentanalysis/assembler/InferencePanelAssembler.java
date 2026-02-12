@@ -9,8 +9,6 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Component
@@ -36,7 +34,6 @@ public class InferencePanelAssembler {
         }
 
         // 2. 预处理模型数据：将 Map<ModelId, Model> 转换为 Map<DomainId, List<Model>>
-        // 这样做的好处是避免在下方遍历 domains 时进行嵌套循环过滤，将复杂度从 O(N*M) 降低到 O(N+M)
         Map<Long, List<Models>> modelsGroupedByDomainId = Collections.emptyMap();
         // 领域id->模型列表
         if (!CollectionUtils.isEmpty(models)) {
@@ -74,7 +71,7 @@ public class InferencePanelAssembler {
                     return InferencePanelDto.InferencePanelDomainsDataDto.builder()
                             .domainId(domainId)
                             .domainName(domain.getDomainName())
-                            .uninferencedReviewNums(uninferencedCount)
+                            .uninferencedCommentNums(uninferencedCount)
                             .domainModelsDataList(modelDtos)
                             .build();
                 })
