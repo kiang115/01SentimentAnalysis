@@ -20,7 +20,7 @@ public interface InferenceTasksService extends IService<InferenceTasks> {
 
     List<InferenceTasksDto> listAllTasks();
 
-    InferenceDataDto getInferecneData(InferenceParaDto inferenceParaDto);
+    InferenceDataDto getInferenceData(InferenceParaDto inferenceParaDto);
 
     Long addInferenceTasks(InferenceDataDto inferenceDataDto);
 }

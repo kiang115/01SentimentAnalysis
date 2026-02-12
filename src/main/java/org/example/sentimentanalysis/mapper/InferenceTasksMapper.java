@@ -9,7 +9,7 @@ import org.example.sentimentanalysis.model.InferenceTasks;
  * </p>
  *
  * @author kiang
- * @since 2026-02-11
+ * @since 2026-02-12
  */
 public interface InferenceTasksMapper extends BaseMapper<InferenceTasks> {
 

@@ -22,7 +22,7 @@ public class InferenceDataDto {
     public static class InferenceDomainData {
         // 领域
         private Long domainId;
-        private String domainName;
+        private String domainUrl;
         // 模型id
         private Long modelId;
         private BigDecimal modelVersion;

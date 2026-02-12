@@ -21,7 +21,7 @@ import java.util.List;
  * </p>
  *
  * @author kiang
- * @since 2026-02-11
+ * @since 2026-02-12
  */
 @Getter
 @Setter
@@ -85,7 +85,6 @@ public class InferenceTasks implements Serializable {
      */
     @TableField(value = "domain_ids", typeHandler = Fastjson2TypeHandler.class)
     private List<Long> domainIds;
-
     /**
      * 处理状态 ( 0:处理中, 1:成功完成, 2:失败完成)
      */

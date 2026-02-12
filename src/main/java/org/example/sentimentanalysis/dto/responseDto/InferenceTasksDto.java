@@ -45,7 +45,7 @@ public class InferenceTasksDto {
     /**
      * 处理评论数 (处理评论总数量)
      */
-    private Integer processedCount;
+    private Long processedCount;
 
     /**
      * 平均处理速度 (单位: 条/秒)

@@ -32,15 +32,11 @@ public class InferenceParaDto {
     @AllArgsConstructor
     public static class InferenceDomainPara {
 
-        @NotNull(message = "模型id不能为空")
+        @NotNull(message = "领域id不能为空")
         private Long domainId;
-        @NotBlank(message = "模型名称不能为空")
-        private String domainName;
 
         @NotNull(message = "模型id不能为空")
         private Long modelId;
-        @NotBlank(message = "模型名称不能为空")
-        private BigDecimal modelVersion;
 
         @NotNull(message = "推理数量不能为空")
         private Long inferenceReviewNums;

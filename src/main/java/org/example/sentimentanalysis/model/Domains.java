@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author kiang
- * @since 2026-02-11
+ * @since 2026-02-12
  */
 @Getter
 @Setter
@@ -40,6 +40,12 @@ public class Domains implements Serializable {
      */
     @TableField("domain_name")
     private String domainName;
+
+    /**
+     * 领域模型路径名字, 如: waimai, hotel, shop
+     */
+    @TableField("domain_url")
+    private String domainUrl;
 
     /**
      * 领域创建时间

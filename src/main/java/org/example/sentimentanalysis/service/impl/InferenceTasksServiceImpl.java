@@ -1,14 +1,11 @@
 package org.example.sentimentanalysis.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
-import org.apache.catalina.User;
 import org.example.sentimentanalysis.assembler.InferenceDataAssembler;
 import org.example.sentimentanalysis.assembler.InferenceTasksAssembler;
 import org.example.sentimentanalysis.dto.requestDto.InferenceParaDto;
 import org.example.sentimentanalysis.dto.responseDto.InferenceDataDto;
 import org.example.sentimentanalysis.dto.responseDto.InferenceTasksDto;
-import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.enums.SortEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Comments;
@@ -24,15 +21,12 @@ import org.example.sentimentanalysis.service.ModelsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.example.sentimentanalysis.enums.CommentStatusEnum.PENDING;
-import static org.example.sentimentanalysis.enums.SortEnum.NEWEST_SORT;
 
 /**
  * <p>
@@ -66,27 +60,58 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
     }
 
     @Override
-    public InferenceDataDto getInferecneData(InferenceParaDto inferenceParaDto) {
-//        根据sort排序，然后获取对应数量的推理表格，然后传入toDto装配
+    public InferenceDataDto getInferenceData(InferenceParaDto inferenceParaDto) {
+        List<InferenceParaDto.InferenceDomainPara> domainParas = inferenceParaDto.getInferenceDomainPara();
+        if (CollectionUtils.isEmpty(domainParas)) {
+            return new InferenceDataDto();
+        }
+
+        // 1. 批量数据预取 (准备原材料)
+        Set<Long> domainIds = domainParas.stream().map(InferenceParaDto.InferenceDomainPara::getDomainId).collect(Collectors.toSet());
+        Set<Long> modelIds = domainParas.stream().map(InferenceParaDto.InferenceDomainPara::getModelId).collect(Collectors.toSet());
+
+        Map<Long, Domains> domainMap = domainsService.listByIds(domainIds).stream()
+                .collect(Collectors.toMap(Domains::getDomainId, d -> d));
+        Map<Long, Models> modelMap = modelsService.listByIds(modelIds).stream()
+                .collect(Collectors.toMap(Models::getModelId, m -> m));
+
+        // 2. 批量查询并分组评论
         LambdaQueryWrapper<Comments> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Comments::getStatus, PENDING.getCode())
-                .orderByDesc(inferenceParaDto.getSort().equals(SortEnum.NEWEST_SORT.getKey()), Comments::getPublishTime)
-                .orderByAsc(inferenceParaDto.getSort().equals(SortEnum.LATEST_SORT.getKey()), Comments::getPublishTime);
-        List<Comments> sortedCommentsList = commentsService.list(wrapper);
+                .in(Comments::getDomainId, domainIds)
+                .orderByDesc(SortEnum.NEWEST_SORT.getKey().equals(inferenceParaDto.getSort()), Comments::getPublishTime)
+                .orderByAsc(SortEnum.LATEST_SORT.getKey().equals(inferenceParaDto.getSort()), Comments::getPublishTime);
 
-        Map<Long, List<Comments>> domainsToCommentsList = sortedCommentsList.stream().collect(Collectors.groupingBy(Comments::getDomainId));
-        List<InferenceParaDto.InferenceDomainPara> inferenceDomainParaList = inferenceParaDto.getInferenceDomainPara();
+        Map<Long, List<Comments>> domainsToCommentsMap = commentsService.list(wrapper).stream()
+                .collect(Collectors.groupingBy(Comments::getDomainId));
 
-        //    检测模型id+version是否存在
-        //   检测领域id+name是否存在
-        for (InferenceParaDto.InferenceDomainPara p : inferenceDomainParaList) {
-            boolean exist = modelsService.exists(new LambdaQueryWrapper<Models>().eq(Models::getModelId, p.getModelId()).eq(Models::getModelVersion, p.getModelVersion())) &&
-                    domainsService.exists(new LambdaQueryWrapper<Domains>().eq(Domains::getDomainId, p.getDomainId()).eq(Domains::getDomainName, p.getDomainName()));
-            if (!exist) {
-                throw new CustomBusinessException("模型或者领域信息错误！请检查");
+        // 3. 核心业务处理与转换
+        List<InferenceDataDto.InferenceDomainData> domainDataList = domainParas.stream().map(para -> {
+            // 获取并校验
+            Domains domain = Optional.ofNullable(domainMap.get(para.getDomainId()))
+                    .orElseThrow(() -> new CustomBusinessException("领域ID不存在: " + para.getDomainId()));
+
+            Models model = Optional.ofNullable(modelMap.get(para.getModelId()))
+                    .orElseThrow(() -> new CustomBusinessException("模型ID不存在: " + para.getModelId()));
+
+            List<Comments> allComments = domainsToCommentsMap.getOrDefault(para.getDomainId(), Collections.emptyList());
+
+            // 校验业务规则：评论数是否足够
+            if (allComments.size() < para.getInferenceReviewNums()) {
+                throw new CustomBusinessException("领域 [" + domain.getDomainName() + "] 待处理评论不足");
             }
-        }
-        return inferenceDataAssembler.toDto(inferenceDomainParaList, domainsToCommentsList);
+
+            // 截取业务需要的数量
+            List<Comments> limitedComments = allComments.stream()
+                    .limit(para.getInferenceReviewNums())
+                    .toList();
+
+            // 交给 Assembler 组装单条领域数据
+            return inferenceDataAssembler.toInferenceDomainData(para, model, domain, limitedComments);
+        }).toList();
+
+        // 组装最终结果
+        return InferenceDataDto.builder().inferenceDomainDataList(domainDataList).build();
     }
 
     //将推理任务插入到任务表中
