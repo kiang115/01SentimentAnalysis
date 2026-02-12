@@ -10,12 +10,11 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * <p>
- * 模型表
+ * 领域信息表
  * </p>
  *
  * @author kiang
@@ -24,32 +23,26 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @ToString
-@TableName("models")
+@TableName("domains")
 @Accessors(chain = true)
-public class Models implements Serializable {
+public class Domains implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * 模型ID
-     */
-    @TableId(value = "model_id", type = IdType.AUTO)
-    private Long modelId;
-
-    /**
      * 领域id
      */
-    @TableField("domain_id")
+    @TableId(value = "domain_id", type = IdType.AUTO)
     private Long domainId;
 
     /**
-     * 模型版本号(两位小数, 如1.12)
+     * 领域名字
      */
-    @TableField("model_version")
-    private BigDecimal modelVersion;
+    @TableField("domain_name")
+    private String domainName;
 
     /**
-     * 创建时间(年月日时分秒)
+     * 领域创建时间
      */
     @TableField("created_at")
     private LocalDateTime createdAt;

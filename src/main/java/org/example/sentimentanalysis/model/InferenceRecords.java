@@ -58,7 +58,7 @@ public class InferenceRecords implements Serializable {
      * 评论所属领域
      */
     @TableField("domain_id")
-    private Integer domainId;
+    private Long domainId;
 
     /**
      * 模型推理的正面概率
@@ -79,7 +79,7 @@ public class InferenceRecords implements Serializable {
     private Integer modelSentiment;
 
     /**
-     * 推理时间
+     * 推理完成时间
      */
     @TableField("inference_time")
     private LocalDateTime inferenceTime;

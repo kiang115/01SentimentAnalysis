@@ -1,7 +1,10 @@
 package org.example.sentimentanalysis.dto.responseDto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,6 +15,9 @@ import java.util.List;
  * 对应数据库表 inference_tasks
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class InferenceTasksDto {
 
     /**
@@ -56,7 +62,7 @@ public class InferenceTasksDto {
      * 处理状态 (String类型)
      * 对应数据库 process_status (数字)，转换为易读的字符串（如：待处理/处理中/成功/失败）
      */
-    private String processStatus;
+    private String processStatusName;
 
     /**
      * 模型信息内部类
@@ -72,7 +78,7 @@ public class InferenceTasksDto {
          * 模型版本号
          */
         private BigDecimal modelVersion;
-//        模型领域
-        private String modelDomain;
+        //        模型领域
+        private String domainName;
     }
 }

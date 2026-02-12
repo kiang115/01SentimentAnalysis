@@ -15,5 +15,6 @@ import java.util.List;
  * @since 2026-02-11
  */
 public interface InferenceTasksService extends IService<InferenceTasks> {
+
     List<InferenceTasksDto> listAllTasks();
 }

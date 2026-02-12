@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.Fastjson2TypeHandler;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -88,7 +87,7 @@ public class InferenceTasks implements Serializable {
     private List<Long> domainIds;
 
     /**
-     * 处理状态 (0:待处理, 1:处理中, 2:成功, 3:失败)
+     * 处理状态 ( 0:处理中, 1:成功完成, 2:失败完成)
      */
     @TableField("process_status")
     private Integer processStatus;

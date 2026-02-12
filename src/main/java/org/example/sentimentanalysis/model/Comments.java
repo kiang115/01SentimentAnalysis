@@ -48,10 +48,10 @@ public class Comments implements Serializable {
     private String content;
 
     /**
-     * 评论所属领域：0=未知，1=外卖(waimai)，2=酒店(hotel)（后续扩展）
+     * 评论所属领域：0=外卖(waimai)，1=电商(shop)，2=酒店(hotel)
      */
     @TableField("domain_id")
-    private Integer domainId;
+    private Long domainId;
 
     /**
      * 评论发布时间

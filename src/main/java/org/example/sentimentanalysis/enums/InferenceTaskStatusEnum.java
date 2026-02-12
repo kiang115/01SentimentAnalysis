@@ -65,4 +65,12 @@ public enum InferenceTaskStatusEnum {
         // 未匹配到返回未知状态
         return UNKNOWN.getName();
     }
+    public static InferenceTaskStatusEnum getByCode(int code) {
+        for (InferenceTaskStatusEnum status : InferenceTaskStatusEnum.values()) {
+            if (status.getCode() == code) {
+                return status;
+            }
+        }
+        return null;
+    }
 }
