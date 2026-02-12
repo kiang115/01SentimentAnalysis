@@ -39,7 +39,7 @@ public class CodeGenerator {
                             .formatFileName("%s")
 
                             .mapperBuilder()
-                            .enableFileOverride()// 覆盖已生成文件
+//                            .enableFileOverride()// 覆盖已生成文件
                             .formatMapperFileName("%sMapper")
                             .formatXmlFileName("%sMapper")
 

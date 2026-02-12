@@ -1,6 +1,7 @@
 package org.example.sentimentanalysis.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import org.example.sentimentanalysis.dto.requestDto.InferenceParaDto;
 import org.example.sentimentanalysis.dto.responseDto.InferenceDataDto;
 import org.example.sentimentanalysis.dto.responseDto.InferencePanelDto;
@@ -36,9 +37,13 @@ public class InferenceController {
 
     @Operation(summary = "使用推理配置")
     @PostMapping("/InferenceDataCheck")
-    public Response<InferenceDataDto> InferenceDataCheck(@RequestBody InferenceParaDto inferenceParaDto) {
+    public Response<InferenceDataDto> InferenceDataCheck(@RequestBody @Valid InferenceParaDto inferenceParaDto) {
 //        1.根据参数配置找到对应的InferenceDataDto
         InferenceDataDto inferenceDataDto = inferenceTasksService.getInferecneData(inferenceParaDto);
+//        2. 更新推理任务表
+        Long inferenceTaskId = inferenceTasksService.addInferenceTasks(inferenceDataDto);
+//        3. 返回数据给fastapi
+
         return Response.data(inferenceDataDto);
     }
 }

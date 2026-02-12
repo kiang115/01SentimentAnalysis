@@ -22,7 +22,7 @@ public class InferenceDataAssembler {
             throw new CustomBusinessException("推理参数为空");
         }
         if (CollectionUtils.isEmpty(domainsToCommentsList)) {
-            throw new CustomBusinessException("推理领域评论映射为空");
+            throw new CustomBusinessException("待推理评论列表为空");
         }
 
         List<InferenceDataDto.InferenceDomainData> domainDataList = inferenceDomainParaList.stream()
@@ -47,7 +47,7 @@ public class InferenceDataAssembler {
         // 2. 业务逻辑校验
         if (commentsList.size() < requiredNums) {
             throw new CustomBusinessException(String.format(
-                "领域 [%s](ID:%d) 未处理数据数 %d 少于选定评论数 %d",
+                "领域 [%s](ID:%d) 未处理数据数 %d 少于选定评论数 %d,请刷新后再试",
                 para.getDomainName(), domainId, commentsList.size(), requiredNums));
         }
 
