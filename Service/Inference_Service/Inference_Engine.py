@@ -5,11 +5,12 @@ from transformers import BertTokenizer, BertForSequenceClassification
 from peft import PeftModel
 from Config.Bert_Config import CONFIG
 from Service.Inference_Service.Redis_Service import update_task_redis
-
+from Dto.Redis.InferTaskSnapshot import InferTaskSnapshot
 import asyncio
 import time
 
 from Dto.request.InferenceRequest import InferenceRequest
+
 
 class InferenceEngine:
     def __init__(self):
@@ -85,14 +86,15 @@ class InferenceEngine:
             nonlocal processed_count
             processed_count += batch_size_count
             current_duration = time.time() - start_time
+            batch_snapshot = InferTaskSnapshot(task_id, processed_count, current_duration, 0, "processing")
             loop.call_soon_threadsafe(
                 lambda: asyncio.create_task(
-                    update_task_redis(task_id, processed_count, current_duration, 0, "processing")
+                    update_task_redis(batch_snapshot)
                 )
             )
 
         try:
-            await update_task_redis(task_id, 0, 0, 0, "processing")
+            await update_task_redis(InferTaskSnapshot(task_id, 0, 0, 0, "processing"))
 
             for domain_data in request.inferenceDomainDataList:
                 # 2. 使用 self.predict_domain_batch 引用实例方法
@@ -105,8 +107,10 @@ class InferenceEngine:
                 )
                 all_results.extend(res)
 
-            await update_task_redis(task_id, processed_count, time.time() - start_time, 1, "completed")
+            await update_task_redis(
+                InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 1, "completed"))
 
         except Exception as e:
             print(f"Inference Error: {str(e)}")  # 建议加上日志
-            await update_task_redis(task_id, processed_count, time.time() - start_time, 2, f"Error: {str(e)}")
+            await update_task_redis(
+                InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 2, f"Error: {str(e)}"))
