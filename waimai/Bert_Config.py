@@ -30,6 +30,7 @@ CONFIG = {
     "LORA_ALPHA": 16,
     "LORA_DROPOUT": 0.1,
     "LORA_TARGET_MODULES": ["query", "value", "key"],
+    "MODULES_TO_SAVE": ["classifier"],
     # 数据切分
     "TRAIN_RATIO": 0.8,
     "VAL_RATIO": 0.1,

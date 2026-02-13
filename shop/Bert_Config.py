@@ -13,8 +13,8 @@ from transformers import BertTokenizer
 from sklearn.model_selection import train_test_split
 
 CONFIG = {
-#名字
-    "NAME":"shop",
+    # 名字
+    "NAME": "shop",
     # 模型与数据路径
     "BERT_MODEL_PATH": r"../bert-base-chinese",
     "DATA_DIR": "../online-shopping.csv",
@@ -30,6 +30,7 @@ CONFIG = {
     "LORA_ALPHA": 16,
     "LORA_DROPOUT": 0.1,
     "LORA_TARGET_MODULES": ["query", "value", "key"],
+    "MODULES_TO_SAVE": ["classifier"],
     # 数据切分
     "TRAIN_RATIO": 0.8,
     "VAL_RATIO": 0.1,
