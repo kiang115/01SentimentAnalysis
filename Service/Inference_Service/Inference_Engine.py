@@ -3,9 +3,13 @@ import gc
 import os
 from transformers import BertTokenizer, BertForSequenceClassification
 from peft import PeftModel
-from Bert_Config import CONFIG
-from HostService.HostService import BusinessException, ResultBody
+from Config.Bert_Config import CONFIG
+from Service.Inference_Service.Redis_Service import update_task_redis
 
+import asyncio
+import time
+
+from Dto.request.InferenceRequest import InferenceRequest
 
 class InferenceEngine:
     def __init__(self):
@@ -67,3 +71,42 @@ class InferenceEngine:
             del model
             if torch.cuda.is_available(): torch.cuda.empty_cache()
             gc.collect()
+
+    # --- 修复后的函数定义 - --
+
+    async def background_inference_task(self, request: InferenceRequest):  # 1. 添加 self
+        all_results = []
+        processed_count = 0
+        start_time = time.time()
+        task_id = request.taskId
+        loop = asyncio.get_running_loop()
+
+        def on_batch_done(batch_size_count: int):
+            nonlocal processed_count
+            processed_count += batch_size_count
+            current_duration = time.time() - start_time
+            loop.call_soon_threadsafe(
+                lambda: asyncio.create_task(
+                    update_task_redis(task_id, processed_count, current_duration, 0, "processing")
+                )
+            )
+
+        try:
+            await update_task_redis(task_id, 0, 0, 0, "processing")
+
+            for domain_data in request.inferenceDomainDataList:
+                # 2. 使用 self.predict_domain_batch 引用实例方法
+                res = await asyncio.to_thread(
+                    self.predict_domain_batch,
+                    domain_url=domain_data.domainUrl,
+                    version=str(domain_data.modelVersion),
+                    comments_data=[c.model_dump() for c in domain_data.inferenceDomainCommentList],
+                    on_batch_complete=on_batch_done
+                )
+                all_results.extend(res)
+
+            await update_task_redis(task_id, processed_count, time.time() - start_time, 1, "completed")
+
+        except Exception as e:
+            print(f"Inference Error: {str(e)}")  # 建议加上日志
+            await update_task_redis(task_id, processed_count, time.time() - start_time, 2, f"Error: {str(e)}")
