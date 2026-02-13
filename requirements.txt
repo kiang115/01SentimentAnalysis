@@ -1,0 +1,17 @@
+# PyTorch 1.13.1 with CPU version
+--index-url https://download.pytorch.org/whl/cpu
+torch==1.13.1
+torchvision==0.14.1
+torchaudio==0.13.1
+
+# Transformers and Data Science stack
+transformers==4.21.3
+pandas==1.5.3
+numpy==1.23.5
+scikit-learn==1.1.3
+tqdm==4.64.1
+
+# PEFT (Parameter-Efficient Fine-Tuning)
+peft==0.3.0
+
+#运行命令 pip install -r requirements.txt
