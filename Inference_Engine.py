@@ -4,7 +4,7 @@ import os
 from transformers import BertTokenizer, BertForSequenceClassification
 from peft import PeftModel
 from Bert_Config import CONFIG
-from HostService.HostService import BusinessException,ResultBody
+from HostService.HostService import BusinessException, ResultBody
 
 
 class InferenceEngine:
@@ -18,23 +18,19 @@ class InferenceEngine:
             num_labels=CONFIG["NUM_CLASSES"]
         ).to(self.device).eval()
 
-    def predict_domain_batch(self, domain_url: str, version: str, comments_data: list):
-        # 路径规则：LORA_URL / domainUrl / v-modelVersion
+    # Inference_Engine.py 内部
+    def predict_domain_batch(self, domain_url: str, version: str, comments_data: list, on_batch_complete=None):
         lora_path = os.path.join(CONFIG["LORA_URL"], domain_url, f"v-{version}")
-
         if not os.path.exists(lora_path):
             raise FileNotFoundError(f"LoRA模型未找到: {lora_path}")
 
-        # 动态挂载 LoRA
         model = PeftModel.from_pretrained(self.base_model, lora_path).to(self.device).eval()
-
         results = []
         contents = [c['content'] for c in comments_data]
         comment_ids = [c['commentId'] for c in comments_data]
 
         try:
             with torch.no_grad():
-                # 分批执行，防止大批量评论导致 OOM
                 for i in range(0, len(contents), self.micro_batch_size):
                     batch_contents = contents[i: i + self.micro_batch_size]
                     batch_ids = comment_ids[i: i + self.micro_batch_size]
@@ -47,16 +43,25 @@ class InferenceEngine:
                     outputs = model(**inputs)
                     probs_all = torch.softmax(outputs.logits, dim=1).cpu().numpy()
 
+                    batch_results = []
                     for j, probs in enumerate(probs_all):
                         neg_p, pos_p = round(float(probs[0]), 4), round(float(probs[1]), 4)
                         sentiment = int(probs.argmax())
-                        results.append({
+                        res = {
                             "commentId": batch_ids[j],
                             "modelSentiment": sentiment,
                             "positiveProb": pos_p,
                             "negativeProb": neg_p,
                             "confidence": pos_p if sentiment == 1 else neg_p
-                        })
+                        }
+                        batch_results.append(res)
+
+                    results.extend(batch_results)
+
+                    # --- 新增：每完成一个 batch，执行一次回调 ---
+                    if on_batch_complete:
+                        # 传入当前这批处理的数量
+                        on_batch_complete(len(batch_contents))
             return results
         finally:
             del model
