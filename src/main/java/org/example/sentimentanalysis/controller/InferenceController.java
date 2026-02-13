@@ -20,6 +20,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 
 import static org.example.sentimentanalysis.enums.InferenceTaskStatusEnum.FAILED;
+import static org.example.sentimentanalysis.enums.InferenceTaskStatusEnum.PROCESSING;
 
 @RestController
 public class InferenceController {
@@ -54,16 +55,19 @@ public class InferenceController {
         inferenceDataDto.setTaskId(inferenceTaskId);
 //        3. 发送数据给fastapi
         Response<InferenceResultDto> response = fastApiClient.sendInferenceData(inferenceDataDto);
-        if (response.getCode() != 200) {
-//            设置推理任务的状态为失败
-            Long status = inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, FAILED.getCode());
-            if (status == -1L) {
-                throw new CustomBusinessException("error-更新推理任务:失败状态更新失败");
-            }
-            throw new CustomBusinessException("error-推理处理:解析线程中失败");
-        } else {
-            return response;
+//     更新状态
+        if (inferenceTasksService.setInferenceTaskStatus(
+                inferenceTaskId,
+                response.getCode() != 200 ? FAILED.getCode() : PROCESSING.getCode()
+        ) == -1L) {
+            throw new CustomBusinessException("error-更新推理任务:任务状态更新失败");
         }
+
+        if (response.getCode() != 200) {
+            throw new CustomBusinessException("error-推理处理:解析线程中失败");
+        }
+
+        return response;
     }
 
     @Operation(summary = "推理结果解析和处理")
