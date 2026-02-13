@@ -12,4 +12,3 @@ class InferenceDataResponse(BaseModel):
     taskId: int
     processStatus: int   # 1:正常, 2:错误
     results: List[CommentResult]
-    message: str
