@@ -6,6 +6,7 @@ import org.example.sentimentanalysis.assembler.InferenceTasksAssembler;
 import org.example.sentimentanalysis.dto.requestDto.InferenceParaDto;
 import org.example.sentimentanalysis.dto.responseDto.InferenceDataDto;
 import org.example.sentimentanalysis.dto.responseDto.InferenceTasksDto;
+import org.example.sentimentanalysis.enums.InferenceTaskStatusEnum;
 import org.example.sentimentanalysis.enums.SortEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Comments;
@@ -62,9 +63,6 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
     @Override
     public InferenceDataDto getInferenceData(InferenceParaDto inferenceParaDto) {
         List<InferenceParaDto.InferenceDomainPara> domainParas = inferenceParaDto.getInferenceDomainPara();
-        if (CollectionUtils.isEmpty(domainParas)) {
-            return new InferenceDataDto();
-        }
 
         // 1. 批量数据预取 (准备原材料)
         Set<Long> domainIds = domainParas.stream().map(InferenceParaDto.InferenceDomainPara::getDomainId).collect(Collectors.toSet());
@@ -96,6 +94,9 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
 
             List<Comments> allComments = domainsToCommentsMap.getOrDefault(para.getDomainId(), Collections.emptyList());
 
+            if (para.getInferenceReviewNums() <= 0) {
+                throw new CustomBusinessException("领域 [" + domain.getDomainName() + "] 待处理评论数不能小于等于0");
+            }
             // 校验业务规则：评论数是否足够
             if (allComments.size() < para.getInferenceReviewNums()) {
                 throw new CustomBusinessException("领域 [" + domain.getDomainName() + "] 待处理评论不足");
@@ -140,12 +141,21 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
                 .filter(Objects::nonNull)
                 .mapToLong(item -> item.getInferenceCommentNums() == null ? 0L : item.getInferenceCommentNums())
                 .sum();
-
-        task.setDomainIds(domainIds).setUsedModelIds(modelIds).setProcessedCount(totalComments);
+//        设置默认的发起人id为1
+        task.setDomainIds(domainIds).setUsedModelIds(modelIds).setProcessedCount(totalComments).setInitiatorId(1L);
         save(task);
         if (task.getTaskId() == null) {
             throw new CustomBusinessException("添加推理任务失败，未生成主键！");
         }
         return task.getTaskId();
+    }
+
+    @Override
+    public Long setInferenceTaskStatus(Long taskId, Integer status) {
+        if (InferenceTaskStatusEnum.existsByCode(status)) {
+            updateById(new InferenceTasks().setTaskId(taskId).setProcessStatus(status));
+            return taskId;
+        }
+        return -1L;
     }
 }

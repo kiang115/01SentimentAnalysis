@@ -2,17 +2,24 @@ package org.example.sentimentanalysis.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import org.example.sentimentanalysis.config.FastApiClient;
 import org.example.sentimentanalysis.dto.requestDto.InferenceParaDto;
+import org.example.sentimentanalysis.dto.requestDto.InferenceResultDto;
 import org.example.sentimentanalysis.dto.responseDto.InferenceDataDto;
 import org.example.sentimentanalysis.dto.responseDto.InferencePanelDto;
 import org.example.sentimentanalysis.dto.responseDto.InferenceTasksDto;
+import org.example.sentimentanalysis.exception.CustomBusinessException;
+import org.example.sentimentanalysis.model.InferenceTasks;
 import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.DomainsService;
 import org.example.sentimentanalysis.service.InferenceTasksService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+
+import static org.example.sentimentanalysis.enums.InferenceTaskStatusEnum.FAILED;
 
 @RestController
 public class InferenceController {
@@ -20,6 +27,8 @@ public class InferenceController {
     private InferenceTasksService inferenceTasksService;
     @Autowired
     private DomainsService domainsService;
+    @Autowired
+    private FastApiClient fastApiClient; // 注入 Feign 客户端
 
     @Operation(summary = "列出推理任务列表")
     @GetMapping("/InferenceTasksList")
@@ -35,15 +44,32 @@ public class InferenceController {
         return Response.data(domainsService.ListInferencePanelDto());
     }
 
-    @Operation(summary = "使用推理配置")
+    @Operation(summary = "使用配置进行推理")
     @PostMapping("/InferenceDataCheck")
-    public Response<InferenceDataDto> InferenceDataCheck(@RequestBody @Valid InferenceParaDto inferenceParaDto) {
+    public Response<InferenceResultDto> InferenceDataCheck(@RequestBody @Valid InferenceParaDto inferenceParaDto) {
 //        1.根据参数配置找到对应的InferenceDataDto
         InferenceDataDto inferenceDataDto = inferenceTasksService.getInferenceData(inferenceParaDto);
 //        2. 更新推理任务表
-//        Long inferenceTaskId = inferenceTasksService.addInferenceTasks(inferenceDataDto);
-//        3. 返回数据给fastapi
+        Long inferenceTaskId = inferenceTasksService.addInferenceTasks(inferenceDataDto);
+        inferenceDataDto.setTaskId(inferenceTaskId);
+//        3. 发送数据给fastapi
+        Response<InferenceResultDto> response = fastApiClient.sendInferenceData(inferenceDataDto);
+        if (response.getCode() != 200) {
+//            设置推理任务的状态为失败
+            Long status = inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, FAILED.getCode());
+            if (status == -1L) {
+                throw new CustomBusinessException("error-更新推理任务:失败状态更新失败");
+            }
+            throw new CustomBusinessException("error-推理处理:解析线程中失败");
+        } else {
+            return response;
+        }
+    }
 
-        return Response.data(inferenceDataDto);
+    @Operation(summary = "推理结果解析和处理")
+    @PostMapping("/InferenceResultProcess")
+    public Response<InferenceDataDto> InferenceResultProcess(@RequestBody @Valid InferenceResultDto inferenceResultDto) {
+
+        return Response.success();
     }
 }

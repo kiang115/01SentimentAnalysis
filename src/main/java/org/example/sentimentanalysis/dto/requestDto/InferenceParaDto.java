@@ -39,6 +39,7 @@ public class InferenceParaDto {
         private Long modelId;
 
         @NotNull(message = "推理数量不能为空")
+//        service中检查是否<=0
         private Long inferenceReviewNums;
     }
 }

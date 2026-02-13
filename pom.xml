@@ -123,11 +123,18 @@
             <artifactId>fastjson2</artifactId>
             <version>2.0.61</version>
         </dependency>
-<!--        引入参数校验器-->
+        <!--        引入参数校验器-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
+        <!--        引入web请求统一管理器-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+            <version>5.0.1</version>
+        </dependency>
+
     </dependencies>
 
     <build>

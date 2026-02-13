@@ -1,0 +1,56 @@
+package org.example.sentimentanalysis.dto.requestDto;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class InferenceResultDto {
+
+    @NotNull(message = "任务ID不能为空")
+    private Long taskId;
+
+    @NotNull(message = "处理状态不能为空")
+    private Integer processStatus;
+
+    // 可以是空集合 []，但不能是 null。同时开启级联校验以校验 List 内部的对象
+    @NotEmpty(message = "评论结果列表不能为null")
+    @Valid
+    private List<CommentResultList> results;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CommentResultList {
+
+        @NotNull(message = "评论ID不能为空")
+        private Long commentId;
+
+        @NotNull(message = "模型情感结果不能为空")
+        @Min(value = 0, message = "情感结果只能为0或1")
+        @Max(value = 1, message = "情感结果只能为0或1")
+        private Integer modelSentiment; // 0 或 1
+
+        @NotNull(message = "积极概率不能为空")
+        private BigDecimal positiveProb;
+
+        @NotNull(message = "消极概率不能为空")
+        private BigDecimal negativeProb;
+
+        @NotNull(message = "置信度不能为空")
+        private BigDecimal confidence;
+    }
+}

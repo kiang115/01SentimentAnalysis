@@ -12,7 +12,7 @@ public enum ResponseCode {
     //在这里自定义所有输出的状态码和信息
     SUCCESS("操作成功", 200),
     ERROR("操作失败", 500),
-    NOT_FOUND("没有找到此数据",210 );
+    NOT_FOUND("没有找到此数据",404 );
 
     private final String message;
     private final Integer code;

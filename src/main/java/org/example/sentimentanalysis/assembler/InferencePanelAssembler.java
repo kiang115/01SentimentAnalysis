@@ -62,16 +62,16 @@ public class InferencePanelAssembler {
                             .collect(Collectors.toList());
 
                     // 3.2 获取未推理数量 (处理空指针安全)
-                    Long uninferencedCount = 0L;
+                    Long uninfluencedCount = 0L;
                     if (domainsUninferencedReviewNumsMap != null) {
-                        uninferencedCount = domainsUninferencedReviewNumsMap.getOrDefault(domainId, 0L);
+                        uninfluencedCount = domainsUninferencedReviewNumsMap.getOrDefault(domainId, 0L);
                     }
 
                     // 3.3 构建单个领域的DTO
                     return InferencePanelDto.InferencePanelDomainsDataDto.builder()
                             .domainId(domainId)
                             .domainName(domain.getDomainName())
-                            .uninferencedCommentNums(uninferencedCount)
+                            .uninferencedCommentNums(uninfluencedCount)
                             .domainModelsDataList(modelDtos)
                             .build();
                 })

@@ -1,7 +1,11 @@
 package org.example.sentimentanalysis.response;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Setter // 必须有，否则 Jackson 无法把 JSON 的值注入到对象中
+@NoArgsConstructor // 必须有，Jackson 序列化需要无参构造函数
 @Getter
 public class Response<T> {
 // 这里是一些构造出消息体的方法，可以用自定义的code和message构造，也可以用ResponseCode构造，还可以只用message构造

@@ -60,6 +60,20 @@ public enum InferenceTaskStatusEnum {
         // 未匹配到返回未知状态
         return UNKNOWN.getName();
     }
+
+    /**
+     * 判断状态编码是否存在
+     *
+     * @param code 状态编码
+     * @return 是否存在
+     */
+    public static boolean existsByCode(Integer code) {
+        if (code == null) {
+            return false;
+        }
+        return getByCode(code) != null;
+    }
+
     public static InferenceTaskStatusEnum getByCode(int code) {
         for (InferenceTaskStatusEnum status : InferenceTaskStatusEnum.values()) {
             if (status.getCode() == code) {

@@ -14,6 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class InferenceDataDto {
     private List<InferenceDomainData> inferenceDomainDataList;
+    private Long taskId;
 
     @Data
     @Builder
