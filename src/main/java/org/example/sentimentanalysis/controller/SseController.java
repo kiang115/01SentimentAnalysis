@@ -1,6 +1,7 @@
 package org.example.sentimentanalysis.controller;
 
-import org.example.sentimentanalysis.service.impl.SseService;
+import org.example.sentimentanalysis.dto.redisDto.InferTaskSnapshot;
+import org.example.sentimentanalysis.service.impl.GenericSseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -15,10 +16,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class SseController {
 
     @Autowired
-    private SseService sseService;
+    private GenericSseService<InferTaskSnapshot> infersSseService;
 
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe() {
-        return sseService.addConnection();
+        return infersSseService.addConnection();
     }
 }
