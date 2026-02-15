@@ -3,20 +3,26 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Any, Optional
 
+from pydantic import BaseModel
+from typing import List, Optional, Any, TypeVar, Generic
 
-# --- 1. 统一响应结构 ---
-class ResultBody(BaseModel):
+# 定义泛型变量
+T = TypeVar("T")
+
+
+class ResultBody(BaseModel, Generic[T]):
     code: int
-    data: Optional[Any] = None
+    data: Optional[T] = None
     message: str
 
-    @staticmethod
-    def success(data: Any = None, message: str = "操作成功", code: int = 200):
-        return {"code": code, "data": data, "message": message}
+    @classmethod
+    def success(cls, data: T = None, message: str = "操作成功", code: int = 200):
+        # 返回类实例而非字典
+        return cls(code=code, data=data, message=message)
 
-    @staticmethod
-    def fail(message: str = "操作错误", code: int = 500, data: Any = None):
-        return {"code": code, "data": data, "message": message}
+    @classmethod
+    def fail(cls, message: str = "操作错误", code: int = 500, data: Any = None):
+        return cls(code=code, data=data, message=message)
 
 
 # --- 2. 自定义业务异常 ---

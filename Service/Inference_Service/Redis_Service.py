@@ -2,14 +2,14 @@ import json
 from dataclasses import replace
 from datetime import datetime
 import redis.asyncio as redis
-from Config.FastapiConfig import CONFIG
+from Config.FastapiConfig import FAST_CONFIG
 from Dto.Redis.InferTaskSnapshot import InferTaskSnapshot
 
 # --- Redis 配置 ---
 # decode_responses=True 自动将 Redis 返回的 bytes 转为 str
-r = redis.from_url(CONFIG["REDIS_URL"], decode_responses=True)
-TASKS_HASH_KEY = CONFIG["INFERENCE_TASKS_HASH_KEY"]  # 存储所有任务最新状态的 Hash
-TASKS_CHANNEL = CONFIG["INFERENCE_TASKS_CHANNEL"]  # 发布实时进度的频道
+r = redis.from_url(FAST_CONFIG["REDIS_URL"], decode_responses=True)
+TASKS_HASH_KEY = FAST_CONFIG["INFERENCE_TASKS_HASH_KEY"]  # 存储所有任务最新状态的 Hash
+TASKS_CHANNEL = FAST_CONFIG["INFERENCE_TASKS_CHANNEL"]  # 发布实时进度的频道
 
 
 async def update_task_redis(inferTaskSnapshot: InferTaskSnapshot):

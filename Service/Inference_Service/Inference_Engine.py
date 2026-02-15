@@ -11,8 +11,11 @@ from Service.Inference_Service.Redis_Service import update_task_redis
 from Dto.Redis.InferTaskSnapshot import InferTaskSnapshot
 import asyncio
 import time
-
+from Dto.response.InferenceDataResponse import CommentResult, InferenceDataResponse
+from Service.Host_Service.HostService import ResultBody
 from Dto.request.InferenceRequest import InferenceRequest
+from Service.Http_Service.Notify_Springboot import notify_springboot
+from Config.FastapiConfig import FAST_CONFIG
 
 
 class InferenceEngine:
@@ -55,13 +58,14 @@ class InferenceEngine:
                     for j, probs in enumerate(probs_all):
                         neg_p, pos_p = round(float(probs[0]), 4), round(float(probs[1]), 4)
                         sentiment = int(probs.argmax())
-                        res = {
-                            "commentId": batch_ids[j],
-                            "modelSentiment": sentiment,
-                            "positiveProb": pos_p,
-                            "negativeProb": neg_p,
-                            "confidence": pos_p if sentiment == 1 else neg_p
-                        }
+
+                        res = CommentResult(
+                            commentId=batch_ids[j],
+                            modelSentiment=sentiment,
+                            positiveProb=pos_p,
+                            negativeProb=neg_p,
+                            confidence=pos_p if sentiment == 1 else neg_p
+                        )
                         batch_results.append(res)
 
                     results.extend(batch_results)
@@ -81,6 +85,7 @@ class InferenceEngine:
     async def background_inference_task(self, request: InferenceRequest):  # 1. 添加 self
         # print(request)
         all_results = []
+        back_url = FAST_CONFIG["SPRINGBOOT_BASE_URL"] + FAST_CONFIG["INFERENCE_RES_URL"]
         processed_count = 0
         start_time = time.time()
         task_id = request.taskId
@@ -110,9 +115,29 @@ class InferenceEngine:
                 )
                 all_results.extend(res)
 
+            final_comment_result = InferenceDataResponse(
+                taskId=task_id,
+                processStatus=1,  # 完成
+                results=all_results
+            )
+            success_body = ResultBody.success(data=final_comment_result)
+            await notify_springboot(success_body,back_url)
             await update_task_redis(
                 InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 1, "已完成"))
+        #     向springboot发送任务完成通知
         except Exception as e:
-            print(f"Inference Error: {str(e)}")  # 建议加上日志
+            error_msg = f"任务失败: {str(e)}"
+            print(error_msg)
+
+            # --- 【失败处理】 ---
+            # 即使失败，也尽量把当前已完成的部分结果发回去，或者只发错误信息
+            fail_response = InferenceDataResponse(
+                taskId=task_id,
+                processStatus=2,  # 异常
+                results=all_results  # 已处理的部分结果
+            )
+            fail_body = ResultBody.fail(message=error_msg, code=500, data=fail_response)
+            await notify_springboot(fail_body,back_url)  # <--- 真正发送错误通知
+
             await update_task_redis(
-                InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 2, f"失败: {str(e)}"))
+                InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 2, error_msg))
