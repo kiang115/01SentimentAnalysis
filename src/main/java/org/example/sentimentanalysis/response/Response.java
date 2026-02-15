@@ -1,5 +1,7 @@
 package org.example.sentimentanalysis.response;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,8 +11,11 @@ import lombok.Setter;
 @Getter
 public class Response<T> {
 // 这里是一些构造出消息体的方法，可以用自定义的code和message构造，也可以用ResponseCode构造，还可以只用message构造
+    @Valid
     private T data;
+
     private String message;
+//    200 正常 500输出异常message
     private Integer code;
 
     private Response(Integer code, String message, T data) {
@@ -40,6 +45,9 @@ public class Response<T> {
 
     public static <T> Response<T> success(String message) {
         return new Response<>(ResponseCode.SUCCESS.getCode(), message);
+    }
+        public static <T> Response<T> success(T data,String message) {
+        return new Response<>(ResponseCode.SUCCESS.getCode(), message,data);
     }
 
     public static <T> Response<T> data(T data) {

@@ -1,0 +1,80 @@
+评论表
+CREATE TABLE `comments` (
+  `comment_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '评论唯一标识',
+  `customer_id` BIGINT NOT NULL COMMENT '关联顾客表',
+  `content` TEXT NOT NULL COMMENT '评论内容',
+  `domain_id` BIGINT NOT NULL COMMENT '评论所属领域：0=外卖(waimai)，1=电商(shop)，2=酒店(hotel)',
+  `publish_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '评论发布时间',
+  `product_id` BIGINT NOT NULL COMMENT '关联商品表',
+  `merchant_id` BIGINT NOT NULL COMMENT '关联商家表',
+  `status` INTEGER NOT NULL DEFAULT 0 COMMENT '评论当前状态：0=待推理(pending)，1=推理中(inferring)，2=已推理(inferred)，3=审核中(reviewing)，4=已修正(corrected)，5=已拒绝(rejected)',
+  `final_sentiment` INTEGER COMMENT '最终情感结果：1=好评(positive)，0=差评(negative)',
+  `is_retrained` BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否被重训过',
+  PRIMARY KEY (`comment_id`),
+  INDEX `idx_customer_id` (`customer_id`),
+  INDEX `idx_domain_id` (`domain_id`),
+  INDEX `idx_product_id` (`product_id`),
+  INDEX `idx_merchant_id` (`merchant_id`),
+  INDEX `idx_publish_time` (`publish_time`),
+  INDEX `idx_status` (`status`),
+  INDEX `idx_final_sentiment` (`final_sentiment`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商家情感分析-评论主表';
+
+推理记录表
+CREATE TABLE `inference_records` (
+  `inference_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '推理记录ID',
+  `inference_task_id` BIGINT NOT NULL COMMENT '推理任务ID',
+  `comment_id` BIGINT NOT NULL COMMENT '关联评论表',
+  `model_id` BIGINT NOT NULL COMMENT '关联模型表',
+  `domain_id` BIGINT  NOT NULL COMMENT '评论所属领域',
+  `positive_prob` DECIMAL(5,4) NOT NULL COMMENT '模型推理的正面概率',
+  `negative_prob` DECIMAL(5,4) NOT NULL COMMENT '模型推理的负面概率',
+  `model_sentiment` INTEGER NOT NULL COMMENT '模型判断结果',
+  `inference_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '推理完成时间',
+  `confidence` DECIMAL(4,3) NOT NULL COMMENT '推理置信度',
+  PRIMARY KEY (`inference_id`),
+  INDEX `idx_comment_id` (`comment_id`),
+  INDEX `idx_model_id` (`model_id`),
+  INDEX `idx_domain_id` (`domain_id`),
+  INDEX `idx_inference_time` (`inference_time`),
+  INDEX `idx_model_sentiment` (`model_sentiment`),
+  INDEX `idx_comment_model` (`comment_id`, `model_id`),
+  INDEX `idx_domain_time` (`domain_id`, `inference_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推理记录表';
+
+推理任务表
+CREATE TABLE `inference_tasks` (
+  `task_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '推理任务 id (主键)',
+  `initiator_id` BIGINT  NOT NULL COMMENT '发起人 id',
+  `inference_start_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '推理开始时间',
+  `inference_end_time` DATETIME DEFAULT NULL COMMENT '推理结束时间',
+  `inference_duration` BIGINT DEFAULT NULL COMMENT '推理持续时间 (单位: 毫秒)',
+  `processed_count` BIGINT DEFAULT NULL COMMENT '评论数 (处理评论总数量)',
+  `avg_process_speed` DECIMAL(10, 2) DEFAULT NULL COMMENT '平均处理速度 (单位: 条/秒)',
+  `used_model_ids` JSON DEFAULT NULL COMMENT '涉及使用模型id json 存储，eg[1,2,3,4]',
+  `domain_ids` JSON DEFAULT NULL COMMENT '涉及领域id json存储eg[0,3,4]',
+  `process_status` INTEGER DEFAULT 0 COMMENT '处理状态 ( 0：待处理1:处理中, 2:成功完成, 3:失败完成)',
+
+  PRIMARY KEY (`task_id`),
+  KEY `idx_initiator_id` (`initiator_id`) COMMENT '索引：按发起人查询',
+  KEY `idx_process_status` (`process_status`) COMMENT '索引：按状态查询'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推理任务详情表';
+
+模型表
+CREATE TABLE models (
+    model_id  BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '模型ID',
+    domain_id BIGINT NOT NULL COMMENT '领域id',
+    model_version DECIMAL(4,2) NOT NULL COMMENT '模型版本号(两位小数, 如1.12)',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间(年月日时分秒)',
+    INDEX idx_model_id (model_id),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='模型表';
+
+领域表
+CREATE TABLE `domains` (
+    `domain_id` BIGINT AUTO_INCREMENT COMMENT '领域id',
+    `domain_name` VARCHAR(100) NOT NULL COMMENT '领域中文名字',
+    `domain_url` VARCHAR(100) NOT NULL COMMENT '领域模型路径名字, 如: waimai, hotel, shop',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '领域创建时间',
+    PRIMARY KEY (`domain_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='领域信息表';

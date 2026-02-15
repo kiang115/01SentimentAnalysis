@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.example.sentimentanalysis.assembler.InferenceDataAssembler;
 import org.example.sentimentanalysis.assembler.InferenceTasksAssembler;
 import org.example.sentimentanalysis.dto.requestDto.InferenceParaDto;
+import org.example.sentimentanalysis.dto.requestDto.InferenceResultDto;
 import org.example.sentimentanalysis.dto.responseDto.InferenceDataDto;
 import org.example.sentimentanalysis.dto.responseDto.InferenceTasksDto;
 import org.example.sentimentanalysis.enums.InferenceTaskStatusEnum;
@@ -11,22 +12,28 @@ import org.example.sentimentanalysis.enums.SortEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.model.Domains;
+import org.example.sentimentanalysis.model.InferenceRecords;
 import org.example.sentimentanalysis.model.InferenceTasks;
 import org.example.sentimentanalysis.mapper.InferenceTasksMapper;
 import org.example.sentimentanalysis.model.Models;
 import org.example.sentimentanalysis.service.CommentsService;
 import org.example.sentimentanalysis.service.DomainsService;
+import org.example.sentimentanalysis.service.InferenceRecordsService;
 import org.example.sentimentanalysis.service.InferenceTasksService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.sentimentanalysis.service.ModelsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.example.sentimentanalysis.enums.CommentStatusEnum.INFERRED;
 import static org.example.sentimentanalysis.enums.CommentStatusEnum.PENDING;
 
 /**
@@ -49,14 +56,17 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
     private InferenceDataAssembler inferenceDataAssembler;
     @Autowired
     private CommentsService commentsService;
+    @Autowired
+    private InferenceRecordsService inferenceRecordsService;
 
     @Override
-    public List<InferenceTasksDto> listAllTasks() {
-        List<InferenceTasks> tasks = this.list();
+    public List<InferenceTasksDto> listAllTasks(List<InferenceTasks> tasks) {
 //         加载所有的modelId->model映射
         Map<Long, Models> modelMap = modelsService.list().stream().collect(Collectors.toMap(Models::getModelId, model -> model));
 //        加载所有domainId->domain映射
         Map<Long, Domains> domainMap = domainsService.list().stream().collect(Collectors.toMap(Domains::getDomainId, domain -> domain));
+
+//
         return inferenceTasksAssembler.toDtoList(tasks, modelMap, domainMap);
     }
 
@@ -157,5 +167,48 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
             return taskId;
         }
         return -1L;
+    }
+
+    @Override
+    @Transactional
+    public void setInferenceTaskSuccess(InferenceResultDto inferenceResultDto) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime taskEndTime = LocalDateTime.parse(inferenceResultDto.getTaskEndTime(), formatter);
+
+        Long taskId = inferenceResultDto.getTaskId();
+        Float taskDuration = inferenceResultDto.getTaskDuration();
+        Long processCount = inferenceResultDto.getProcessCount();
+
+        long inferenceDurationMs = (long) (taskDuration * 1000);
+        BigDecimal avgProcessSpeed = BigDecimal.valueOf(processCount).divide(BigDecimal.valueOf(taskDuration), 2, RoundingMode.HALF_UP);
+
+        this.updateById(new InferenceTasks()
+                .setTaskId(taskId)
+                .setInferenceEndTime(taskEndTime)
+                .setInferenceDuration(inferenceDurationMs)
+                .setAvgProcessSpeed(avgProcessSpeed));
+
+        List<InferenceResultDto.CommentResultList> results = inferenceResultDto.getResults();
+        List<Comments> commentsToUpdate = results.stream()
+                .map(r -> new Comments()
+                        .setCommentId(r.getCommentId())
+                        .setFinalSentiment(r.getModelSentiment())
+                        .setStatus(INFERRED.getCode()))
+                .toList();
+        commentsService.updateBatchById(commentsToUpdate);
+
+        List<InferenceRecords> recordsToSave = results.stream()
+                .map(r -> new InferenceRecords()
+                        .setInferenceTaskId(taskId)
+                        .setCommentId(r.getCommentId())
+                        .setModelId(r.getModelId())
+                        .setDomainId(r.getDomainId())
+                        .setPositiveProb(r.getPositiveProb())
+                        .setNegativeProb(r.getNegativeProb())
+                        .setModelSentiment(r.getModelSentiment())
+                        .setInferenceTime(taskEndTime)
+                        .setConfidence(r.getConfidence()))
+                .toList();
+        inferenceRecordsService.saveBatch(recordsToSave);
     }
 }

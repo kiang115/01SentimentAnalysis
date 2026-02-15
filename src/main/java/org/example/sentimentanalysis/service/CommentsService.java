@@ -1,5 +1,7 @@
 package org.example.sentimentanalysis.service;
 
+import org.example.sentimentanalysis.dto.requestDto.InferenceResultDto;
+import org.example.sentimentanalysis.dto.responseDto.InferenceDataDto;
 import org.example.sentimentanalysis.model.Comments;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -13,4 +15,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface CommentsService extends IService<Comments> {
 
+    void updateCommentStatus(InferenceDataDto inferenceDataDto);
+
+    void updateCommentStatus(InferenceResultDto inferenceResultDto, int code);
 }
