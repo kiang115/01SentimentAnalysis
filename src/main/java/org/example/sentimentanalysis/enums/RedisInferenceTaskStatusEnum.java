@@ -5,8 +5,8 @@ import lombok.Getter;
 @Getter
 public enum RedisInferenceTaskStatusEnum {
     PENDING(0, "处理中"),
-    COMPLETED(1, "正常完成"),
-    ERRORTASK(2, "异常，请打印异常信息"),
+    COMPLETED(1, "已完成"),
+    ERRORTASK(2, "失败"),
     UNKNOWN(-1, "未知状态");
     private final Integer code;
 

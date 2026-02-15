@@ -17,7 +17,7 @@ public enum InferenceTaskStatusEnum {
     /**
      * 成功
      */
-    SUCCESS(2, "成功"),
+    SUCCESS(2, "已完成"),
 
     /**
      * 失败
