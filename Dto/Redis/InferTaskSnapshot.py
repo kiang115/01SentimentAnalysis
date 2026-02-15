@@ -11,6 +11,7 @@ class InferTaskSnapshot:
     status: int
     statusMsg: str
     currentTime: str = None
+    processSpeed: float = 0.0
 
     def __post_init__(self):
         # 初始化时间并处理浮点数精度

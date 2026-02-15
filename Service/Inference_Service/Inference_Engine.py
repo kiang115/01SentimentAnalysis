@@ -1,9 +1,12 @@
 import torch
 import gc
 import os
+
+from sympy.codegen.ast import Raise
 from transformers import BertTokenizer, BertForSequenceClassification
 from peft import PeftModel
 from Config.Bert_Config import CONFIG
+from Service.Host_Service.HostService import BusinessException
 from Service.Inference_Service.Redis_Service import update_task_redis
 from Dto.Redis.InferTaskSnapshot import InferTaskSnapshot
 import asyncio
@@ -76,6 +79,7 @@ class InferenceEngine:
     # --- 修复后的函数定义 - --
 
     async def background_inference_task(self, request: InferenceRequest):  # 1. 添加 self
+        # print(request)
         all_results = []
         processed_count = 0
         start_time = time.time()
@@ -86,7 +90,7 @@ class InferenceEngine:
             nonlocal processed_count
             processed_count += batch_size_count
             current_duration = time.time() - start_time
-            batch_snapshot = InferTaskSnapshot(task_id, processed_count, current_duration, 0, "processing")
+            batch_snapshot = InferTaskSnapshot(task_id, processed_count, current_duration, 0, "处理中")
             loop.call_soon_threadsafe(
                 lambda: asyncio.create_task(
                     update_task_redis(batch_snapshot)
@@ -94,8 +98,7 @@ class InferenceEngine:
             )
 
         try:
-            await update_task_redis(InferTaskSnapshot(task_id, 0, 0, 0, "processing"))
-
+            await update_task_redis(InferTaskSnapshot(task_id, 0, 0, 0, "处理中"))
             for domain_data in request.inferenceDomainDataList:
                 # 2. 使用 self.predict_domain_batch 引用实例方法
                 res = await asyncio.to_thread(
@@ -108,9 +111,8 @@ class InferenceEngine:
                 all_results.extend(res)
 
             await update_task_redis(
-                InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 1, "completed"))
-
+                InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 1, "已完成"))
         except Exception as e:
             print(f"Inference Error: {str(e)}")  # 建议加上日志
             await update_task_redis(
-                InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 2, f"Error: {str(e)}"))
+                InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 2, f"失败: {str(e)}"))
