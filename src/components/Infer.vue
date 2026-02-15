@@ -157,7 +157,8 @@ function displayAvgSpeed(task: InferenceTaskDto): number | string {
   if (snap != null && snap.processSpeed != null) {
     return snap.processSpeed.toFixed(2)
   }
-  return task.avgProcessSpeed ?? '—'
+  if(task.avgProcessSpeed == null) return '—'
+  return task.avgProcessSpeed.toFixed(2);
 }
 
 /** 卡片「推理结束时间」展示值：有快照用快照 currentTime，否则用 task.inferenceEndTime；无则为 null（模板显示「进行中」） */

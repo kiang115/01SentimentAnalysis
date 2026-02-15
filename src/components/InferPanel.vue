@@ -56,7 +56,7 @@
 
     <template #footer>
       <el-button @click="close">取消</el-button>
-      <el-button type="primary" @click="handleConfirm">点击推理</el-button>
+      <el-button type="primary" :loading="confirmLoading" @click="handleConfirm">点击推理</el-button>
     </template>
   </el-dialog>
 </template>
@@ -100,6 +100,7 @@ const dialogVisible = computed({
 const configList = ref<InferenceConfigItem[]>([])
 const rowState = ref<Array<{ commentCount: number; selectedModelId: number }>>([])
 const loading = ref(false)
+const confirmLoading = ref(false)
 const sort = ref<'newest' | 'lastest'>('newest')
 
 const configWithState = computed(() =>
@@ -152,6 +153,7 @@ async function handleConfirm() {
     ElMessage.warning('请至少为一个领域设置推理数量')
     return
   }
+  confirmLoading.value = true
   try {
     const res = await modelApi.checkInferData({ inferenceDomainPara, sort: sort.value })
     ElMessage.success((res as { message?: string }).message ?? '操作成功')
@@ -160,6 +162,8 @@ async function handleConfirm() {
   } catch {
     close()
     emit('confirm')
+  } finally {
+    confirmLoading.value = false
   }
 }
 
