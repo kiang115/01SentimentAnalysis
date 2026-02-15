@@ -1,0 +1,66 @@
+body{
+    margin: 0px;
+}
+
+.login-container{
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    margin:0px;
+    background-image: url(../assets/images/login/bg.jpg);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    align-items: center;
+    justify-content: center;
+    &-content{
+        width:460px;
+        margin: 0 auto;
+        padding: 6px;
+        background: hsla(0, 0%, 100%, .4);
+        border-radius: 15px;
+        &-bg{
+            padding-top: 36px;
+            padding-bottom: 36px;
+            background-color: #fff;
+            border-radius: 15px;
+        }
+        &-top{
+            text-align: center;
+            padding-bottom: 40px;
+        }
+        &-main{
+            width: 368px;
+            margin: 0 auto;
+        }
+    }
+}
+
+.login-logo{
+    height: 60px;
+    vertical-align: top;
+    margin-right: 16px;
+}
+.login-title{
+    font-size: 26px;
+    color: rgba(0, 0, 0, .85);
+    font-family: Myriad Pro, Helvetica Neue, Arial, Helvetica, sans-serif;
+    font-weight: 600;
+    position: relative;
+    top: 2px;
+}
+ 
+ 
+input:-internal-autofill-selected {
+    background-color: transparent !important;
+    background-image: none !important;
+    color: rgb(255, 255, 255) !important;
+  }
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    transition-delay: 500000s;
+    transition: background-color 50000s ease-out;
+    -webkit-transition-delay: 50000s;
+    -webkit-transition: background-color 50000s ease-out;
+  }
