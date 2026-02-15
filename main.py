@@ -1,11 +1,11 @@
 from fastapi import FastAPI, BackgroundTasks
 from Dto.receive.InferDataReceive import InferenceRequest
 from Dto.send.InferDataSend import InferenceDataResponse
-from Common.Exception import BusinessException, SendBody
+from Common.Exception import BusinessException, SendBody, add_exception_handlers
 from Service.InferService.InferenceEngine import InferenceEngine
 engine = InferenceEngine()
 app = FastAPI(title="Sentiment Analysis API")
-
+add_exception_handlers(app)
 @app.post("/predict")
 async def predict(request: InferenceRequest, background_tasks: BackgroundTasks):
     # 1. 业务逻辑检测
@@ -21,7 +21,10 @@ async def predict(request: InferenceRequest, background_tasks: BackgroundTasks):
     data_content = InferenceDataResponse(
         taskId=request.taskId,
         processStatus=1,  # 这里的 1 是你业务定义的接收状态
-        results=[]
+        results=[],
+        processCount=0,
+        taskEndTime="",
+        taskDuration=0.0,
     )
 
     return SendBody.success(data=data_content, message="任务已提交，正在后台进行推理")

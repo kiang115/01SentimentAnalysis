@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import torch
 import gc
 import os
@@ -30,7 +32,8 @@ class InferenceEngine:
             num_labels=settings.num_classes
         ).to(self.device).eval()
 
-    def predict_domain_batch(self, domain_url: str, version: str, comments_data: list, on_batch_complete=None):
+    def predict_domain_batch(self, domain_url: str, version: str, comments_data: list, modelId: int, domainId: int,
+                             on_batch_complete=None):
         settings = get_settings()
         # 使用 settings.lora_url 替换 CONFIG["LORA_URL"]
         lora_path = os.path.join(settings.lora_url, domain_url, f"v-{version}")
@@ -70,7 +73,9 @@ class InferenceEngine:
                             modelSentiment=sentiment,
                             positiveProb=pos_p,
                             negativeProb=neg_p,
-                            confidence=pos_p if sentiment == 1 else neg_p
+                            confidence=pos_p if sentiment == 1 else neg_p,
+                            modelId=modelId,
+                            domainId=domainId,
                         )
                         batch_results.append(res)
 
@@ -116,31 +121,53 @@ class InferenceEngine:
                     domain_url=domain_data.domainUrl,
                     version=str(domain_data.modelVersion),
                     comments_data=[c.model_dump() for c in domain_data.inferenceDomainCommentList],
-                    on_batch_complete=on_batch_done
+                    on_batch_complete=on_batch_done,
+                    modelId=domain_data.modelId,
+                    domainId=domain_data.domainId
                 )
                 all_results.extend(res)
 
+            duration = time.time() - start_time
+            currentTime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             final_comment_result = InferenceDataResponse(
                 taskId=task_id,
                 processStatus=1,  # 完成
-                results=all_results
+                results=all_results,
+                processCount=processed_count,
+                taskEndTime=currentTime,
+                taskDuration=duration
             )
             success_body = SendBody.success(data=final_comment_result)
             await post_springboot(success_body, back_url)
             await update_task_redis(
-                InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 1, "已完成"))
-
+                InferTaskSnapshot(task_id, processed_count, duration, 1, "已完成"), currentTime)
         except Exception as e:
             error_msg = f"任务失败: {str(e)}"
             print(error_msg)
+            all_raw_results=[]
+            for domain_data in request.inferenceDomainDataList:
+                current_model_id = domain_data.modelId
+                current_domain_id = domain_data.domainId
 
+                # 2. 遍历该 domain 下的所有评论
+                for comment in domain_data.inferenceDomainCommentList:
+                    # 3. 创建结果对象并赋值
+                    result = CommentResult(
+                        commentId=comment.commentId,
+                        modelId=current_model_id,
+                        domainId=current_domain_id
+                        # 其他字段使用默认值
+                    )
+                    all_raw_results.append(result)
+
+            # 4. 组装响应对象
             fail_response = InferenceDataResponse(
-                taskId=task_id,
-                processStatus=2,  # 异常
-                results=all_results
+                taskId=request.taskId,
+                processStatus=2,
+                processCount=len(all_results),
+                results=all_raw_results
             )
             fail_body = SendBody.fail(message=error_msg, code=500, data=fail_response)
             await post_springboot(fail_body, back_url)
-
             await update_task_redis(
                 InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 2, error_msg))

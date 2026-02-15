@@ -1,14 +1,22 @@
 from pydantic import BaseModel
 from typing import List
-#  推理的结果，需要返回给springboot
+
+from pydantic import BaseModel, Field
+#  推理的结果，需要返回给springboot 全部设上默认值，防止springboot解析出错，导致业务不能正常进行
 class CommentResult(BaseModel):
-    commentId: int
-    modelSentiment: int  # 0或1
-    positiveProb: float
-    negativeProb: float
-    confidence: float
+    commentId: int = 0
+    modelSentiment: int = 0  # 0或1
+    positiveProb: float = 0.0
+    negativeProb: float = 0.0
+    confidence: float = 0.0
+    modelId: int = 0
+    domainId: int = 0
+
 
 class InferenceDataResponse(BaseModel):
-    taskId: int
-    processStatus: int # 0-进行中, 1-完成, 2-异常
-    results: List[CommentResult]
+    taskId: int = 0
+    processStatus: int = 2  # 0-进行中, 1-完成, 2-异常
+    processCount: int = 0
+    taskEndTime: str = ""  # 默认为空字符串而非 None
+    taskDuration: float = 0.0  # 默认 0.00
+    results: List[CommentResult] = Field(default_factory=list)  # 默认为空列表 []
