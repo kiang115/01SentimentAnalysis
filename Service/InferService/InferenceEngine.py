@@ -2,36 +2,39 @@ import torch
 import gc
 import os
 
-from sympy.codegen.ast import Raise
 from transformers import BertTokenizer, BertForSequenceClassification
 from peft import PeftModel
-from Config.Bert_Config import CONFIG
-from Service.Host_Service.HostService import BusinessException
-from Service.Inference_Service.Redis_Service import update_task_redis
+from Service.Redis.RedisService import update_task_redis
 from Dto.Redis.InferTaskSnapshot import InferTaskSnapshot
 import asyncio
 import time
-from Dto.response.InferenceDataResponse import CommentResult, InferenceDataResponse
-from Service.Host_Service.HostService import ResultBody
-from Dto.request.InferenceRequest import InferenceRequest
-from Service.Http_Service.Notify_Springboot import notify_springboot
-from Config.FastapiConfig import FAST_CONFIG
+from Dto.send.InferDataSend import CommentResult, InferenceDataResponse
+from Common.SendBody import SendBody
+from Dto.receive.InferDataReceive import InferenceRequest
+from Common.Https import post_springboot
+from Config import get_settings
 
 
 class InferenceEngine:
     def __init__(self):
+        settings = get_settings()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.micro_batch_size = CONFIG["MAX_GPU_BATCH_SIZE"]
-        self.tokenizer = BertTokenizer.from_pretrained(CONFIG["BERT_MODEL_PATH"])
+        self.micro_batch_size = settings.max_gpu_batch_size
+
+        # 使用 settings 替换 CONFIG
+        self.tokenizer = BertTokenizer.from_pretrained(settings.bert_model_path)
+
         # 基础模型常驻显存
         self.base_model = BertForSequenceClassification.from_pretrained(
-            CONFIG["BERT_MODEL_PATH"],
-            num_labels=CONFIG["NUM_CLASSES"]
+            settings.bert_model_path,
+            num_labels=settings.num_classes
         ).to(self.device).eval()
 
-    # Inference_Engine.py 内部
     def predict_domain_batch(self, domain_url: str, version: str, comments_data: list, on_batch_complete=None):
-        lora_path = os.path.join(CONFIG["LORA_URL"], domain_url, f"v-{version}")
+        settings = get_settings()
+        # 使用 settings.lora_url 替换 CONFIG["LORA_URL"]
+        lora_path = os.path.join(settings.lora_url, domain_url, f"v-{version}")
+
         if not os.path.exists(lora_path):
             raise FileNotFoundError(f"LoRA模型未找到: {lora_path}")
 
@@ -47,8 +50,11 @@ class InferenceEngine:
                     batch_ids = comment_ids[i: i + self.micro_batch_size]
 
                     inputs = self.tokenizer(
-                        batch_contents, return_tensors="pt", padding=True,
-                        truncation=True, max_length=CONFIG["MAX_LENGTH"]
+                        batch_contents,
+                        return_tensors="pt",
+                        padding=True,
+                        truncation=True,
+                        max_length=settings.max_length  # 替换 CONFIG["MAX_LENGTH"]
                     ).to(self.device)
 
                     outputs = model(**inputs)
@@ -70,22 +76,22 @@ class InferenceEngine:
 
                     results.extend(batch_results)
 
-                    # --- 新增：每完成一个 batch，执行一次回调 ---
                     if on_batch_complete:
-                        # 传入当前这批处理的数量
                         on_batch_complete(len(batch_contents))
             return results
         finally:
             del model
-            if torch.cuda.is_available(): torch.cuda.empty_cache()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
             gc.collect()
 
-    # --- 修复后的函数定义 - --
-
-    async def background_inference_task(self, request: InferenceRequest):  # 1. 添加 self
-        # print(request)
+    async def background_inference_task(self, request: InferenceRequest):
+        settings = get_settings()
         all_results = []
-        back_url = FAST_CONFIG["SPRINGBOOT_BASE_URL"] + FAST_CONFIG["INFERENCE_RES_URL"]
+
+        # 使用 settings 替换 FAST_CONFIG
+        back_url = settings.springboot_base_url + settings.inference_res_url
+
         processed_count = 0
         start_time = time.time()
         task_id = request.taskId
@@ -105,7 +111,6 @@ class InferenceEngine:
         try:
             await update_task_redis(InferTaskSnapshot(task_id, 0, 0, 0, "处理中"))
             for domain_data in request.inferenceDomainDataList:
-                # 2. 使用 self.predict_domain_batch 引用实例方法
                 res = await asyncio.to_thread(
                     self.predict_domain_batch,
                     domain_url=domain_data.domainUrl,
@@ -120,24 +125,22 @@ class InferenceEngine:
                 processStatus=1,  # 完成
                 results=all_results
             )
-            success_body = ResultBody.success(data=final_comment_result)
-            await notify_springboot(success_body,back_url)
+            success_body = SendBody.success(data=final_comment_result)
+            await post_springboot(success_body, back_url)
             await update_task_redis(
                 InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 1, "已完成"))
-        #     向springboot发送任务完成通知
+
         except Exception as e:
             error_msg = f"任务失败: {str(e)}"
             print(error_msg)
 
-            # --- 【失败处理】 ---
-            # 即使失败，也尽量把当前已完成的部分结果发回去，或者只发错误信息
             fail_response = InferenceDataResponse(
                 taskId=task_id,
                 processStatus=2,  # 异常
-                results=all_results  # 已处理的部分结果
+                results=all_results
             )
-            fail_body = ResultBody.fail(message=error_msg, code=500, data=fail_response)
-            await notify_springboot(fail_body,back_url)  # <--- 真正发送错误通知
+            fail_body = SendBody.fail(message=error_msg, code=500, data=fail_response)
+            await post_springboot(fail_body, back_url)
 
             await update_task_redis(
                 InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 2, error_msg))

@@ -18,7 +18,7 @@ class InferenceDomainData(BaseModel):
     # 统计与列表
     inferenceCommentNums: int
     inferenceDomainCommentList: List[InferenceDomainComment]
-
+# 发送过来需要推理的数据
 class InferenceRequest(BaseModel):
     taskId: int
     inferenceDomainDataList: List[InferenceDomainData]

@@ -1,11 +1,10 @@
 from fastapi import FastAPI, BackgroundTasks
-from Dto.request.InferenceRequest import InferenceRequest
-from Dto.response.InferenceDataResponse import InferenceDataResponse
-from Service.Host_Service.HostService import BusinessException, ResultBody
-from Service.Inference_Service.Inference_Engine import InferenceEngine
+from Dto.receive.InferDataReceive import InferenceRequest
+from Dto.send.InferDataSend import InferenceDataResponse
+from Common.Exception import BusinessException, SendBody
+from Service.InferService.InferenceEngine import InferenceEngine
 engine = InferenceEngine()
 app = FastAPI(title="Sentiment Analysis API")
-
 
 @app.post("/predict")
 async def predict(request: InferenceRequest, background_tasks: BackgroundTasks):
@@ -25,10 +24,9 @@ async def predict(request: InferenceRequest, background_tasks: BackgroundTasks):
         results=[]
     )
 
-    return ResultBody.success(data=data_content, message="任务已提交，正在后台进行推理")
+    return SendBody.success(data=data_content, message="任务已提交，正在后台进行推理")
 
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="127.0.0.1", port=8000)

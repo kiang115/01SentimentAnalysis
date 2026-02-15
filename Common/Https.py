@@ -1,10 +1,9 @@
 import httpx
 from fastapi.encoders import jsonable_encoder
 
-from Service.Host_Service.HostService import ResultBody
+from Common.SendBody import SendBody
 
-
-async def notify_springboot(payload: ResultBody, url: str):
+async def post_springboot(payload: SendBody, url: str):
     async with httpx.AsyncClient() as client:
         # clean_data = jsonable_encoder(payload)
         # json只能接收字典类型
