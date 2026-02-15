@@ -69,8 +69,8 @@ public class GenericSseService<T> {
                     })
                     .filter(Objects::nonNull)
                     .toList();
-
-            emitter.send(SseEmitter.event().name(eventName).data(taskList));
+//                全量推送
+            emitter.send(SseEmitter.event().name(eventName+":first").data(taskList));
 
             if (taskList.isEmpty() || taskList.stream().allMatch(context::isFinalStatus)) {
                 emitter.complete();

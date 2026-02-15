@@ -15,7 +15,6 @@ import org.example.sentimentanalysis.service.DomainsService;
 import org.example.sentimentanalysis.service.InferenceTasksService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -41,11 +40,10 @@ public class InferenceController {
     @Operation(summary = "列出推理数据配置面板")
     @GetMapping("/InferencePanel")
     public Response<InferencePanelDto> InferenceDataConfig() {
-
         return Response.data(domainsService.ListInferencePanelDto());
     }
 
-    @Operation(summary = "使用配置进行推理")
+    @Operation(summary = "使用配置开始推理")
     @PostMapping("/InferenceDataCheck")
     public Response<InferenceResultDto> InferenceDataCheck(@RequestBody @Valid InferenceParaDto inferenceParaDto) {
 //        1.根据参数配置找到对应的InferenceDataDto
@@ -66,7 +64,6 @@ public class InferenceController {
         if (response.getCode() != 200) {
             throw new CustomBusinessException("error-推理处理:解析线程中失败");
         }
-
         return response;
     }
 

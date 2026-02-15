@@ -22,7 +22,7 @@ public class InferenceParaDto {
     @NotEmpty(message = "推理参数列表不能为空")
     private List<InferenceDomainPara> inferenceDomainPara;
 
-    @NotBlank(message = "排序方式不能为空")
+    @NotBlank(message = "评论排序方式不能为空,必选 参数 newest按最新评论排序 lastest按最旧评论排序 ")
     private String sort;
 
     // 内部类：接收推理所需的模型参数

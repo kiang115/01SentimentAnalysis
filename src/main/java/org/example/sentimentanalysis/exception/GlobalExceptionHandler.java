@@ -19,4 +19,5 @@ public class GlobalExceptionHandler {
     public Response handleCustomException(CustomBusinessException e) {
         return Response.fail(e.getCode(), e.getMessage());
     }
+//    #todo  对satoken的异常进行手动捕获处理
 }

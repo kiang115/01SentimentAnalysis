@@ -31,6 +31,9 @@ public class InferenceDataDto {
         private Long inferenceCommentNums;
         // 需要推理的评论列表
         private List<InferenceDomainComment> inferenceDomainCommentList;
+
+//        返回总共的评论数
+//        返回一个是否需要连接sse的状态
     }
 
     @Data

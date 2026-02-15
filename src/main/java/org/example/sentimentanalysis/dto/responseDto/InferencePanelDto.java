@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class InferencePanelDto {
-
+// 返回给模型推理参数配置看板的数据
     private List<InferencePanelDomainsDataDto> inferenceConfigDataList;
 
     // --- 内部类开始 ---
@@ -22,10 +22,15 @@ public class InferencePanelDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class InferencePanelDomainsDataDto { // 加上 public static
+//    每个领域的数据
+    public static class InferencePanelDomainsDataDto {
+//        领域id
         private Long domainId;
+//        领域名称
         private String domainName;
+//        领域未推理的评论数
         private Long uninferencedCommentNums;
+//        领域专属模型信息
         private List<DomainsModelDataDto> domainModelsDataList;
     }
 
@@ -33,8 +38,10 @@ public class InferencePanelDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class DomainsModelDataDto { // 加上 public static
+    public static class DomainsModelDataDto {
+//        模型id ->模型唯一
         private Long modelId;
+//        模型版本号码
         private BigDecimal modelVersion;
     }
 }

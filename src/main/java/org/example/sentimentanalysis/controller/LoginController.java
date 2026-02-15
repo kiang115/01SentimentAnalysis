@@ -1,22 +1,20 @@
 package org.example.sentimentanalysis.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.Mapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.example.sentimentanalysis.response.Response;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 public class LoginController {
 
-    @GetMapping("/log")
-    public String index() {
+    @GetMapping("/login")
+    public Response<String> index() {
 //        理解：会在返回的时候将satoken返回给前端
         StpUtil.login("admin");
-        return "Greetings from Spring Boot!";
+        return Response.data(StpUtil.getTokenValue());
     }
 
-    @GetMapping("/isLogin")
+    @RequestMapping("/isLogin")
     public String isLogin() {
         return "当前会话是否登录：" + StpUtil.isLogin();
     }

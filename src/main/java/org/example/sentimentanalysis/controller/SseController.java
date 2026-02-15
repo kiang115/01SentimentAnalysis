@@ -18,7 +18,7 @@ public class SseController {
     @Autowired
     private GenericSseService<InferTaskSnapshot> infersSseService;
 
-    @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(value = "/infer/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe() {
         return infersSseService.addConnection();
     }
