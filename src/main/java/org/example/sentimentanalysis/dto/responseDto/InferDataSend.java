@@ -27,7 +27,7 @@ public class InferDataSend {
         private String domainUrl;
         // 模型id
         private Long modelId;
-        private BigDecimal modelVersion;
+        private String modelVersion;
         // 本领域待推理评论数
         private Long inferenceCommentNums;
         // 需要推理的评论列表

@@ -77,7 +77,7 @@ public class InferTasksDetailSend {
         /**
          * 模型版本号
          */
-        private BigDecimal modelVersion;
+        private String modelVersion;
         //        模型领域
         private String domainName;
     }

@@ -42,6 +42,6 @@ public class InferPanelSend {
 //        模型id ->模型唯一
         private Long modelId;
 //        模型版本号码
-        private BigDecimal modelVersion;
+        private String modelVersion;
     }
 }

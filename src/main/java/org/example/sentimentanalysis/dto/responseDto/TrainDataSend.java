@@ -20,7 +20,7 @@ public class TrainDataSend {
     private Long domainId;
     private String domainUrl;
     // 模型版本 #后台需要转为字符串 比如1.1转为1.10
-    private BigDecimal modelVersion;
+    private String modelVersion;
     private List<TrainSourceData> trainDataList;
     //  参数配置 直接从TrainPanelRec中复制
     /**

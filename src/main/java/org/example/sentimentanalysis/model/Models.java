@@ -10,7 +10,6 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -46,7 +45,7 @@ public class Models implements Serializable {
      * 模型版本号(两位小数, 如1.12)
      */
     @TableField("model_version")
-    private BigDecimal modelVersion;
+    private String modelVersion;
 
     /**
      * 创建时间(年月日时分秒)

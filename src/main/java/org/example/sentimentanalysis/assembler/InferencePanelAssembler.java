@@ -7,6 +7,7 @@ import org.example.sentimentanalysis.model.Models;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -19,7 +20,8 @@ public class InferencePanelAssembler {
      *
      * @param domains                          领域列表
      * @param domainsUninferencedReviewNumsMap domainId -> 未推理评论数
-     * @param models                           模型实体列表 (实体包含 modelId, modelVersion, domainId)
+     * @param models                           模型实体列表 (实体包含 modelId, modelVersion,
+     *                                         domainId)
      * @return InferPanelSend
      */
     public InferPanelSend toDto(List<Domains> domains,
@@ -49,10 +51,11 @@ public class InferencePanelAssembler {
                     Long domainId = domain.getDomainId();
 
                     // 3.1 获取该领域下的模型列表并转换为DTO
-                    List<Models> domainModels = finalModelsGroupedByDomainId.getOrDefault(domainId, Collections.emptyList());
+                    List<Models> domainModels = finalModelsGroupedByDomainId.getOrDefault(domainId,
+                            Collections.emptyList());
 
-//                    3.1.1对domainModels按照版本大小排序
-                    domainModels.sort((v1, v2) -> v2.getModelVersion().compareTo(v1.getModelVersion()));
+                    // 3.1.1对domainModels按照版本创建时间排序
+                    domainModels.sort(Comparator.comparing(Models::getCreatedAt).reversed());
 
                     List<InferPanelSend.DomainsModelDataDto> modelDtos = domainModels.stream()
                             .map(model -> InferPanelSend.DomainsModelDataDto.builder()
@@ -64,7 +67,8 @@ public class InferencePanelAssembler {
                     // 3.2 获取未推理数量 (处理空指针安全)
                     Long uninfluencedCount = 0L;
                     if (domainsUninferencedReviewNumsMap != null) {
-                        uninfluencedCount = domainsUninferencedReviewNumsMap.getOrDefault(domainId, 0L);
+                        uninfluencedCount = domainsUninferencedReviewNumsMap
+                                .getOrDefault(domainId, 0L);
                     }
 
                     // 3.3 构建单个领域的DTO
