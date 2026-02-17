@@ -78,3 +78,94 @@ CREATE TABLE `domains` (
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '领域创建时间',
     PRIMARY KEY (`domain_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='领域信息表';
+
+训练任务表
+CREATE TABLE `train_tasks` (
+    -- 1. 基础信息
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '训练任务id',
+    `creator_id` BIGINT DEFAULT 0 NOT NULL COMMENT '发起人id',
+    `domain_id` BIGINT NOT NULL COMMENT '领域id',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '训练状态 (0:待处理, 1:处理中, 2:成功完成, 3:失败完成)',
+
+    -- 2. 时间与统计
+    `start_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '训练开始时间',
+    `end_time` DATETIME DEFAULT NULL COMMENT '训练结束时间',
+    `duration` BIGINT DEFAULT NULL COMMENT '训练持续时间(秒)',
+    `total_comments` INT DEFAULT 0 COMMENT '训练总评论数',
+
+    -- 3. 训练参数配置
+    `lora_r` INTEGER  DEFAULT 8 COMMENT 'LORA_R',
+    `lora_alpha` INTEGER  DEFAULT 16 COMMENT 'lora_alpha',
+    `epochs` INTEGER  DEFAULT 5 COMMENT '训练轮数',
+    `batch_size` INTEGER  DEFAULT 64 COMMENT '训练批次大小',
+    `learning_rate` DECIMAL(10, 8) DEFAULT 0.00001000 COMMENT '学习率(1e-5)',
+    `random_seed` INTEGER  DEFAULT 42 COMMENT '随机种子',
+    `lora_modules` JSON COMMENT 'Lora模块列表, eg: ["query", "key", "value", "dense"]',
+    `train_split_ratio` DECIMAL(3, 2) DEFAULT 0.80 COMMENT '训练集比例, eg: 0.80',
+
+    -- 4. 训练产出与指标
+    `model_id` VARCHAR(128) DEFAULT NULL COMMENT '训练得到的模型id',
+    `accuracy` DECIMAL(5, 2) DEFAULT NULL COMMENT '总体准确率(%)',
+    `precision_rate` DECIMAL(5, 4) DEFAULT NULL COMMENT '精确率(准确率)',
+    `recall_rate` DECIMAL(5, 4) DEFAULT NULL COMMENT '召回率',
+    `f1_score` DECIMAL(5, 4) DEFAULT NULL COMMENT 'f1分数',
+
+    -- 5. 可视化曲线数据 (JSON存储列表)
+    `train_loss_list` JSON COMMENT '训练集loss变化趋势数组',
+    `train_acc_list` JSON COMMENT '训练集准确率变化趋势数组',
+    `val_loss_list` JSON COMMENT '验证集loss变化趋势数组',
+    `val_acc_list` JSON COMMENT '验证集准确率变化趋势数组',
+
+    -- 6. 通用审计字段
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间',
+
+    -- 索引优化
+    INDEX `idx_creator` (`creator_id`),
+    INDEX `idx_domain` (`domain_id`),
+    INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练任务管理表';
+
+训练参数表
+CREATE TABLE `train_para` (
+    `para_id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '参数配置Id',
+    `domain_id` BIGINT NOT NULL COMMENT '领域id',
+
+    -- 训练核心参数
+    `lora_r` INT NOT NULL DEFAULT 8 COMMENT 'LORA_R',
+    `lora_alpha` INT NOT NULL DEFAULT 16 COMMENT 'lora_alpha',
+    `epochs` INT NOT NULL DEFAULT 5 COMMENT '训练轮数',
+    `batch_size` INT NOT NULL DEFAULT 64 COMMENT '训练批次大小',
+    `learning_rate` DECIMAL(10, 8) NOT NULL DEFAULT 0.00001000 COMMENT '学习率(1e-5)',
+    `random_seed` INT NOT NULL DEFAULT 42 COMMENT '随机种子',
+
+    -- 扩展参数
+    `lora_modules` JSON COMMENT 'Lora模块列表, 可能的值: ["query", "key", "value", "dense"]',
+    `train_split_ratio` DECIMAL(3, 2) NOT NULL DEFAULT 0.80 COMMENT '训练集比例, eg: 0.80',
+
+    -- 审计字段
+    `config_name` VARCHAR(100) DEFAULT NULL COMMENT '配置名称(可选)',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+
+    -- 索引
+    INDEX `idx_domain` (`domain_id`),
+    INDEX `idx_is_default` (`is_default`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练参数配置模板表';
+
+CREATE TABLE `train_data` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '训练数据id (主键)',
+    `domain_id` BIGINT NOT NULL COMMENT '领域id',
+    `content` TEXT NOT NULL COMMENT '训练数据内容',
+    `source` ENUM('corrected', 'upload', 'original') NOT NULL COMMENT '训练数据来源 (corrected/upload/original)',
+    `train_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '数据被训练次数',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '数据创建时间',
+    PRIMARY KEY (`id`),
+    -- 如果需要按来源筛选，可以增加索引
+    INDEX `idx_source` (`source`),
+    -- 如果需要按创建时间排序，可以增加索引
+    INDEX `idx_created_at` (`created_at`),
+    -- 按领域筛选/统计训练数据
+    INDEX `idx_domain` (`domain_id`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练数据表';
+

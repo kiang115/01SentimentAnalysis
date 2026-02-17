@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.example.sentimentanalysis.assembler.InferencePanelAssembler;
 import org.example.sentimentanalysis.dto.responseDto.InferencePanelDto;
+import org.example.sentimentanalysis.dto.responseDto.TrainPanelDTO;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.model.Domains;
@@ -65,5 +66,10 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
 
         return inferencePanelAssembler.toDto(domains, resultMap, models);
 
+    }
+
+    @Override
+    public TrainPanelDTO listTrainPanel() {
+            return null;
     }
 }
