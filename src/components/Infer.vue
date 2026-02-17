@@ -113,7 +113,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { Loading } from '@element-plus/icons-vue'
 import { modelApi } from '@/api/model-api'
 import Constants from '@/utils/constants'
-import type { InferTaskSnapshot } from '@/Dto/SseSnapshot/Infer-task-snapshot'
+import type { InferTaskSnapshot } from '@/Dto/SseSnapshot/InferTaskSnapshot'
 import InferPanel from './InferPanel.vue'
 import type { InferTaskDetail } from '@/Dto/ReceiveDto/InferTaskDetail'
 // ==================== 状态与引用 ====================
@@ -136,9 +136,9 @@ function getSnapshot(task: InferTaskDetail): InferTaskSnapshot | undefined {
   return snapshotMap.value.get(task.taskId)
 }
 
-/** 模型版本展示：固定两位小数（例如 0.10、1.00） */
-function formatModelVersion(version: number): string {
-  return version.toFixed(2)
+/** 模型版本展示：直接展示后端返回的字符串 */
+function formatModelVersion(version: string): string {
+  return version
 }
 
 /** 卡片「推理持续时间」展示值：有快照用快照 duration（秒），否则用 task.inferenceDuration（毫秒转秒）；统一保留两位小数，空为「—」 */

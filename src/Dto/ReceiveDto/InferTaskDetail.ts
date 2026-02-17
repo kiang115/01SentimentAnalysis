@@ -1,7 +1,7 @@
 /** 与后端 modelApi.listInferTasks 返回的 data 项中 modelInfoList 元素结构一致 */
 export interface ModelInfo {
   modelId: number
-  modelVersion: number
+  modelVersion: string
   domainName: string
 }
 

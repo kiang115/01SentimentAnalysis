@@ -96,9 +96,9 @@ const configWithState = computed(() =>
   }))
 )
 
-/** 模型版本展示：固定两位小数（例如 0.10、1.00） */
-function formatModelVersion(version: number): string {
-  return version.toFixed(2)
+/** 模型版本展示：直接展示后端返回的字符串 */
+function formatModelVersion(version: string): string {
+  return version
 }
 
 function close() {

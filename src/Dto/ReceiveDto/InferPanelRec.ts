@@ -3,7 +3,7 @@
  */
 export interface DomainModelItem {
   modelId: number
-  modelVersion: number
+  modelVersion: string
 }
 
 export interface InferenceConfigItem {
