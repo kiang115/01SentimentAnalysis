@@ -3,10 +3,10 @@ package org.example.sentimentanalysis.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.example.sentimentanalysis.assembler.InferenceDataAssembler;
 import org.example.sentimentanalysis.assembler.InferenceTasksAssembler;
-import org.example.sentimentanalysis.dto.requestDto.InferenceParaDto;
-import org.example.sentimentanalysis.dto.requestDto.InferenceResultDto;
-import org.example.sentimentanalysis.dto.responseDto.InferenceDataDto;
-import org.example.sentimentanalysis.dto.responseDto.InferenceTasksDto;
+import org.example.sentimentanalysis.dto.requestDto.InferPanelRec;
+import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
+import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
+import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
 import org.example.sentimentanalysis.enums.InferenceTaskStatusEnum;
 import org.example.sentimentanalysis.enums.SortEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
@@ -60,7 +60,7 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
     private InferenceRecordsService inferenceRecordsService;
 
     @Override
-    public List<InferenceTasksDto> listAllTasks(List<InferenceTasks> tasks) {
+    public List<InferTasksDetailSend> listAllTasks(List<InferenceTasks> tasks) {
 //         加载所有的modelId->model映射
         Map<Long, Models> modelMap = modelsService.list().stream().collect(Collectors.toMap(Models::getModelId, model -> model));
 //        加载所有domainId->domain映射
@@ -71,12 +71,12 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
     }
 
     @Override
-    public InferenceDataDto getInferenceData(InferenceParaDto inferenceParaDto) {
-        List<InferenceParaDto.InferenceDomainPara> domainParas = inferenceParaDto.getInferenceDomainPara();
+    public InferDataSend getInferenceData(InferPanelRec inferPanelRec) {
+        List<InferPanelRec.InferenceDomainPara> domainParas = inferPanelRec.getInferenceDomainPara();
 
         // 1. 批量数据预取 (准备原材料)
-        Set<Long> domainIds = domainParas.stream().map(InferenceParaDto.InferenceDomainPara::getDomainId).collect(Collectors.toSet());
-        Set<Long> modelIds = domainParas.stream().map(InferenceParaDto.InferenceDomainPara::getModelId).collect(Collectors.toSet());
+        Set<Long> domainIds = domainParas.stream().map(InferPanelRec.InferenceDomainPara::getDomainId).collect(Collectors.toSet());
+        Set<Long> modelIds = domainParas.stream().map(InferPanelRec.InferenceDomainPara::getModelId).collect(Collectors.toSet());
 
         Map<Long, Domains> domainMap = domainsService.listByIds(domainIds).stream()
                 .collect(Collectors.toMap(Domains::getDomainId, d -> d));
@@ -87,14 +87,14 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
         LambdaQueryWrapper<Comments> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Comments::getStatus, PENDING.getCode())
                 .in(Comments::getDomainId, domainIds)
-                .orderByDesc(SortEnum.NEWEST_SORT.getKey().equals(inferenceParaDto.getSort()), Comments::getPublishTime)
-                .orderByAsc(SortEnum.LATEST_SORT.getKey().equals(inferenceParaDto.getSort()), Comments::getPublishTime);
+                .orderByDesc(SortEnum.NEWEST_SORT.getKey().equals(inferPanelRec.getSort()), Comments::getPublishTime)
+                .orderByAsc(SortEnum.LATEST_SORT.getKey().equals(inferPanelRec.getSort()), Comments::getPublishTime);
 
         Map<Long, List<Comments>> domainsToCommentsMap = commentsService.list(wrapper).stream()
                 .collect(Collectors.groupingBy(Comments::getDomainId));
 
         // 3. 核心业务处理与转换
-        List<InferenceDataDto.InferenceDomainData> domainDataList = domainParas.stream().map(para -> {
+        List<InferDataSend.InferenceDomainData> domainDataList = domainParas.stream().map(para -> {
             // 获取并校验
             Domains domain = Optional.ofNullable(domainMap.get(para.getDomainId()))
                     .orElseThrow(() -> new CustomBusinessException("领域ID不存在: " + para.getDomainId()));
@@ -122,27 +122,27 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
         }).toList();
 
         // 组装最终结果
-        return InferenceDataDto.builder().inferenceDomainDataList(domainDataList).build();
+        return InferDataSend.builder().inferenceDomainDataList(domainDataList).build();
     }
 
     //将推理任务插入到任务表中
     @Override
     @Transactional
-    public Long addInferenceTasks(InferenceDataDto inferenceDataDto) {
+    public Long addInferenceTasks(InferDataSend inferDataSend) {
 //构造一个要插入的task数据
         InferenceTasks task = new InferenceTasks();
-        List<InferenceDataDto.InferenceDomainData> domainDataList = inferenceDataDto.getInferenceDomainDataList();
+        List<InferDataSend.InferenceDomainData> domainDataList = inferDataSend.getInferenceDomainDataList();
 
         // 1. 获取 ModelId 列表 (去重)
         List<Long> modelIds = domainDataList.stream()
-                .map(InferenceDataDto.InferenceDomainData::getModelId)
+                .map(InferDataSend.InferenceDomainData::getModelId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
 
         // 2. 获取 DomainId 列表 (不去重)
         List<Long> domainIds = domainDataList.stream()
-                .map(InferenceDataDto.InferenceDomainData::getDomainId)
+                .map(InferDataSend.InferenceDomainData::getDomainId)
                 .filter(Objects::nonNull)
                 .toList();
 
@@ -171,13 +171,13 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
 
     @Override
     @Transactional
-    public void setInferenceTaskSuccess(InferenceResultDto inferenceResultDto) {
+    public void setInferenceTaskSuccess(InferResultRec inferResultRec) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        LocalDateTime taskEndTime = LocalDateTime.parse(inferenceResultDto.getTaskEndTime(), formatter);
+        LocalDateTime taskEndTime = LocalDateTime.parse(inferResultRec.getTaskEndTime(), formatter);
 
-        Long taskId = inferenceResultDto.getTaskId();
-        Float taskDuration = inferenceResultDto.getTaskDuration();
-        Long processCount = inferenceResultDto.getProcessCount();
+        Long taskId = inferResultRec.getTaskId();
+        Float taskDuration = inferResultRec.getTaskDuration();
+        Long processCount = inferResultRec.getProcessCount();
 
         long inferenceDurationMs = (long) (taskDuration * 1000);
         BigDecimal avgProcessSpeed = BigDecimal.valueOf(processCount).divide(BigDecimal.valueOf(taskDuration), 2, RoundingMode.HALF_UP);
@@ -188,7 +188,7 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
                 .setInferenceDuration(inferenceDurationMs)
                 .setAvgProcessSpeed(avgProcessSpeed));
 
-        List<InferenceResultDto.CommentResultList> results = inferenceResultDto.getResults();
+        List<InferResultRec.CommentResultList> results = inferResultRec.getResults();
         List<Comments> commentsToUpdate = results.stream()
                 .map(r -> new Comments()
                         .setCommentId(r.getCommentId())

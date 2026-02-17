@@ -9,7 +9,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 // 点击推理按钮，后端收到的参数
@@ -17,7 +16,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class InferenceParaDto {
+public class InferPanelRec {
     @Valid
     @NotEmpty(message = "推理参数列表不能为空")
     private List<InferenceDomainPara> inferenceDomainPara;

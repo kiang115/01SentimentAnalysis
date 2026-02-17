@@ -1,7 +1,7 @@
 package org.example.sentimentanalysis.assembler;
 
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
-import org.example.sentimentanalysis.dto.responseDto.InferencePanelDto;
+import org.example.sentimentanalysis.dto.responseDto.InferPanelSend;
 import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.model.Models;
 import org.springframework.stereotype.Component;
@@ -20,15 +20,15 @@ public class InferencePanelAssembler {
      * @param domains                          领域列表
      * @param domainsUninferencedReviewNumsMap domainId -> 未推理评论数
      * @param models                           模型实体列表 (实体包含 modelId, modelVersion, domainId)
-     * @return InferencePanelDto
+     * @return InferPanelSend
      */
-    public InferencePanelDto toDto(List<Domains> domains,
-                                   Map<Long, Long> domainsUninferencedReviewNumsMap,
-                                   List<Models> models) {
+    public InferPanelSend toDto(List<Domains> domains,
+                                Map<Long, Long> domainsUninferencedReviewNumsMap,
+                                List<Models> models) {
 
         // 1. 边界条件校验
         if (CollectionUtils.isEmpty(domains)) {
-            return InferencePanelDto.builder()
+            return InferPanelSend.builder()
                     .inferenceConfigDataList(Collections.emptyList())
                     .build();
         }
@@ -44,7 +44,7 @@ public class InferencePanelAssembler {
         Map<Long, List<Models>> finalModelsGroupedByDomainId = modelsGroupedByDomainId;
 
         // 3. 核心转换逻辑
-        List<InferencePanelDto.InferencePanelDomainsDataDto> inferenceConfigDataList = domains.stream()
+        List<InferPanelSend.InferencePanelDomainsDataDto> inferenceConfigDataList = domains.stream()
                 .map(domain -> {
                     Long domainId = domain.getDomainId();
 
@@ -54,8 +54,8 @@ public class InferencePanelAssembler {
 //                    3.1.1对domainModels按照版本大小排序
                     domainModels.sort((v1, v2) -> v2.getModelVersion().compareTo(v1.getModelVersion()));
 
-                    List<InferencePanelDto.DomainsModelDataDto> modelDtos = domainModels.stream()
-                            .map(model -> InferencePanelDto.DomainsModelDataDto.builder()
+                    List<InferPanelSend.DomainsModelDataDto> modelDtos = domainModels.stream()
+                            .map(model -> InferPanelSend.DomainsModelDataDto.builder()
                                     .modelId(model.getModelId())
                                     .modelVersion(model.getModelVersion())
                                     .build())
@@ -68,7 +68,7 @@ public class InferencePanelAssembler {
                     }
 
                     // 3.3 构建单个领域的DTO
-                    return InferencePanelDto.InferencePanelDomainsDataDto.builder()
+                    return InferPanelSend.InferencePanelDomainsDataDto.builder()
                             .domainId(domainId)
                             .domainName(domain.getDomainName())
                             .uninferencedCommentNums(uninfluencedCount)
@@ -78,7 +78,7 @@ public class InferencePanelAssembler {
                 .collect(Collectors.toList());
 
         // 4. 返回最终结果
-        return InferencePanelDto.builder()
+        return InferPanelSend.builder()
                 .inferenceConfigDataList(inferenceConfigDataList)
                 .build();
     }

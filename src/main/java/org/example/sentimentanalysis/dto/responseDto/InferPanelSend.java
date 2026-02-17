@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class InferencePanelDto {
+public class InferPanelSend {
 // 返回给模型推理参数配置看板的数据
     private List<InferencePanelDomainsDataDto> inferenceConfigDataList;
 

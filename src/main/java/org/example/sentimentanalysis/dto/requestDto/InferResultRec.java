@@ -1,9 +1,5 @@
 package org.example.sentimentanalysis.dto.requestDto;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +13,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class InferenceResultDto {
+public class InferResultRec {
 
     @NotNull(message = "任务ID不能为空")
     private Long taskId;

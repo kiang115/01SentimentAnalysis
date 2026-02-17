@@ -144,14 +144,14 @@ CREATE TABLE `train_para` (
     `train_split_ratio` DECIMAL(3, 2) NOT NULL DEFAULT 0.80 COMMENT '训练集比例, eg: 0.80',
 
     -- 审计字段
-    `config_name` VARCHAR(100) DEFAULT NULL COMMENT '配置名称(可选)',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
 
     -- 索引
     INDEX `idx_domain` (`domain_id`),
-    INDEX `idx_is_default` (`is_default`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练参数配置模板表';
+
+
 
 CREATE TABLE `train_data` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '训练数据id (主键)',
@@ -167,5 +167,7 @@ CREATE TABLE `train_data` (
     INDEX `idx_created_at` (`created_at`),
     -- 按领域筛选/统计训练数据
     INDEX `idx_domain` (`domain_id`),
+    -- 训练面板按领域+来源聚合时使用
+    INDEX `idx_domain_source` (`domain_id`, `source`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练数据表';
 

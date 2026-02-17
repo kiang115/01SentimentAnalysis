@@ -1,7 +1,7 @@
 package org.example.sentimentanalysis.service;
 
-import org.example.sentimentanalysis.dto.responseDto.InferencePanelDto;
-import org.example.sentimentanalysis.dto.responseDto.TrainPanelDTO;
+import org.example.sentimentanalysis.dto.responseDto.InferPanelSend;
+import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
 import org.example.sentimentanalysis.model.Domains;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -14,7 +14,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2026-02-11
  */
 public interface DomainsService extends IService<Domains> {
-   InferencePanelDto ListInferencePanelDto();
+   InferPanelSend ListInferencePanelDto();
 
-    TrainPanelDTO listTrainPanel();
+    TrainPanelSend listTrainPanel();
 }

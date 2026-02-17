@@ -1,12 +1,18 @@
 package org.example.sentimentanalysis.dto.responseDto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Data
-public class TrainPanelDTO {
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class TrainPanelSend {
     /**
      * 训练参数配置列表
      * 对应图中「List<TrainPara>」，这是顶层DTO的核心属性
@@ -22,6 +28,9 @@ public class TrainPanelDTO {
 
 
     @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class TrainPanelDomainDTO {
         /**
          * 领域id（严格按图中拼写，若图中是domianId可直接修改）
@@ -43,14 +52,17 @@ public class TrainPanelDTO {
          */
         private Long uploadNum;
 
-//        原始网络数据集的参数数量
+        //        原始网络数据集的参数数量
         private Long originalNum;
 
-//        该领域的默认参数配置
+        //        该领域的默认参数配置
         private List<TrainParaDTO> defaultParaList;
     }
 
     @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class TrainParaDTO {
         /**
          * 参数配置id

@@ -18,7 +18,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class InferenceTasksDto {
+public class InferTasksDetailSend {
 
     /**
      * 详情id（对应数据库 task_id）

@@ -1,7 +1,5 @@
 package org.example.sentimentanalysis.service;
 
-import org.example.sentimentanalysis.dto.requestDto.InferenceResultDto;
-import org.example.sentimentanalysis.dto.responseDto.InferenceTasksDto;
 import org.example.sentimentanalysis.model.InferenceRecords;
 import com.baomidou.mybatisplus.extension.service.IService;
 

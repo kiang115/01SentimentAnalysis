@@ -1,7 +1,7 @@
 package org.example.sentimentanalysis.assembler;
 
-import org.example.sentimentanalysis.dto.requestDto.InferenceParaDto;
-import org.example.sentimentanalysis.dto.responseDto.InferenceDataDto;
+import org.example.sentimentanalysis.dto.requestDto.InferPanelRec;
+import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
 import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.model.Models;
@@ -15,8 +15,8 @@ public class InferenceDataAssembler {
     /**
      * 将实体对象和参数转换为前端需要的 InferenceDomainData DTO
      */
-    public InferenceDataDto.InferenceDomainData toInferenceDomainData(
-            InferenceParaDto.InferenceDomainPara para,
+    public InferDataSend.InferenceDomainData toInferenceDomainData(
+            InferPanelRec.InferenceDomainPara para,
             Models model,
             Domains domain,
             List<Comments> commentsList) {
@@ -26,11 +26,11 @@ public class InferenceDataAssembler {
         }
 
         // 转换评论列表
-        List<InferenceDataDto.InferenceDomainComment> commentDtos = commentsList.stream()
+        List<InferDataSend.InferenceDomainComment> commentDtos = commentsList.stream()
                 .map(this::toCommentDto)
                 .toList();
 
-        return InferenceDataDto.InferenceDomainData.builder()
+        return InferDataSend.InferenceDomainData.builder()
                 .domainId(domain.getDomainId())
                 .domainUrl(domain.getDomainUrl())
                 .modelId(model.getModelId())
@@ -43,8 +43,8 @@ public class InferenceDataAssembler {
     /**
      * 内部私有方法：转换单条评论
      */
-    private InferenceDataDto.InferenceDomainComment toCommentDto(Comments comment) {
-        return InferenceDataDto.InferenceDomainComment.builder()
+    private InferDataSend.InferenceDomainComment toCommentDto(Comments comment) {
+        return InferDataSend.InferenceDomainComment.builder()
                 .commentId(comment.getCommentId())
                 .content(comment.getContent())
                 .build();

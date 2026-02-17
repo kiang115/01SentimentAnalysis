@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 // 要返回给模型推理的数据
-public class InferenceDataDto {
+public class InferDataSend {
     private List<InferenceDomainData> inferenceDomainDataList;
     private Long taskId;
 

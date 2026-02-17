@@ -1,7 +1,7 @@
 package org.example.sentimentanalysis.service.impl;
 
-import org.example.sentimentanalysis.dto.requestDto.InferenceResultDto;
-import org.example.sentimentanalysis.dto.responseDto.InferenceDataDto;
+import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
+import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.mapper.CommentsMapper;
@@ -24,15 +24,15 @@ import java.util.stream.Collectors;
 public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> implements CommentsService {
 
     @Override
-    public void updateCommentStatus(InferenceDataDto inferenceDataDto) {
-        List<InferenceDataDto.InferenceDomainData> domainDataList = inferenceDataDto.getInferenceDomainDataList();
+    public void updateCommentStatus(InferDataSend inferDataSend) {
+        List<InferDataSend.InferenceDomainData> domainDataList = inferDataSend.getInferenceDomainDataList();
         if (domainDataList == null || domainDataList.isEmpty()) {
             return;
         }
         List<Long> commentIds = domainDataList.stream()
                 .filter(d -> d.getInferenceDomainCommentList() != null)
                 .flatMap(d -> d.getInferenceDomainCommentList().stream())
-                .map(InferenceDataDto.InferenceDomainComment::getCommentId)
+                .map(InferDataSend.InferenceDomainComment::getCommentId)
                 .collect(Collectors.toList());
         if (commentIds.isEmpty()) {
             return;
@@ -44,13 +44,13 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     }
 
     @Override
-    public void updateCommentStatus(InferenceResultDto inferenceResultDto, int code) {
-        List<InferenceResultDto.CommentResultList> results = inferenceResultDto.getResults();
+    public void updateCommentStatus(InferResultRec inferResultRec, int code) {
+        List<InferResultRec.CommentResultList> results = inferResultRec.getResults();
         if (results == null || results.isEmpty()) {
             return;
         }
         List<Long> commentIds = results.stream()
-                .map(InferenceResultDto.CommentResultList::getCommentId)
+                .map(InferResultRec.CommentResultList::getCommentId)
                 .collect(Collectors.toList());
         if (commentIds.isEmpty()) {
             return;

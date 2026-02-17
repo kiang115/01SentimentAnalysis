@@ -1,6 +1,5 @@
 package org.example.sentimentanalysis.service.impl;
 
-import org.example.sentimentanalysis.dto.requestDto.InferenceResultDto;
 import org.example.sentimentanalysis.model.InferenceRecords;
 import org.example.sentimentanalysis.mapper.InferenceRecordsMapper;
 import org.example.sentimentanalysis.service.InferenceRecordsService;

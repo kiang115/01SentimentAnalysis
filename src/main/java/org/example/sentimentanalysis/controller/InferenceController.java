@@ -3,15 +3,14 @@ package org.example.sentimentanalysis.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.example.sentimentanalysis.config.FastApiClient;
-import org.example.sentimentanalysis.dto.requestDto.InferenceParaDto;
-import org.example.sentimentanalysis.dto.requestDto.InferenceResultDto;
-import org.example.sentimentanalysis.dto.responseDto.InferenceDataDto;
-import org.example.sentimentanalysis.dto.responseDto.InferencePanelDto;
-import org.example.sentimentanalysis.dto.responseDto.InferenceTasksDto;
+import org.example.sentimentanalysis.dto.requestDto.InferPanelRec;
+import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
+import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
+import org.example.sentimentanalysis.dto.responseDto.InferPanelSend;
+import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.enums.InferenceTaskStatusEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
-import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.model.InferenceTasks;
 import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.CommentsService;
@@ -38,7 +37,7 @@ public class InferenceController {
 
     @Operation(summary = "列出推理任务列表")
     @GetMapping("/InferenceTasksList")
-    public Response<List<InferenceTasksDto>> InferenceTasksList() {
+    public Response<List<InferTasksDetailSend>> InferenceTasksList() {
 
         List<InferenceTasks> tasks = inferenceTasksService.list();
 //          在这里查找tasks中是否有任务状态为待处理的，如果有返回false 否者true
@@ -49,22 +48,22 @@ public class InferenceController {
 
     @Operation(summary = "列出推理数据配置面板")
     @GetMapping("/InferencePanel")
-    public Response<InferencePanelDto> InferenceDataConfig() {
+    public Response<InferPanelSend> InferenceDataConfig() {
         return Response.data(domainsService.ListInferencePanelDto());
     }
 
     @Operation(summary = "使用配置开始推理")
     @PostMapping("/InferenceDataCheck")
-    public Response<InferenceResultDto> InferenceDataCheck(@RequestBody @Valid InferenceParaDto inferenceParaDto) {
+    public Response<InferResultRec> InferenceDataCheck(@RequestBody @Valid InferPanelRec inferPanelRec) {
 //        1.根据参数配置找到对应的InferenceDataDto
-        InferenceDataDto inferenceDataDto = inferenceTasksService.getInferenceData(inferenceParaDto);
+        InferDataSend inferDataSend = inferenceTasksService.getInferenceData(inferPanelRec);
 //        2. 更新推理任务表
-        Long inferenceTaskId = inferenceTasksService.addInferenceTasks(inferenceDataDto);
-        inferenceDataDto.setTaskId(inferenceTaskId);
+        Long inferenceTaskId = inferenceTasksService.addInferenceTasks(inferDataSend);
+        inferDataSend.setTaskId(inferenceTaskId);
 //        3. 更新评论状态 为推理中
-        commentsService.updateCommentStatus(inferenceDataDto);
+        commentsService.updateCommentStatus(inferDataSend);
 //        4. 发送数据给fastapi
-        Response<InferenceResultDto> response = fastApiClient.sendInferenceData(inferenceDataDto);
+        Response<InferResultRec> response = fastApiClient.sendInferenceData(inferDataSend);
 //     更新状态
         if (inferenceTasksService.setInferenceTaskStatus(
                 inferenceTaskId,
@@ -81,22 +80,22 @@ public class InferenceController {
 
     @Operation(summary = "推理结果解析和处理")
     @PostMapping("/InferenceResultProcess")
-    public Response<InferenceDataDto> InferenceResultProcess(@RequestBody @Valid Response<InferenceResultDto> inferenceResultDtoResponse) {
+    public Response<InferDataSend> InferenceResultProcess(@RequestBody @Valid Response<InferResultRec> inferenceResultDtoResponse) {
 //        接收推理结果
-        InferenceResultDto inferenceResultDto = inferenceResultDtoResponse.getData();
+        InferResultRec inferResultRec = inferenceResultDtoResponse.getData();
 
         if (inferenceResultDtoResponse.getCode() != 200) {
-            inferenceTasksService.setInferenceTaskStatus(inferenceResultDto.getTaskId(), FAILED.getCode());
+            inferenceTasksService.setInferenceTaskStatus(inferResultRec.getTaskId(), FAILED.getCode());
 //            设置评论状态重新为待处理
-            commentsService.updateCommentStatus(inferenceResultDto, CommentStatusEnum.PENDING.getCode());
+            commentsService.updateCommentStatus(inferResultRec, CommentStatusEnum.PENDING.getCode());
             return Response.fail(inferenceResultDtoResponse.getMessage());
         }
 //        设置评论状态为已处理
-        commentsService.updateCommentStatus(inferenceResultDto, CommentStatusEnum.INFERRED.getCode());
+        commentsService.updateCommentStatus(inferResultRec, CommentStatusEnum.INFERRED.getCode());
 
-        inferenceTasksService.setInferenceTaskStatus(inferenceResultDto.getTaskId(), SUCCESS.getCode());
+        inferenceTasksService.setInferenceTaskStatus(inferResultRec.getTaskId(), SUCCESS.getCode());
 //       设置成功需要更新的东西，状态上面已经更新了
-        inferenceTasksService.setInferenceTaskSuccess(inferenceResultDto);
+        inferenceTasksService.setInferenceTaskSuccess(inferResultRec);
         return Response.success();
     }
 }
