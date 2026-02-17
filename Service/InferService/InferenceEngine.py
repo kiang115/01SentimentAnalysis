@@ -119,7 +119,7 @@ class InferenceEngine:
                 res = await asyncio.to_thread(
                     self.predict_domain_batch,
                     domain_url=domain_data.domainUrl,
-                    version=str(domain_data.modelVersion),
+                    version = domain_data.modelVersion,
                     comments_data=[c.model_dump() for c in domain_data.inferenceDomainCommentList],
                     on_batch_complete=on_batch_done,
                     modelId=domain_data.modelId,

@@ -14,7 +14,7 @@ class InferenceDomainData(BaseModel):
     domainUrl: str
     # 模型相关
     modelId: int
-    modelVersion: Decimal
+    modelVersion: str
     # 统计与列表
     inferenceCommentNums: int
     inferenceDomainCommentList: List[InferenceDomainComment]
