@@ -1,5 +1,5 @@
 /**
- * POST /InferenceDataCheck 请求体
+ * POST /InferenceDataCheck 发送给后端的推理参数配置
  */
 
 export interface InferenceDomainParaItem {
@@ -8,7 +8,7 @@ export interface InferenceDomainParaItem {
   inferenceReviewNums: number
 }
 
-export interface CheckInferDataPara {
+export interface InferPanelSend {
   inferenceDomainPara: InferenceDomainParaItem[]
   sort: 'newest' | 'lastest'
 }

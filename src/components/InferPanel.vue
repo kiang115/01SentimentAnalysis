@@ -45,7 +45,7 @@
             <el-option
               v-for="m in row.item.domainModelsDataList"
               :key="m.modelId"
-              :label="`v${m.modelVersion}`"
+              :label="`v${formatModelVersion(m.modelVersion)}`"
               :value="m.modelId"
             />
           </el-select>
@@ -66,22 +66,8 @@ import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import { modelApi } from '@/api/model-api'
-
-interface DomainModelItem {
-  modelId: number
-  modelVersion: number
-}
-
-interface InferenceConfigItem {
-  domainId: number
-  domainName: string
-  uninferencedCommentNums: number
-  domainModelsDataList: DomainModelItem[]
-}
-
-interface InferencePanelData {
-  inferenceConfigDataList: InferenceConfigItem[]
-}
+import type { InferenceConfigItem } from '@/Dto/ReceiveDto/InferPanelRec'
+import type { InferPanelSend, InferenceDomainParaItem } from '@/Dto/SendDto/InferPanelSend'
 
 const props = defineProps<{
   modelValue: boolean
@@ -110,6 +96,11 @@ const configWithState = computed(() =>
   }))
 )
 
+/** 模型版本展示：固定两位小数（例如 0.10、1.00） */
+function formatModelVersion(version: number): string {
+  return version.toFixed(2)
+}
+
 function close() {
   emit('update:modelValue', false)
 }
@@ -123,7 +114,7 @@ async function fetchPanel() {
   loading.value = true
   try {
     const res = await modelApi.listInferPanel()
-    const data = (res as { data: InferencePanelData }).data
+    const data = res.data
     const list = data?.inferenceConfigDataList ?? []
     configList.value = list
     rowState.value = list.map((item) => {
@@ -142,7 +133,7 @@ async function fetchPanel() {
 }
 
 async function handleConfirm() {
-  const inferenceDomainPara = configWithState.value
+  const inferenceDomainPara: InferenceDomainParaItem[] = configWithState.value
     .map((row) => ({
       domainId: row.item.domainId,
       modelId: row.state.selectedModelId,
@@ -155,7 +146,8 @@ async function handleConfirm() {
   }
   confirmLoading.value = true
   try {
-    const res = await modelApi.checkInferData({ inferenceDomainPara, sort: sort.value })
+    const para: InferPanelSend = { inferenceDomainPara, sort: sort.value }
+    const res = await modelApi.checkInferData(para)
     ElMessage.success((res as { message?: string }).message ?? '操作成功')
     close()
     emit('confirm')

@@ -6,7 +6,7 @@ export interface ModelInfo {
 }
 
 /** 与后端 listInferTasks 返回的 data 列表中单条任务结构一致（可空字段与接口一致） */
-export interface InferenceTaskDto {
+export interface InferTaskDetail {
   // 任务id
   taskId: number
   // 推理开始时间

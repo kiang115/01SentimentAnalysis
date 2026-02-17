@@ -78,7 +78,7 @@
                 size="small"
                 class="model-tag"
               >
-                {{ m.domainName }} (v{{ m.modelVersion }})
+                {{ m.domainName }} (v{{ formatModelVersion(m.modelVersion) }})
               </el-tag>
             </template>
             <span v-else>—</span>
@@ -115,11 +115,11 @@ import { modelApi } from '@/api/model-api'
 import Constants from '@/utils/constants'
 import type { InferTaskSnapshot } from '@/Dto/SseSnapshot/Infer-task-snapshot'
 import InferPanel from './InferPanel.vue'
-import type { InferenceTaskDto } from '@/Dto/responseDto/InferenceTaskDto'
+import type { InferTaskDetail } from '@/Dto/ReceiveDto/InferTaskDetail'
 // ==================== 状态与引用 ====================
 
 /** 任务列表，来源为 listInferTasks() 的 data */
-const taskList = ref<InferenceTaskDto[]>([])
+const taskList = ref<InferTaskDetail[]>([])
 /** 列表加载中，用于显示 loading 或空状态 */
 const loading = ref(true)
 /** 是否显示「推理信息配置」弹窗 InferPanel */
@@ -132,12 +132,17 @@ const snapshotMap = ref<Map<number, InferTaskSnapshot>>(new Map())
 // ==================== 展示用计算（优先快照，无快照用 REST 数据） ====================
 
 /** 根据 taskId 从 snapshotMap 取快照，无则 undefined */
-function getSnapshot(task: InferenceTaskDto): InferTaskSnapshot | undefined {
+function getSnapshot(task: InferTaskDetail): InferTaskSnapshot | undefined {
   return snapshotMap.value.get(task.taskId)
 }
 
+/** 模型版本展示：固定两位小数（例如 0.10、1.00） */
+function formatModelVersion(version: number): string {
+  return version.toFixed(2)
+}
+
 /** 卡片「推理持续时间」展示值：有快照用快照 duration（秒），否则用 task.inferenceDuration（毫秒转秒）；统一保留两位小数，空为「—」 */
-function displayDuration(task: InferenceTaskDto): number | string {
+function displayDuration(task: InferTaskDetail): number | string {
   const snap = getSnapshot(task)
   if (snap != null) return snap.duration > 0 ? snap.duration.toFixed(2) : '—'
   if (task.inferenceDuration == null) return '—'
@@ -145,14 +150,14 @@ function displayDuration(task: InferenceTaskDto): number | string {
 }
 
 /** 卡片「处理总评论数」展示值：有快照用快照 processedCount，否则用 task.processedCount；空为「—」 */
-function displayProcessedCount(task: InferenceTaskDto): number | string {
+function displayProcessedCount(task: InferTaskDetail): number | string {
   const snap = getSnapshot(task)
   if (snap != null) return snap.processedCount
   return task.processedCount ?? '—'
 }
 
 /** 卡片「平均处理速度」展示值：有快照且快照 processSpeed 有值时用快照，否则用 DB avgProcessSpeed；空为「—」 */
-function displayAvgSpeed(task: InferenceTaskDto): number | string {
+function displayAvgSpeed(task: InferTaskDetail): number | string {
   const snap = getSnapshot(task)
   if (snap != null && snap.processSpeed != null) {
     return snap.processSpeed.toFixed(2)
@@ -162,20 +167,20 @@ function displayAvgSpeed(task: InferenceTaskDto): number | string {
 }
 
 /** 卡片「推理结束时间」展示值：有快照用快照 currentTime，否则用 task.inferenceEndTime；无则为 null（模板显示「进行中」） */
-function displayEndTime(task: InferenceTaskDto): string | null {
+function displayEndTime(task: InferTaskDetail): string | null {
   const snap = getSnapshot(task)
   if (snap != null) return snap.currentTime
   return task.inferenceEndTime ?? null
 }
 
 /** 卡片「状态文案」展示值：有快照用快照 statusMsg，否则用 task.processStatusName */
-function displayStatusText(task: InferenceTaskDto): string {
+function displayStatusText(task: InferTaskDetail): string {
   const snap = getSnapshot(task)
   return snap?.statusMsg ?? task.processStatusName
 }
 
 /** 实时进度百分比：SSE 当前评论数 / 数据库推理总评论数，0～100；无快照或总数≤0 时返回 null（不显示进度条） */
-function progressPercent(task: InferenceTaskDto): number | null {
+function progressPercent(task: InferTaskDetail): number | null {
   const snap = getSnapshot(task)
   if (snap == null) return null
   const total = task.processedCount
@@ -243,7 +248,7 @@ async function loadTaskList() {
   loading.value = true
   try {
     const res = await modelApi.listInferTasks()
-    taskList.value = (res as { data: InferenceTaskDto[] }).data ?? []
+    taskList.value = (res as { data: InferTaskDetail[] }).data ?? []
     snapshotMap.value = new Map()
     connectSSE()
   } catch {
