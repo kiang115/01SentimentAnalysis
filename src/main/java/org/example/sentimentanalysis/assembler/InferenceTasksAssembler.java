@@ -2,7 +2,7 @@ package org.example.sentimentanalysis.assembler;
 
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
-import org.example.sentimentanalysis.enums.InferenceTaskStatusEnum;
+import org.example.sentimentanalysis.enums.TaskStatusEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.model.InferenceTasks;
@@ -51,7 +51,7 @@ public class InferenceTasksAssembler {
                 .inferenceDuration(task.getInferenceDuration())
                 .processedCount(task.getProcessedCount())
                 .avgProcessSpeed(task.getAvgProcessSpeed())
-                .processStatusName(InferenceTaskStatusEnum.getStatusNameByCode(task.getProcessStatus()))
+                .processStatusName(TaskStatusEnum.getStatusNameByCode(task.getProcessStatus()))
                 .build();
 
         // 2. 模型信息字段赋值（含空指针+业务校验）

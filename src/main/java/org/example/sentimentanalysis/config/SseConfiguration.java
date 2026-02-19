@@ -1,6 +1,7 @@
 package org.example.sentimentanalysis.config;
 
 import org.example.sentimentanalysis.dto.redisDto.InferTaskSnapshot;
+import org.example.sentimentanalysis.dto.redisDto.TrainTaskSnapshot;
 import org.example.sentimentanalysis.service.impl.GenericSseService;
 import org.example.sentimentanalysis.context.SseTaskContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ public class SseConfiguration {
     private StringRedisTemplate redisTemplate;
     @Autowired
     private ObjectMapper objectMapper;
-
+//   先写类，再注册！！
     // --- 任务 1：推理任务配置 ---
     @Bean
     public GenericSseService<InferTaskSnapshot> inferSseService() {
@@ -53,6 +54,36 @@ public class SseConfiguration {
             }
         }, redisTemplate, objectMapper);
     }
+
+    @Bean
+    public GenericSseService<TrainTaskSnapshot> trainSseService() {
+        return new GenericSseService<>(new SseTaskContext<TrainTaskSnapshot>() {
+            @Override
+            public String getEventName() {
+                return "model:train_event";
+            }
+
+            @Override
+            public String getChannel() {
+                return "model:train_channel";
+            }
+
+            @Override
+            public String getHashKey() {
+                return "model:train_hashkey";
+            }
+
+            @Override
+            public Class<TrainTaskSnapshot> getDataClass() {
+                return TrainTaskSnapshot.class;
+            }
+
+            @Override
+            public boolean isFinalStatus(TrainTaskSnapshot data) {
+                return data.getStatus().equals(COMPLETED.getCode()) || data.getStatus().equals(ERRORTASK.getCode());
+            }
+        }, redisTemplate, objectMapper);
+    }
 //        @Bean
 //    public GenericSseService<FileTaskDto> fileSseService() {
 //        return new GenericSseService<>(new SseTaskContext<FileTaskDto>() {
@@ -72,8 +103,8 @@ public class SseConfiguration {
     // --- 统一注册 Redis 监听器 ---
     @Bean
     public RedisMessageListenerContainer redisContainer(RedisConnectionFactory factory,
-                                                        GenericSseService<InferTaskSnapshot> inferService
-//                                                        GenericSseService<FileTaskDto> fileService
+                                                        GenericSseService<InferTaskSnapshot> inferService,
+                                                        GenericSseService<TrainTaskSnapshot> trainService
     ) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(factory);
@@ -83,10 +114,11 @@ public class SseConfiguration {
                 (msg, p) -> inferService.onMessage(new String(msg.getBody())),
                 new ChannelTopic(inferService.getChannel())
         );
-//        container.addMessageListener(
-//            (msg, p) -> fileService.onMessage(new String(msg.getBody())),
-//            new ChannelTopic("file_updates")
-//        );
+        container.addMessageListener(
+                (msg, p) -> trainService.onMessage(new String(msg.getBody())),
+                new ChannelTopic(trainService.getChannel())
+        );
+
         return container;
     }
 }

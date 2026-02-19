@@ -25,7 +25,7 @@ public interface InferenceTasksService extends IService<InferenceTasks> {
 
     Long addInferenceTasks(InferDataSend inferDataSend);
 
-    Long setInferenceTaskStatus(Long taskId, Integer status);
+    void setInferenceTaskStatus(Long taskId, Integer status);
 
     void setInferenceTaskSuccess(InferResultRec inferResultRec);
 }

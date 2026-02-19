@@ -21,7 +21,7 @@ import java.util.List;
  * </p>
  *
  * @author kiang
- * @since 2026-02-17
+ * @since 2026-02-19
  */
 @Getter
 @Setter
@@ -54,7 +54,7 @@ public class TrainTasks implements Serializable {
      * 训练状态 (0:待处理, 1:处理中, 2:成功完成, 3:失败完成)
      */
     @TableField("status")
-    private Byte status;
+    private Integer status;
 
     /**
      * 训练开始时间
@@ -77,8 +77,8 @@ public class TrainTasks implements Serializable {
     /**
      * 训练总评论数
      */
-    @TableField("total_comments")
-    private Integer totalComments;
+    @TableField("total_data")
+    private Long totalData;
 
     /**
      * LORA_R
@@ -129,10 +129,16 @@ public class TrainTasks implements Serializable {
     private BigDecimal trainSplitRatio;
 
     /**
+     * 是否重新训练，是=1 否=0
+     */
+    @TableField("if_over_train")
+    private Integer ifOverTrain;
+
+    /**
      * 训练得到的模型id
      */
     @TableField("model_id")
-    private String modelId;
+    private Long modelId;
 
     /**
      * 总体准确率(%)

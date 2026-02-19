@@ -62,14 +62,17 @@ public class TrainDataSend {
      */
     private BigDecimal trainSplitRatio;
     // 是否需要覆盖训练
-    private boolean isOverTrain;
+    private boolean ifOverTrain;
+
+    //    使用的前一个基础model版本
+    private String baseModelVersion;
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TrainSourceData {
-//        TrainData中得到
+        //        TrainData中得到
         //        类别名称 固定为 corrected/upload/original
         private String source;
         //        类别数据列表
@@ -82,8 +85,9 @@ public class TrainDataSend {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TrainBaseData {
-//        数据来源
+        //        数据来源
         private Long id;
         private String content;
+        private Integer label;
     }
 }

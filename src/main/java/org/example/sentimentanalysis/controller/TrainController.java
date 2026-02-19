@@ -2,14 +2,27 @@ package org.example.sentimentanalysis.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import org.example.sentimentanalysis.config.FastApiClient;
+import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
+import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainPanelRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
+import org.example.sentimentanalysis.enums.TaskStatusEnum;
+import org.example.sentimentanalysis.exception.CustomBusinessException;
+import org.example.sentimentanalysis.model.TrainTasks;
 import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.DomainsService;
+import org.example.sentimentanalysis.service.ModelsService;
+import org.example.sentimentanalysis.service.TrainDataService;
 import org.example.sentimentanalysis.service.TrainTasksService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+
+import static org.example.sentimentanalysis.enums.RedisInferenceTaskStatusEnum.ERRORTASK;
+import static org.example.sentimentanalysis.enums.TaskStatusEnum.FAILED;
 
 @RestController
 public class TrainController {
@@ -17,6 +30,12 @@ public class TrainController {
     private DomainsService domainsService;
     @Autowired
     private TrainTasksService trainTasksService;
+    @Autowired
+    private FastApiClient fastApiClient;
+    @Autowired
+    private ModelsService modelsService;
+    @Autowired
+    private TrainDataService trainDataService;
 
     /**
      * 列出训练配置面板数据（开始训练前初始化）
@@ -28,12 +47,43 @@ public class TrainController {
         return Response.data(trainPanelSend);
     }
 
-    @Operation(summary = "开始训练")
+    @Operation(summary = "使用配置开始训练")
     @PostMapping("/TrainDataCheck")
-    public Response<String> trainDataCheck(@RequestBody @Valid  TrainPanelRec trainPanelRec) {
-//        System.out.println(trainPanelRec);
-
+    public Response<TrainDataSend> trainDataCheck(@RequestBody @Valid TrainPanelRec trainPanelRec) {
+//      得到发送给fastapi的数据
         TrainDataSend trainDataSend = trainTasksService.getTrainData(trainPanelRec);
-        return Response.data("开始训练");
+//      插入训练任务
+        Long taskId = trainTasksService.addTrainTask(trainPanelRec);
+        trainDataSend.setTaskId(taskId);
+        Response<InferResultRec> response = fastApiClient.sendTrainData(trainDataSend);
+        if (response.getCode() != 200) {
+//            训练任务状态设置为failed
+            trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()));
+            throw new CustomBusinessException("error-推理处理:解析线程中失败");
+        }
+        return Response.success();
+    }
+
+    @Operation(summary = "训练结果解析和处理")
+    @PostMapping("/TrainResultProcess")
+    public Response<TrainDataSend> trainResultProcess(@RequestBody @Valid Response<TrainResultRec> trainDataRec) {
+        TrainResultRec trainRec = trainDataRec.getData();
+        if (trainDataRec.getCode() != 200) {
+            trainTasksService.updateById(new TrainTasks().setId(trainRec.getTaskId()).setStatus(TaskStatusEnum.FAILED.getCode()));
+            throw new CustomBusinessException("训练任务失败");
+        }
+//        添加训练得到的新模型
+        Long modelId = modelsService.addModelByTrainResult(trainRec);
+        System.out.println("添加训练得到的新模型");
+        if (modelId == -1) {
+            throw new CustomBusinessException("训练数据装配失败：模型已存在");
+        }
+//        对训练任务表(end_time,duration,model_id,accuracy,precision_rate,recall_rate,f1_score，train_loss_list，train_acc_list,val_loss_list，val_acc_list)进行更新
+        trainTasksService.updateByTrainRec(trainRec, modelId);
+        System.out.println("对训练任务表进行更新");
+//        训练数据表，进行更新(trainCount++)。
+        trainDataService.updateTrainCount(trainRec.getResults());
+        System.out.println("训练数据表进行更新");
+        return Response.success();
     }
 }

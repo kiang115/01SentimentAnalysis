@@ -1,9 +1,11 @@
 package org.example.sentimentanalysis.service;
 
+import jakarta.validation.Valid;
 import org.example.sentimentanalysis.dto.requestDto.TrainPanelRec;
+import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataSend;
-import org.example.sentimentanalysis.model.TrainTasks;
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.example.sentimentanalysis.model.TrainTasks;
 
 /**
  * <p>
@@ -15,4 +17,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface TrainTasksService extends IService<TrainTasks> {
     TrainDataSend getTrainData(TrainPanelRec trainPanelRec);
+
+    Long addTrainTask(@Valid TrainPanelRec trainPanelRec);
+
+    void updateByTrainRec(TrainResultRec trainRec, Long modelId);
 }

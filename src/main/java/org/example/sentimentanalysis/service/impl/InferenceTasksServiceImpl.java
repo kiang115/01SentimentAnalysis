@@ -7,7 +7,7 @@ import org.example.sentimentanalysis.dto.requestDto.InferPanelRec;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
 import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
-import org.example.sentimentanalysis.enums.InferenceTaskStatusEnum;
+import org.example.sentimentanalysis.enums.TaskStatusEnum;
 import org.example.sentimentanalysis.enums.SortEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Comments;
@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 
 import static org.example.sentimentanalysis.enums.CommentStatusEnum.INFERRED;
 import static org.example.sentimentanalysis.enums.CommentStatusEnum.PENDING;
+import static org.example.sentimentanalysis.enums.TaskStatusEnum.SUCCESS;
 
 /**
  * <p>
@@ -151,7 +152,7 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
                 .filter(Objects::nonNull)
                 .mapToLong(item -> item.getInferenceCommentNums() == null ? 0L : item.getInferenceCommentNums())
                 .sum();
-//        设置默认的发起人id为1
+//        设置默认的发起人id为1 处理中状态默认为0，无需设置
         task.setDomainIds(domainIds).setUsedModelIds(modelIds).setProcessedCount(totalComments).setInitiatorId(1L);
         save(task);
         if (task.getTaskId() == null) {
@@ -161,12 +162,11 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
     }
 
     @Override
-    public Long setInferenceTaskStatus(Long taskId, Integer status) {
-        if (InferenceTaskStatusEnum.existsByCode(status)) {
+    public void setInferenceTaskStatus(Long taskId, Integer status) {
+        if (TaskStatusEnum.existsByCode(status)) {
             updateById(new InferenceTasks().setTaskId(taskId).setProcessStatus(status));
-            return taskId;
         }
-        return -1L;
+        return;
     }
 
     @Override
@@ -186,7 +186,8 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
                 .setTaskId(taskId)
                 .setInferenceEndTime(taskEndTime)
                 .setInferenceDuration(inferenceDurationMs)
-                .setAvgProcessSpeed(avgProcessSpeed));
+                .setAvgProcessSpeed(avgProcessSpeed)
+                .setProcessStatus(SUCCESS.getCode()));
 
         List<InferResultRec.CommentResultList> results = inferResultRec.getResults();
         List<Comments> commentsToUpdate = results.stream()

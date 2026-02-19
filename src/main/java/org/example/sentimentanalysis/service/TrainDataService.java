@@ -3,6 +3,8 @@ package org.example.sentimentanalysis.service;
 import org.example.sentimentanalysis.model.TrainData;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
+
 /**
  * <p>
  * 训练数据表 服务类
@@ -13,4 +15,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface TrainDataService extends IService<TrainData> {
 
+    void updateTrainCount(List<Long> ids);
 }

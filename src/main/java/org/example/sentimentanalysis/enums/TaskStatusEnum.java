@@ -3,7 +3,7 @@ package org.example.sentimentanalysis.enums;
 import lombok.Getter;
 
 @Getter
-public enum InferenceTaskStatusEnum {
+public enum TaskStatusEnum {
     /**
      * 待处理
      */
@@ -39,7 +39,7 @@ public enum InferenceTaskStatusEnum {
 
 
     // 构造方法
-    InferenceTaskStatusEnum(Integer code, String name) {
+    TaskStatusEnum(Integer code, String name) {
         this.code = code;
         this.name = name;
     }
@@ -52,7 +52,7 @@ public enum InferenceTaskStatusEnum {
      */
     public static String getStatusNameByCode(Integer statusCode) {
         // 遍历枚举值，匹配编码
-        for (InferenceTaskStatusEnum status : InferenceTaskStatusEnum.values()) {
+        for (TaskStatusEnum status : TaskStatusEnum.values()) {
             if (status.getCode().equals(statusCode)) {
                 return status.getName();
             }
@@ -74,8 +74,8 @@ public enum InferenceTaskStatusEnum {
         return getByCode(code) != null;
     }
 
-    public static InferenceTaskStatusEnum getByCode(int code) {
-        for (InferenceTaskStatusEnum status : InferenceTaskStatusEnum.values()) {
+    public static TaskStatusEnum getByCode(int code) {
+        for (TaskStatusEnum status : TaskStatusEnum.values()) {
             if (status.getCode() == code) {
                 return status;
             }

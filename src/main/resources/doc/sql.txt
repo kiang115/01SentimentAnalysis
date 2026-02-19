@@ -64,7 +64,7 @@ CREATE TABLE `inference_tasks` (
 CREATE TABLE models (
     model_id  BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '模型ID',
     domain_id BIGINT NOT NULL COMMENT '领域id',
-    model_version DECIMAL(4,2) NOT NULL COMMENT '模型版本号(两位小数, 如1.12)',
+    model_version VARCHAR(20) NOT NULL COMMENT '模型版本号(两位小数, 如1.12)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间(年月日时分秒)',
     INDEX idx_model_id (model_id),
     INDEX idx_created_at (created_at)
@@ -85,13 +85,13 @@ CREATE TABLE `train_tasks` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '训练任务id',
     `creator_id` BIGINT DEFAULT 0 NOT NULL COMMENT '发起人id',
     `domain_id` BIGINT NOT NULL COMMENT '领域id',
-    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '训练状态 (0:待处理, 1:处理中, 2:成功完成, 3:失败完成)',
+    `status` INTEGER NOT NULL DEFAULT 0 COMMENT '训练状态 (0:待处理, 1:处理中, 2:成功完成, 3:失败完成)',
 
     -- 2. 时间与统计
     `start_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '训练开始时间',
     `end_time` DATETIME DEFAULT NULL COMMENT '训练结束时间',
     `duration` BIGINT DEFAULT NULL COMMENT '训练持续时间(秒)',
-    `total_comments` INT DEFAULT 0 COMMENT '训练总评论数',
+    `total_data` BIGINT DEFAULT 0 COMMENT '训练总评论数',
 
     -- 3. 训练参数配置
     `lora_r` INTEGER  DEFAULT 8 COMMENT 'LORA_R',
@@ -102,9 +102,10 @@ CREATE TABLE `train_tasks` (
     `random_seed` INTEGER  DEFAULT 42 COMMENT '随机种子',
     `lora_modules` JSON COMMENT 'Lora模块列表, eg: ["query", "key", "value", "dense"]',
     `train_split_ratio` DECIMAL(3, 2) DEFAULT 0.80 COMMENT '训练集比例, eg: 0.80',
+    `if_over_train` INTEGER default 0 COMMENT '是否重新训练，是=1 否=0',
 
     -- 4. 训练产出与指标
-    `model_id` VARCHAR(128) DEFAULT NULL COMMENT '训练得到的模型id',
+    `model_id` BIGINT  DEFAULT NULL COMMENT '训练得到的模型id',
     `accuracy` DECIMAL(5, 2) DEFAULT NULL COMMENT '总体准确率(%)',
     `precision_rate` DECIMAL(5, 4) DEFAULT NULL COMMENT '精确率(准确率)',
     `recall_rate` DECIMAL(5, 4) DEFAULT NULL COMMENT '召回率',
@@ -125,6 +126,7 @@ CREATE TABLE `train_tasks` (
     INDEX `idx_domain` (`domain_id`),
     INDEX `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练任务管理表';
+
 
 训练参数表
 CREATE TABLE `train_para` (
@@ -153,10 +155,12 @@ CREATE TABLE `train_para` (
 
 
 
+
 CREATE TABLE `train_data` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '训练数据id (主键)',
     `domain_id` BIGINT NOT NULL COMMENT '领域id',
     `content` TEXT NOT NULL COMMENT '训练数据内容',
+    `label` INT NOT NULL COMMENT '训练数据标签',
     `source` ENUM('corrected', 'upload', 'original') NOT NULL COMMENT '训练数据来源 (corrected/upload/original)',
     `train_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '数据被训练次数',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '数据创建时间',
@@ -170,4 +174,3 @@ CREATE TABLE `train_data` (
     -- 训练面板按领域+来源聚合时使用
     INDEX `idx_domain_source` (`domain_id`, `source`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练数据表';
-
