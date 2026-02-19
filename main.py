@@ -3,8 +3,10 @@ from Dto.receive.InferDataRec import InferDataRes
 from Dto.send.InferDataSend import InferenceDataResponse
 from Common.Exception import BusinessException, SendBody, add_exception_handlers
 from Service.InferService.InferenceEngine import InferenceEngine
+from Service.TrainService.TrainEngine import TrainEngine
 from Dto.receive.TrainDataRec import TrainDataRes
 engine = InferenceEngine()
+train_engine = TrainEngine()
 app = FastAPI(title="Sentiment Analysis API")
 add_exception_handlers(app)
 @app.post("/predict")
@@ -22,8 +24,11 @@ async def predict(request: InferDataRes, background_tasks: BackgroundTasks):
 
 @app.post("/train")
 async def train(trainDataRes: TrainDataRes, background_tasks: BackgroundTasks):
-    # 使用给定配置，异步进行模型训练，得到Lora模型
-    return
+    # 校验数据列表不为空
+    if not trainDataRes.trainDataList or not any(g.trainDataList for g in trainDataRes.trainDataList):
+        raise BusinessException("请求的训练数据列表不能为空", 500)
+    background_tasks.add_task(train_engine.background_train_task, trainDataRes)
+    return SendBody.success(message="训练任务已提交，正在后台执行")
 
 
 if __name__ == "__main__":

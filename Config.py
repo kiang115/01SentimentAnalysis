@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     parallel_workers: int = 0
     max_length: int = 0
     max_gpu_batch_size: int = 0
+    weight_decay: float = 0.0
 
     # Redis 相关配置
     # redis的连接url

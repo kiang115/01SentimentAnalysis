@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from decimal import Decimal
 
 
@@ -8,6 +8,8 @@ class TrainDataItem(BaseModel):
     id: int
     # 训练文本内容
     content: str
+    # 训练标签
+    label: int
 
 
 class TrainDataSourceGroup(BaseModel):
@@ -37,3 +39,5 @@ class TrainDataRes(BaseModel):
     randomSeed: int
     trainSplitRatio: Decimal
     ifOverTrain: bool
+    baseModelVersion:Optional[str] = None
+

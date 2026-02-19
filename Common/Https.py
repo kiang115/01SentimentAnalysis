@@ -7,7 +7,7 @@ async def post_springboot(payload: SendBody, url: str):
     async with httpx.AsyncClient() as client:
         # clean_data = jsonable_encoder(payload)
         # json只能接收字典类型
-        print(f"DEBUG - Sending to SpringBoot: {jsonable_encoder(payload)}")
+        print(f"DEBUG - 发送到springboot: {jsonable_encoder(payload)},url:{url}")
         try:
             response = await client.post(url, json=jsonable_encoder(payload), timeout=30.0)
             response.raise_for_status()
