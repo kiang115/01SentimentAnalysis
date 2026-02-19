@@ -6,13 +6,13 @@ import os
 
 from transformers import BertTokenizer, BertForSequenceClassification
 from peft import PeftModel
-from Service.Redis.RedisService import update_task_redis
+from Service.Redis.RedisService import update_infer_task
 from Dto.Redis.InferTaskSnapshot import InferTaskSnapshot
 import asyncio
 import time
 from Dto.send.InferDataSend import CommentResult, InferenceDataResponse
 from Common.SendBody import SendBody
-from Dto.receive.InferDataReceive import InferenceRequest
+from Dto.receive.InferDataRec import InferDataRes
 from Common.Https import post_springboot
 from Config import get_settings
 
@@ -90,7 +90,7 @@ class InferenceEngine:
                 torch.cuda.empty_cache()
             gc.collect()
 
-    async def background_inference_task(self, request: InferenceRequest):
+    async def background_inference_task(self, request: InferDataRes):
         settings = get_settings()
         all_results = []
 
@@ -109,12 +109,12 @@ class InferenceEngine:
             batch_snapshot = InferTaskSnapshot(task_id, processed_count, current_duration, 0, "处理中")
             loop.call_soon_threadsafe(
                 lambda: asyncio.create_task(
-                    update_task_redis(batch_snapshot)
+                    update_infer_task(batch_snapshot)
                 )
             )
 
         try:
-            await update_task_redis(InferTaskSnapshot(task_id, 0, 0, 0, "处理中"))
+            await update_infer_task(InferTaskSnapshot(task_id, 0, 0, 0, "处理中"))
             for domain_data in request.inferenceDomainDataList:
                 res = await asyncio.to_thread(
                     self.predict_domain_batch,
@@ -139,7 +139,7 @@ class InferenceEngine:
             )
             success_body = SendBody.success(data=final_comment_result)
             await post_springboot(success_body, back_url)
-            await update_task_redis(
+            await update_infer_task(
                 InferTaskSnapshot(task_id, processed_count, duration, 1, "已完成"), currentTime)
         except Exception as e:
             error_msg = f"任务失败: {str(e)}"
@@ -169,5 +169,5 @@ class InferenceEngine:
             )
             fail_body = SendBody.fail(message=error_msg, code=500, data=fail_response)
             await post_springboot(fail_body, back_url)
-            await update_task_redis(
+            await update_infer_task(
                 InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 2, error_msg))

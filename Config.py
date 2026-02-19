@@ -7,7 +7,7 @@ from functools import lru_cache
 class Settings(BaseSettings):
     # BERT 相关配置
     bert_model_path: str = ""
-    # lora模型的根目录路径
+    # lora推理使用配置
     lora_url: str = ""
     dropout: float = 0.0
     num_classes: int = 0
@@ -22,12 +22,18 @@ class Settings(BaseSettings):
     inference_tasks_hash_key: str = ""
     # 推理任务用redis publish的频道名字
     inference_tasks_channel: str = ""
+    # 训练任务存入redis的key名字
+    train_tasks_hash_key: str = ""
+    # 训练任务用redis publish的频道名字
+    train_tasks_channel: str = ""
 
     # SpringBoot 相关配置
     # 后端的基础url
     springboot_base_url: str = ""
     # 推理结果返回给springboot的url
     inference_res_url: str = ""
+    # 训练结果返回给springboot的url
+    train_res_url: str = ""
 
     # 根据 ENV 环境变量加载对应的 .env 文件，默认 development
     model_config = SettingsConfigDict(

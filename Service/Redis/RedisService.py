@@ -8,7 +8,7 @@ from Config import get_settings
 r = redis.from_url(get_settings().redis_url, decode_responses=True)
 
 
-async def update_task_redis(inferTaskSnapshot: InferTaskSnapshot,currentTime=None):
+async def update_infer_task(inferTaskSnapshot: InferTaskSnapshot, currentTime=None):
     """
     更新 Redis 中的任务快照并发布实时消息
     status: 0-进行中, 1-完成, 2-异常
