@@ -22,18 +22,17 @@
           <div class="card-header">
             <div class="card-header-row">
               <span style="font-weight: bold;">模型训练 #{{ task.id }}</span>
-              <div class="card-header-tags">
-                <el-tag type="info" size="small">领域:{{ task.domainName }}</el-tag>
-                <el-tag type="success" size="small">模型版本:{{ task.modelVersion }}{{ task.ifOverTrain === 1 ? ' (重训版本)' : '' }}</el-tag>
+              <div class="card-header-right">
+                <el-tag type="success" size="small">{{ task.domainName }}-V{{ task.modelVersion }}{{ task.ifOverTrain === 1 ? ' (重训版本)' : '' }}</el-tag>
+                <el-button
+                  type="primary"
+                  link
+                  :disabled="!isTaskCompleted(task)"
+                  @click="openDetail(task)"
+                >
+                  <el-icon><DataLine /></el-icon>
+                </el-button>
               </div>
-              <el-button
-                type="primary"
-                link
-                :disabled="!isTaskCompleted(task)"
-                @click="openDetail(task)"
-              >
-                <el-icon><DataLine /></el-icon>
-              </el-button>
             </div>
             <div class="text-small">
               {{ task.startTime }}
@@ -419,11 +418,11 @@ function onTrainConfirm() {
   align-items: center;
   justify-content: space-between;
 }
-.card-header-tags {
+.card-header-right {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-left: 16px;
+  margin-left: auto;
 }
 .text-small {
   font-size: 12px;
