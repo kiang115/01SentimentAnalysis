@@ -17,11 +17,15 @@
 
   <ul v-if="taskList.length" class="task-list">
     <li v-for="task in taskList" :key="task.id">
-      <el-card style="max-width: 400px" shadow="hover">
+      <el-card class="train-card" shadow="hover">
         <template #header>
           <div class="card-header">
             <div class="card-header-row">
               <span style="font-weight: bold;">模型训练 #{{ task.id }}</span>
+              <div class="card-header-tags">
+                <el-tag type="info" size="small">领域:{{ task.domainName }}</el-tag>
+                <el-tag type="success" size="small">模型版本:{{ task.modelVersion }}{{ task.ifOverTrain === 1 ? ' (重训版本)' : '' }}</el-tag>
+              </div>
               <el-button
                 type="primary"
                 link
@@ -39,8 +43,8 @@
             <el-tag :type="getStatusTagType(task)" size="small">{{ displayStatusText(task) }}</el-tag>
           </div>
         </template>
-        <el-row :gutter="16">
-          <el-col :xs="24" :sm="12" class="text-center mb-4">
+        <el-row :gutter="16" class="stat-row">
+          <el-col :xs="24" :sm="8" class="text-center mb-4">
             <div class="stat-block">
               <div class="stat-title">{{ getSnapshot(task) ? '当前轮次/总轮次' : '总轮次' }}</div>
               <div class="stat-value">{{ displayEpoch(task) }}</div>
@@ -49,19 +53,16 @@
               {{ getSnapshot(task)!.currentBatch }} / {{ getSnapshot(task)!.epochTotalBatches }} - 每轮总批次
             </div>
           </el-col>
-          <el-col :xs="24" :sm="12" class="text-center mb-4">
-            <el-statistic
-              title="训练总数据量"
-              :value="task.totalData"
-              value-style="font-weight:bold"
-            />
+          <el-col :xs="24" :sm="8" class="text-center mb-4">
+            <div class="stat-block">
+              <div class="stat-title">训练总数据量</div>
+              <div class="stat-value">{{ task.totalData }}</div>
+            </div>
             <div class="text-small mt-2">
               训练集:验证集 {{ displayTrainValRatio(task) }}
             </div>
           </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :xs="24" class="text-center mb-4">
+          <el-col :xs="24" :sm="8" class="text-center mb-4">
             <div class="stat-block">
               <div class="stat-title">训练持续时间</div>
               <div class="stat-value">{{ displayDuration(task) }}</div>
@@ -85,34 +86,11 @@
             <div class="footer-section">
               <span class="footer-section-title">训练指标</span>
               <div class="footer-metrics">
-                <div class="metric-item">
-                  <span class="metric-label">准确率</span>
-                  <span class="metric-value">{{ displayAccuracy(task) }}</span>
-                </div>
-                <div class="metric-item">
-                  <span class="metric-label">精确率</span>
-                  <span class="metric-value">{{ displayPrecision(task) }}</span>
-                </div>
-                <div class="metric-item">
-                  <span class="metric-label">召回率</span>
-                  <span class="metric-value">{{ displayRecall(task) }}</span>
-                </div>
-                <div class="metric-item">
-                  <span class="metric-label">F1</span>
-                  <span class="metric-value">{{ displayF1(task) }}</span>
-                </div>
+                <span class="metric-wrap"><el-tag size="small" class="metric-tag">准确率:{{ displayAccuracy(task) }}</el-tag></span>
+                <span class="metric-wrap"><el-tag size="small" class="metric-tag">精确率:{{ displayPrecision(task) }}</el-tag></span>
+                <span class="metric-wrap"><el-tag size="small" class="metric-tag">召回率:{{ displayRecall(task) }}</el-tag></span>
+                <span class="metric-wrap"><el-tag size="small" class="metric-tag">F1:{{ displayF1(task) }}</el-tag></span>
               </div>
-            </div>
-            <el-divider class="footer-divider" />
-            <div class="footer-extra">
-              <span class="extra-item">
-                <span class="extra-label">领域</span>
-                <span class="extra-value">{{ task.domainName }}</span>
-              </span>
-              <span class="extra-item">
-                <span class="extra-label">模型版本</span>
-                <span class="extra-value">{{ task.modelVersion }}{{ task.ifOverTrain === 1 ? ' (重训版本)' : '' }}</span>
-              </span>
             </div>
           </div>
         </template>
@@ -396,9 +374,13 @@ function onTrainConfirm() {
   list-style: none;
   padding: 0;
   margin: 0;
+  width: 100%;
 }
 .task-list li {
   margin-bottom: 16px;
+}
+.train-card {
+  width: 100%;
 }
 .progress-block {
   margin-top: 12px;
@@ -437,6 +419,12 @@ function onTrainConfirm() {
   align-items: center;
   justify-content: space-between;
 }
+.card-header-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+}
 .text-small {
   font-size: 12px;
   color: var(--el-text-color-secondary);
@@ -445,10 +433,8 @@ function onTrainConfirm() {
   margin-top: 4px;
 }
 .card-footer {
-  padding: 12px 0 4px;
-  background: var(--el-fill-color-lighter);
-  margin: 0 -20px -20px;
   padding: 14px 20px 16px;
+  margin: 0 -20px -20px;
   border-radius: 0 0 var(--el-card-border-radius) var(--el-card-border-radius);
 }
 .footer-section-title {
@@ -460,50 +446,20 @@ function onTrainConfirm() {
   display: block;
 }
 .footer-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px 16px;
-}
-.metric-item {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 10px;
-  background: var(--el-bg-color);
-  border-radius: 6px;
-  border: 1px solid var(--el-border-color-lighter);
-}
-.metric-label {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-.metric-value {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  font-variant-numeric: tabular-nums;
-}
-.footer-divider {
-  margin: 12px 0;
-}
-.footer-extra {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px 24px;
-  font-size: 12px;
-}
-.footer-extra .extra-item {
-  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 6px;
+  width: 100%;
+  gap: 8px;
 }
-.footer-extra .extra-label {
-  color: var(--el-text-color-secondary);
+.footer-metrics .metric-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
 }
-.footer-extra .extra-value {
-  color: var(--el-text-color-primary);
-  font-weight: 500;
+.footer-metrics .metric-tag {
+  font-variant-numeric: tabular-nums;
 }
 .loading-wrap {
   display: flex;

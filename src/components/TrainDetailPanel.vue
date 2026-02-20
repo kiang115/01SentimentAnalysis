@@ -51,6 +51,20 @@
         <div class="section-subtitle">训练过程指标变化</div>
         <div ref="chartRef" class="chart-container"></div>
       </div>
+
+      <div class="detail-section">
+        <el-descriptions title="训练配置参数详情" :column="3" border>
+          <el-descriptions-item label="批次大小">{{ formatOptionalNumber(task.batchSize) }}</el-descriptions-item>
+          <el-descriptions-item label="总轮数">{{ formatOptionalNumber(task.epochs) }}</el-descriptions-item>
+          <el-descriptions-item label="学习率">{{ formatOptionalNumber(task.learningRate) }}</el-descriptions-item>
+          <el-descriptions-item label="随机种子">{{ formatOptionalNumber(task.randomSeed) }}</el-descriptions-item>
+          <el-descriptions-item label="LORA_R">{{ formatOptionalNumber(task.loraR) }}</el-descriptions-item>
+          <el-descriptions-item label="LORA_ALPHA">{{ formatOptionalNumber(task.loraAlpha) }}</el-descriptions-item>
+          <el-descriptions-item label="LORA模块列表" :span="2">{{ loraModulesText }}</el-descriptions-item>
+          <el-descriptions-item label="训练集比例">{{ trainSplitRatioDisplay }}</el-descriptions-item>
+          <el-descriptions-item label="是否重新训练">{{ ifOverTrainText }}</el-descriptions-item>
+        </el-descriptions>
+      </div>
     </template>
 
     <template #footer>
@@ -100,6 +114,11 @@ function formatMetric(v: number | undefined): string {
   return Number(v).toFixed(4)
 }
 
+function formatOptionalNumber(v: number | undefined): string {
+  if (v == null || !Number.isFinite(v)) return '—'
+  return String(v)
+}
+
 const trainValRatioText = computed(() => {
   const t = props.task
   if (!t) return ''
@@ -107,6 +126,22 @@ const trainValRatioText = computed(() => {
   const train = (r * 100).toFixed(0)
   const val = ((1 - r) * 100).toFixed(0)
   return `训练集:验证集 ${train}% : ${val}%`
+})
+
+const loraModulesText = computed(() => {
+  const arr = props.task?.loraModules
+  if (!arr?.length) return '—'
+  return arr.join(', ')
+})
+
+const trainSplitRatioDisplay = computed(() => {
+  const r = props.task?.trainSplitRatio
+  if (r == null || !Number.isFinite(r)) return '—'
+  return (r * 100).toFixed(0) + '%'
+})
+
+const ifOverTrainText = computed(() => {
+  return props.task?.ifOverTrain === 1 ? '是' : '否'
 })
 
 function buildChartOption(): echarts.ComposeOption<echarts.LineSeriesOption> {
