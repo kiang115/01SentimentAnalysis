@@ -333,7 +333,7 @@ const rules = {
     },
   ],
 }
-
+// todo 允许各种数据来源为0
 function resetDomainState() {
   counts.value = {
     correctedCount: 0,

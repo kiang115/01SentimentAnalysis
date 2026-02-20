@@ -93,7 +93,7 @@
     <span>加载中...</span>
   </div>
 </template>
-
+<!--todo 总体改为使用Scrollbar 滚动条 而不是现在的无限滚动-->
 <script lang="ts" setup>
 /**
  * 推理任务列表组件 (Infer.vue)
@@ -237,6 +237,14 @@ function connectSSE() {
       applySnapshot(snap)
     } catch {
       // 解析失败时忽略
+    }
+  })
+
+  /** 服务端关闭或网络异常时清理连接，不重连 */
+  es.addEventListener('error', () => {
+    es.close()
+    if (eventSourceRef.value === es) {
+      eventSourceRef.value = null
     }
   })
 }

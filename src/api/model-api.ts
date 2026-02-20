@@ -21,4 +21,7 @@ export const modelApi = {
     checkTrainData: (para: TrainPanelSend) => {
         return post('/TrainDataCheck', para)
     },
+    listTrainTasks: () => {
+        return get('/TrainTaskList', {})
+    },
 }

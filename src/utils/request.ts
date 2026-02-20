@@ -51,7 +51,7 @@ request.interceptors.request.use(
 // 添加响应拦截器
 // 判断code
 
-// - 正确200-> 返回干净的后端data ->进入业务代码的then()
+// - 正确200-> 返回完整的response结构体 ->进入业务代码的then()
 //  错误->返回 有网络请求头的完整的response ->进入业务代码catch()（）(reject部分)
 request.interceptors.response.use(
     (httpResponse) => {
