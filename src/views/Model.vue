@@ -5,7 +5,7 @@ import Train from "@/components/Train.vue"
 
 <template>
 <!--<Infer> </Infer>-->
-  <train></train>
+  <Train></Train>
 </template>
 
 <style scoped lang="less">
