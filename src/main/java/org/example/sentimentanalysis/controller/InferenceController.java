@@ -61,16 +61,21 @@ public class InferenceController {
         Long inferenceTaskId = inferenceTasksService.addInferenceTasks(inferDataSend);
         inferDataSend.setTaskId(inferenceTaskId);
 //        3. 发送数据给fastapi
-        Response<InferResultRec> response = fastApiClient.sendInferenceData(inferDataSend);
+        try {
+            Response<InferResultRec> response = fastApiClient.sendInferenceData(inferDataSend);
 //        4. 异常处理
-        if(response.getCode()!=200){
+            if (response.getCode() != 200) {
 //            推理任务状态设置为failed
-            inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, FAILED.getCode());
-            throw new CustomBusinessException("error-推理处理:解析线程中失败");
+                inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, TaskStatusEnum.FAILED.getCode());
+                throw new CustomBusinessException("error-模型推理失败:" + response.getMessage());
+            }
+        } catch (Exception e) {
+            inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, TaskStatusEnum.FAILED.getCode());
+            throw new CustomBusinessException("error-模型服务未启动:" + e.getMessage());
         }
 //        5.更新评论状态 为推理中
         commentsService.updateCommentStatus(inferDataSend);
-        return Response.success(response.getMessage());
+        return Response.success();
     }
 
     @Operation(summary = "推理结果解析和处理")
@@ -83,7 +88,7 @@ public class InferenceController {
             inferenceTasksService.setInferenceTaskStatus(inferResultRec.getTaskId(), FAILED.getCode());
 //            设置评论状态重新为待处理
             commentsService.updateCommentStatus(inferResultRec, CommentStatusEnum.PENDING.getCode());
-            throw new CustomBusinessException("error:"+inferenceResultDtoResponse.getMessage());
+            throw new CustomBusinessException("error:" + inferenceResultDtoResponse.getMessage());
         }
 //        设置评论状态为已处理
         commentsService.updateCommentStatus(inferResultRec, CommentStatusEnum.INFERRED.getCode());

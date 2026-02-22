@@ -34,10 +34,10 @@ public class TrainController {
     @Autowired
     private TrainDataService trainDataService;
 
-   @Operation(summary = "列出训练任务列表")
-   @GetMapping("/TrainTaskList")
-   public Response<TrainTasksSend> listTrainTask() {
-       TrainTasksSend trainTasksSend = trainTasksService.listTrainTask();
+    @Operation(summary = "列出训练任务列表")
+    @GetMapping("/TrainTaskList")
+    public Response<TrainTasksSend> listTrainTask() {
+        TrainTasksSend trainTasksSend = trainTasksService.listTrainTask();
         return Response.data(trainTasksSend);
     }
 
@@ -58,11 +58,16 @@ public class TrainController {
         TrainDataSend trainDataSend = trainTasksService.getTrainData(trainPanelRec);
         Long taskId = trainTasksService.addTrainTask(trainPanelRec);
         trainDataSend.setTaskId(taskId);
-        Response<InferResultRec> response = fastApiClient.sendTrainData(trainDataSend);
-        if (response.getCode() != 200) {
-//            训练任务状态设置为failed
+
+        try {
+            Response<InferResultRec> response = fastApiClient.sendTrainData(trainDataSend);
+            if (response.getCode() != 200) {
+                trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()));
+                throw new CustomBusinessException("error-模型训练失败:"+response.getMessage());
+            }
+        } catch (Exception e) {
             trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()));
-            throw new CustomBusinessException("error-推理处理:解析线程中失败");
+            throw new CustomBusinessException("error-模型服务未启动:"+e.getMessage());
         }
         return Response.success();
     }
