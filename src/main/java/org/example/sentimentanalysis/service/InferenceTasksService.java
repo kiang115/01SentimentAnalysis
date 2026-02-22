@@ -5,6 +5,7 @@ import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
 import org.example.sentimentanalysis.dto.responseDto.InferPieChartSend;
 import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
+import org.example.sentimentanalysis.dto.responseDto.TasksHotChartSend;
 import org.example.sentimentanalysis.model.InferenceTasks;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -31,4 +32,6 @@ public interface InferenceTasksService extends IService<InferenceTasks> {
     void setInferenceTaskSuccess(InferResultRec inferResultRec);
 
     InferPieChartSend getInferPieChart();
+
+    TasksHotChartSend getTasksHotChart();
 }

@@ -9,6 +9,7 @@ import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
 import org.example.sentimentanalysis.dto.responseDto.InferPieChartSend;
 import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
+import org.example.sentimentanalysis.dto.responseDto.TasksHotChartSend;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.enums.TaskStatusEnum;
 import org.example.sentimentanalysis.enums.SortEnum;
@@ -19,10 +20,12 @@ import org.example.sentimentanalysis.model.InferenceRecords;
 import org.example.sentimentanalysis.model.InferenceTasks;
 import org.example.sentimentanalysis.mapper.InferenceTasksMapper;
 import org.example.sentimentanalysis.model.Models;
+import org.example.sentimentanalysis.model.TrainTasks;
 import org.example.sentimentanalysis.service.CommentsService;
 import org.example.sentimentanalysis.service.DomainsService;
 import org.example.sentimentanalysis.service.InferenceRecordsService;
 import org.example.sentimentanalysis.service.InferenceTasksService;
+import org.example.sentimentanalysis.service.TrainTasksService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.sentimentanalysis.service.ModelsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -62,6 +66,8 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
     private CommentsService commentsService;
     @Autowired
     private InferenceRecordsService inferenceRecordsService;
+    @Autowired
+    private TrainTasksService trainTasksService;
 
     @Override
     public List<InferTasksDetailSend> listAllTasks(List<InferenceTasks> tasks) {
@@ -284,6 +290,63 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
                 .domainNameList(domainNameList)
                 .inferredPie(inferredPie)
                 .unInferredPie(unInferredPie)
+                .build();
+    }
+
+    @Override
+    public TasksHotChartSend getTasksHotChart() {
+        // 1. 确定统计范围：当前年月，当月第一天 00:00 至最后一天 23:59:59
+        LocalDate now = LocalDate.now();
+        int yearVal = now.getYear();
+        int monthVal = now.getMonthValue();
+        LocalDateTime monthStart = now.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime monthEnd = now.withDayOfMonth(now.lengthOfMonth()).atTime(23, 59, 59, 999_999_999);
+
+        // 2. 推理任务按日期统计：inference_tasks.inference_start_time 落在当月，按日期分组计数
+        LambdaQueryWrapper<InferenceTasks> inferWrapper = new LambdaQueryWrapper<>();
+        inferWrapper.between(InferenceTasks::getInferenceStartTime, monthStart, monthEnd);
+        List<InferenceTasks> inferTasks = this.list(inferWrapper);
+        Map<LocalDate, Long> inferCountByDate = inferTasks.stream()
+                .filter(t -> t.getInferenceStartTime() != null)
+                .collect(Collectors.groupingBy(t -> t.getInferenceStartTime().toLocalDate(), Collectors.counting()));
+
+        // 3. 训练任务按日期统计：train_tasks.start_time 落在当月，按日期分组计数
+        LambdaQueryWrapper<TrainTasks> trainWrapper = new LambdaQueryWrapper<>();
+        trainWrapper.between(TrainTasks::getStartTime, monthStart, monthEnd);
+        List<TrainTasks> trainTasks = trainTasksService.list(trainWrapper);
+        Map<LocalDate, Long> trainCountByDate = trainTasks.stream()
+                .filter(t -> t.getStartTime() != null)
+                .collect(Collectors.groupingBy(t -> t.getStartTime().toLocalDate(), Collectors.counting()));
+
+        // 4. 生成本月每一天的 DailyData（无任务的日期 count 均为 0）
+        DateTimeFormatter dateFmt = DateTimeFormatter.ISO_LOCAL_DATE;
+        List<TasksHotChartSend.DailyData> dailyDataList = new ArrayList<>();
+        int lastDay = now.lengthOfMonth();
+        for (int day = 1; day <= lastDay; day++) {
+            LocalDate date = now.withDayOfMonth(day);
+            String dateStr = date.format(dateFmt);
+            int inferCount = inferCountByDate.getOrDefault(date, 0L).intValue();
+            int trainCount = trainCountByDate.getOrDefault(date, 0L).intValue();
+            int totalCount = inferCount + trainCount;
+            dailyDataList.add(TasksHotChartSend.DailyData.builder()
+                    .date(dateStr)
+                    .inferCount(inferCount)
+                    .trainCount(trainCount)
+                    .totalCount(totalCount)
+                    .build());
+        }
+
+        // 5. 热力图颜色最大值：当月单日 (推理+训练) 次数最大值
+        int maxTotalCount = dailyDataList.stream()
+                .mapToInt(TasksHotChartSend.DailyData::getTotalCount)
+                .max()
+                .orElse(0);
+
+        return TasksHotChartSend.builder()
+                .year(String.valueOf(yearVal))
+                .month(String.valueOf(monthVal))
+                .maxTotalCount(maxTotalCount)
+                .dailyDataList(dailyDataList)
                 .build();
     }
 }

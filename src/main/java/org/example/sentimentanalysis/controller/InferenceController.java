@@ -5,10 +5,7 @@ import jakarta.validation.Valid;
 import org.example.sentimentanalysis.config.FastApiClient;
 import org.example.sentimentanalysis.dto.requestDto.InferPanelRec;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
-import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
-import org.example.sentimentanalysis.dto.responseDto.InferPanelSend;
-import org.example.sentimentanalysis.dto.responseDto.InferPieChartSend;
-import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
+import org.example.sentimentanalysis.dto.responseDto.*;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.enums.TaskStatusEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
@@ -103,5 +100,12 @@ public class InferenceController {
     public Response<InferPieChartSend> InferPieChart() {
         InferPieChartSend inferPieChartSend = inferenceTasksService.getInferPieChart();
         return Response.data(inferPieChartSend);
+    }
+//    月度日历热力图
+    @Operation(summary = "数据月度日历热力图")
+    @GetMapping("/TasksHotChart")
+    public Response<TasksHotChartSend> TasksHotChart() {
+        TasksHotChartSend tasksHotChartSend = inferenceTasksService.getTasksHotChart();
+        return Response.data(tasksHotChartSend);
     }
 }
