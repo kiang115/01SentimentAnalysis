@@ -8,6 +8,7 @@ import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainPanelRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
+import org.example.sentimentanalysis.dto.responseDto.TrainTasksSend;
 import org.example.sentimentanalysis.enums.TaskStatusEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.TrainTasks;
@@ -18,11 +19,6 @@ import org.example.sentimentanalysis.service.TrainDataService;
 import org.example.sentimentanalysis.service.TrainTasksService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
-
-import static org.example.sentimentanalysis.enums.RedisInferenceTaskStatusEnum.ERRORTASK;
-import static org.example.sentimentanalysis.enums.TaskStatusEnum.FAILED;
 
 @RestController
 public class TrainController {
@@ -36,6 +32,13 @@ public class TrainController {
     private ModelsService modelsService;
     @Autowired
     private TrainDataService trainDataService;
+
+   @Operation(summary = "列出训练任务列表")
+   @GetMapping("/TrainTaskList")
+   public Response<TrainTasksSend> listTrainTask() {
+       TrainTasksSend trainTasksSend = trainTasksService.listTrainTask();
+        return Response.data(trainTasksSend);
+    }
 
     /**
      * 列出训练配置面板数据（开始训练前初始化）
@@ -52,7 +55,6 @@ public class TrainController {
     public Response<TrainDataSend> trainDataCheck(@RequestBody @Valid TrainPanelRec trainPanelRec) {
 //      得到发送给fastapi的数据
         TrainDataSend trainDataSend = trainTasksService.getTrainData(trainPanelRec);
-//      插入训练任务
         Long taskId = trainTasksService.addTrainTask(trainPanelRec);
         trainDataSend.setTaskId(taskId);
         Response<InferResultRec> response = fastApiClient.sendTrainData(trainDataSend);

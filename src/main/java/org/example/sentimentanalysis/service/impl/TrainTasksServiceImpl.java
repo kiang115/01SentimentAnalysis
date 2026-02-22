@@ -7,6 +7,7 @@ import org.example.sentimentanalysis.assembler.TrainDataAssembler;
 import org.example.sentimentanalysis.dto.requestDto.TrainPanelRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataSend;
+import org.example.sentimentanalysis.dto.responseDto.TrainTasksSend;
 import org.example.sentimentanalysis.enums.TaskStatusEnum;
 import org.example.sentimentanalysis.enums.TrainDataSourceEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
@@ -119,6 +120,12 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
     public Long addTrainTask(TrainPanelRec trainPanelRec) {
 //        将trainPanelRec中对应值插入到trainTasks表中
 //        trainTasks中 creatorId先写死为1，状态使用待处理，其他训练参数保持一致
+
+        Domains domain = domainsService.getById(trainPanelRec.getDomainId());
+        if (domain == null) {
+            throw new CustomBusinessException("未找到ID为[" + trainPanelRec.getDomainId() + "]的Domain数据");
+        }
+
         long totalData = trainPanelRec.getCorrectedNum()
                 + trainPanelRec.getUploadNum()
                 + trainPanelRec.getOriginalNum();
@@ -127,6 +134,10 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
                 .setCreatorId(1L)
                 .setStatus(TaskStatusEnum.PROCESSING.getCode())
                 .setDomainId(trainPanelRec.getDomainId())
+                .setDomainName(domain.getDomainName())
+                .setCorrectedNum(trainPanelRec.getCorrectedNum())
+                .setUploadNum(trainPanelRec.getUploadNum())
+                .setOriginalNum(trainPanelRec.getOriginalNum())
                 .setTotalData(totalData)
                 .setLoraR(trainPanelRec.getLoraR())
                 .setLoraAlpha(trainPanelRec.getLoraAlpha())
@@ -136,7 +147,7 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
                 .setRandomSeed(trainPanelRec.getRandomSeed())
                 .setLoraModules(trainPanelRec.getLoraModules())
                 .setTrainSplitRatio(trainPanelRec.getTrainSplitRatio())
-                .setIfOverTrain(trainPanelRec.getIsOverTrain()==true?1:0);
+                .setIfOverTrain(trainPanelRec.getIsOverTrain() == true ? 1 : 0);
 
 //        保存并返回任务id
         boolean saveSuccess = save(trainTask);
@@ -151,6 +162,7 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         TrainTasks trainTasks = new TrainTasks();
 //        (end_time,duration,model_id,accuracy,precision_rate,recall_rate,f1_score，train_loss_list，train_acc_list,val_loss_list，val_acc_list)进行更新
         trainTasks.setId(trainRec.getTaskId())
+                .setModelVersion(trainRec.getModelVersion())
                 .setModelId(modelId)
                 .setEndTime(trainRec.getEndTime())
                 .setDuration(trainRec.getDuration().longValue())
@@ -163,7 +175,19 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
                 .setValLossList(trainRec.getValLossList())
                 .setValAccList(trainRec.getValAccList())
                 .setStatus(TaskStatusEnum.SUCCESS.getCode());
-                updateById(trainTasks);
+        updateById(trainTasks);
+    }
+
+    @Override
+    public TrainTasksSend listTrainTask() {
+//        是否是否有进行中状态的task
+        LambdaQueryWrapper<TrainTasks> queryWrapper = new LambdaQueryWrapper<TrainTasks>()
+                .eq(TrainTasks::getStatus, TaskStatusEnum.PROCESSING.getCode());
+        Integer ifAllFinished = count(queryWrapper) > 0 ? 0 : 1;
+        TrainTasksSend trainTasksSend = new TrainTasksSend();
+        trainTasksSend.setIfAllFinished(ifAllFinished);
+        trainTasksSend.setTrainTasksList(list());
+        return trainTasksSend;
     }
 
     /**
@@ -188,7 +212,9 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         return copiedList.subList(0, Math.toIntExact(requiredCount));
     }
 
-    /** 解析版本号，格式为 x.y（仅一个点分隔） */
+    /**
+     * 解析版本号，格式为 x.y（仅一个点分隔）
+     */
     private VersionParts parseVersion(String version) {
         String[] parts = version.split("\\.");
         if (parts.length != 2) {
@@ -199,7 +225,9 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         return new VersionParts(major, minor);
     }
 
-    /** 生成下一版本号：isOverTrain 为大版本+1.0，否则为小版本+1 */
+    /**
+     * 生成下一版本号：isOverTrain 为大版本+1.0，否则为小版本+1
+     */
     private String nextVersion(VersionParts latest, Boolean isOverTrain) {
         if (Boolean.TRUE.equals(isOverTrain)) {
             return (latest.major() + 1) + ".0";

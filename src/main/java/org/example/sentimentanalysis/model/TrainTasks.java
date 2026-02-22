@@ -21,7 +21,7 @@ import java.util.List;
  * </p>
  *
  * @author kiang
- * @since 2026-02-19
+ * @since 2026-02-20
  */
 @Getter
 @Setter
@@ -49,6 +49,12 @@ public class TrainTasks implements Serializable {
      */
     @TableField("domain_id")
     private Long domainId;
+
+    /**
+     * 领域中文名字
+     */
+    @TableField("domain_name")
+    private String domainName;
 
     /**
      * 训练状态 (0:待处理, 1:处理中, 2:成功完成, 3:失败完成)
@@ -79,6 +85,24 @@ public class TrainTasks implements Serializable {
      */
     @TableField("total_data")
     private Long totalData;
+
+    /**
+     * 来源于评论审核的数据数量
+     */
+    @TableField("corrected_num")
+    private Long correctedNum;
+
+    /**
+     * 来源于手动上传的数据数量
+     */
+    @TableField("upload_num")
+    private Long uploadNum;
+
+    /**
+     * 来源于初始数据集的数据数量
+     */
+    @TableField("original_num")
+    private Long originalNum;
 
     /**
      * LORA_R
@@ -141,6 +165,12 @@ public class TrainTasks implements Serializable {
     private Long modelId;
 
     /**
+     * 模型版本号(两位小数, 如1.12)
+     */
+    @TableField("model_version")
+    private String modelVersion;
+
+    /**
      * 总体准确率(%)
      */
     @TableField("accuracy")
@@ -164,7 +194,7 @@ public class TrainTasks implements Serializable {
     @TableField("f1_score")
     private BigDecimal f1Score;
 
-    /**
+     /**
      * 训练集loss变化趋势数组
      */
     @TableField(value = "train_loss_list", typeHandler = Fastjson2TypeHandler.class)

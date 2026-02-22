@@ -94,7 +94,8 @@ public class GenericSseService<T> {
             }
         });
     }
-
+// 检测redis历史数据中是否所有任务都结束，如果所有任务都结束，则关闭所有连接
+//    todo 需要在断开连接之前通知vue，让vue知道所有任务已经结束
     private void checkAndCloseIfAllFinished() {
         Map<Object, Object> snapshots = redisTemplate.opsForHash().entries(hashKey);
         boolean anyRunning = snapshots.values().stream()

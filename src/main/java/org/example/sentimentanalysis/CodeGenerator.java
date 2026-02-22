@@ -28,7 +28,7 @@ public class CodeGenerator {
                 })
                 .strategyConfig(builder -> {
                     builder.enableSkipView()
-                            // 生成所有表（不指定表名）
+                            // model表
                             .entityBuilder()
                             .enableFileOverride() // 覆盖已生成文件
                             .enableLombok()
@@ -37,16 +37,16 @@ public class CodeGenerator {
                             .naming(NamingStrategy.underline_to_camel)
                             .columnNaming(NamingStrategy.underline_to_camel) // 下划线转驼峰
                             .formatFileName("%s")
-
+//                            mapper表
                             .mapperBuilder()
                             .enableFileOverride()// 覆盖已生成文件
                             .formatMapperFileName("%sMapper")
                             .formatXmlFileName("%sMapper")
-
+//                           service表
                             .serviceBuilder()
+//                            .enableFileOverride()
                             .formatServiceFileName("%sService")
                             .formatServiceImplFileName("%sServiceImpl")
-
                             .controllerBuilder()
                             .disable();
                 })
