@@ -63,6 +63,7 @@
           <el-descriptions-item label="LORA模块列表" :span="2">{{ loraModulesText }}</el-descriptions-item>
           <el-descriptions-item label="训练集比例">{{ trainSplitRatioDisplay }}</el-descriptions-item>
           <el-descriptions-item label="是否重新训练">{{ ifOverTrainText }}</el-descriptions-item>
+          <el-descriptions-item label="数据来源比例" :span="2">{{ dataSourceRatioText }}</el-descriptions-item>
         </el-descriptions>
       </div>
     </template>
@@ -142,6 +143,15 @@ const trainSplitRatioDisplay = computed(() => {
 
 const ifOverTrainText = computed(() => {
   return props.task?.ifOverTrain === 1 ? '是' : '否'
+})
+
+const dataSourceRatioText = computed(() => {
+  const t = props.task
+  if (!t) return '—'
+  const a = t.originalNum ?? 0
+  const b = t.correctedNum ?? 0
+  const c = t.uploadNum ?? 0
+  return `模型初始数据集 ${a} : 人工修正数据集 ${b} : 手动上传数据 ${c}`
 })
 
 function buildChartOption(): echarts.ComposeOption<echarts.LineSeriesOption> {
