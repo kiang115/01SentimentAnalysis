@@ -7,90 +7,88 @@
   - 刷新列表时清空 snapshotMap，再建立 SSE，以便新列表先以 DB 展示，随后 SSE 再填充快照。
 -->
 <template>
-  <el-descriptions class="margin-top" title="推理任务" :column="3" border>
-    <template #extra>
-      <el-button type="primary" @click="panelVisible = true">开始推理</el-button>
-    </template>
-  </el-descriptions>
+  <div class="infer-root">
+    <el-descriptions class="margin-top infer-header" title="推理任务" :column="3" border>
+      <template #extra>
+        <el-button type="primary" @click="panelVisible = true">开始推理</el-button>
+      </template>
+    </el-descriptions>
 
-  <InferPanel v-model="panelVisible" @confirm="onInferConfirm" />
+    <InferPanel v-model="panelVisible" @confirm="onInferConfirm" />
 
-  <ul v-if="taskList.length" class="task-list">
+    <div class="task-list-scroll">
+      <ul v-if="taskList.length" class="task-list">
     <li v-for="task in taskList" :key="task.taskId">
-      <el-card style="max-width: 400px" shadow="hover">
+      <el-card class="infer-card" shadow="hover">
         <template #header>
           <div class="card-header">
-            <span style="font-weight: bold;">推理任务: #{{ task.taskId }}</span>
+            <div class="card-header-row">
+              <span style="font-weight: bold;">推理任务 #{{ task.taskId }}</span>
+            </div>
             <div class="text-small">
               {{ task.inferenceStartTime }}
               <template v-if="displayEndTime(task)"> - {{ displayEndTime(task) }}</template>
               <template v-else> - 进行中</template>
             </div>
-            <el-tag type="info" size="small">{{ displayStatusText(task) }}</el-tag>
+            <el-tag :type="getStatusTagType(task)" size="small">{{ displayStatusText(task) }}</el-tag>
           </div>
         </template>
-        <el-row :gutter="16">
-          <el-col :xs="24" :sm="12" :md="8" class="text-center mb-4">
-            <el-statistic
-              title="推理持续时间"
-              :value="displayDuration(task)"
-              value-style="font-weight:bold"
-            >
-              <template #suffix>
-                <span style="font-weight: bold;">/秒</span>
-              </template>
-            </el-statistic>
+        <el-row :gutter="16" class="stat-row">
+          <el-col :xs="24" :sm="8" class="text-center mb-4">
+            <div class="stat-block">
+              <div class="stat-title">推理持续时间</div>
+              <div class="stat-value">{{ displayDuration(task) }}<span class="stat-suffix">/秒</span></div>
+            </div>
           </el-col>
-          <el-col :xs="24" :sm="12" :md="8" class="text-center mb-4">
-            <el-statistic
-              title="处理总评论数"
-              :value="displayProcessedCount(task)"
-              value-style="font-weight:bold"
-            />
+          <el-col :xs="24" :sm="8" class="text-center mb-4">
+            <div class="stat-block">
+              <div class="stat-title">处理总评论数</div>
+              <div class="stat-value">{{ displayProcessedCount(task) }}</div>
+            </div>
           </el-col>
-          <el-col :xs="24" :sm="12" :md="8" class="text-center mb-4">
-            <el-statistic
-              :value="displayAvgSpeed(task)"
-              value-style="font-weight:bold"
-              class="nowrap-statistic"
-            >
-              <template #title>平均处理速度</template>
-              <template #suffix>
-                <span style="font-weight: bold;">/秒</span>
-              </template>
-            </el-statistic>
+          <el-col :xs="24" :sm="8" class="text-center mb-4">
+            <div class="stat-block">
+              <div class="stat-title">平均处理速度</div>
+              <div class="stat-value">{{ displayAvgSpeed(task) }}<span class="stat-suffix">/秒</span></div>
+            </div>
           </el-col>
         </el-row>
         <div v-if="progressPercent(task) != null" class="progress-block">
-          <el-progress
-            :percentage="progressPercent(task) ?? 0"
-            :stroke-width="12"
-          />
+          <div class="progress-row">
+            <el-progress
+              :percentage="progressPercent(task) ?? 0"
+              :stroke-width="12"
+              class="progress-flex"
+            />
+          </div>
           <div class="progress-text">{{ getSnapshot(task)!.processedCount }} / {{ task.processedCount }}</div>
         </div>
         <template #footer>
-          <div class="model-info">
-            <span class="label">模型信息：</span>
-            <template v-if="task.modelInfoList?.length">
-              <el-tag
-                v-for="m in task.modelInfoList"
-                :key="m.modelId"
-                size="small"
-                class="model-tag"
-              >
-                {{ m.domainName }} (v{{ formatModelVersion(m.modelVersion) }})
-              </el-tag>
-            </template>
-            <span v-else>—</span>
+          <div class="card-footer">
+            <div class="footer-section">
+              <span class="footer-section-title">模型信息</span>
+              <div class="footer-metrics">
+                <template v-if="task.modelInfoList?.length">
+                  <span v-for="m in task.modelInfoList" :key="m.modelId" class="metric-wrap">
+                    <el-tag size="small" type="success" class="metric-tag">
+                      {{ m.domainName }} (v{{ formatModelVersion(m.modelVersion) }})
+                    </el-tag>
+                  </span>
+                </template>
+                <span v-else class="metric-wrap">—</span>
+              </div>
+            </div>
           </div>
         </template>
       </el-card>
     </li>
-  </ul>
-  <el-empty v-else-if="!loading" description="暂无推理任务" />
-  <div v-else class="loading-wrap">
-    <el-icon class="is-loading"><Loading /></el-icon>
-    <span>加载中...</span>
+      </ul>
+      <el-empty v-else-if="!loading" description="暂无推理任务" />
+      <div v-else class="loading-wrap">
+        <el-icon class="is-loading"><Loading /></el-icon>
+        <span>加载中...</span>
+      </div>
+    </div>
   </div>
 </template>
 <!--todo 总体改为使用Scrollbar 滚动条 而不是现在的无限滚动-->
@@ -177,6 +175,18 @@ function displayEndTime(task: InferTaskDetail): string | null {
 function displayStatusText(task: InferTaskDetail): string {
   const snap = getSnapshot(task)
   return snap?.statusMsg ?? task.processStatusName
+}
+
+/** 状态对应的标签类型：0 处理中=warning，1 成功完成=success，2 异常完成=danger；无快照=info */
+function getStatusTagType(task: InferTaskDetail): 'info' | 'warning' | 'success' | 'danger' {
+  const snap = getSnapshot(task)
+  const status = snap?.status ?? -1
+  const map: Record<number, 'info' | 'warning' | 'success' | 'danger'> = {
+    0: 'warning',
+    1: 'success',
+    2: 'danger',
+  }
+  return map[status] ?? 'info'
 }
 
 /** 实时进度百分比：SSE 当前评论数 / 数据库推理总评论数，0～100；无快照或总数≤0 时返回 null（不显示进度条） */
@@ -279,45 +289,112 @@ function onInferConfirm() {
 </script>
 
 <style lang="less" scoped>
-/* 任务卡片列表 */
+.infer-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.infer-header {
+  flex-shrink: 0;
+}
+.task-list-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin-top: 16px;
+}
 .task-list {
   list-style: none;
   padding: 0;
   margin: 0;
+  width: 100%;
 }
 .task-list li {
   margin-bottom: 16px;
 }
-/* 实时进度条：仅当有快照且总数>0 时显示 */
+.infer-card {
+  width: 100%;
+}
+.card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.text-small {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.stat-row {
+  /* 与 Train 一致 */
+}
+.stat-block {
+  .stat-title {
+    font-size: 14px;
+    color: var(--el-text-color-secondary);
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-weight: bold;
+    font-size: 24px;
+  }
+  .stat-suffix {
+    font-size: 14px;
+    font-weight: normal;
+    color: var(--el-text-color-secondary);
+    margin-left: 2px;
+  }
+}
 .progress-block {
   margin-top: 12px;
+}
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.progress-flex {
+  flex: 1;
 }
 .progress-text {
   font-size: 12px;
   color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
-/* 卡片头部：任务 ID、时间范围、状态标签 */
-.card-header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.card-footer {
+  padding: 14px 20px 16px;
+  margin: 0 -20px -20px;
+  border-radius: 0 0 var(--el-card-border-radius) var(--el-card-border-radius);
 }
-.text-small {
+.footer-section-title {
   font-size: 12px;
   color: var(--el-text-color-secondary);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  display: block;
 }
-/* 卡片底部：模型信息标签 */
-.model-info {
-  font-size: 12px;
+.footer-metrics {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
-.model-info .label {
-  margin-right: 8px;
+.footer-metrics .metric-wrap {
+  display: inline-flex;
 }
-.model-tag {
-  margin-right: 6px;
+.footer-metrics .metric-tag {
+  font-variant-numeric: tabular-nums;
 }
-/* 列表加载中占位 */
+.mb-4 {
+  margin-bottom: 16px;
+}
 .loading-wrap {
   display: flex;
   align-items: center;

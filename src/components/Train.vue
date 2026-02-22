@@ -6,16 +6,18 @@
   - 展示：有快照用快照（结束时间仅 status 0/1 显示 '-'），无快照用 DB；领域、模型版本仅用 DB。
 -->
 <template>
-  <el-descriptions class="margin-top" title="训练任务" :column="3" border>
-    <template #extra>
-      <el-button type="primary" @click="panelVisible = true">开始训练</el-button>
-    </template>
-  </el-descriptions>
+  <div class="train-root">
+    <el-descriptions class="margin-top train-header" title="训练任务" :column="3" border>
+      <template #extra>
+        <el-button type="primary" @click="panelVisible = true">开始训练</el-button>
+      </template>
+    </el-descriptions>
 
-  <TrainPanel v-model="panelVisible" @confirm="onTrainConfirm" />
-  <TrainDetailPanel v-model="detailVisible" :task="detailTask" />
+    <TrainPanel v-model="panelVisible" @confirm="onTrainConfirm" />
+    <TrainDetailPanel v-model="detailVisible" :task="detailTask" />
 
-  <ul v-if="taskList.length" class="task-list">
+    <div class="task-list-scroll">
+      <ul v-if="taskList.length" class="task-list">
     <li v-for="task in taskList" :key="task.id">
       <el-card class="train-card" shadow="hover">
         <template #header>
@@ -95,11 +97,13 @@
         </template>
       </el-card>
     </li>
-  </ul>
-  <el-empty v-else-if="!loading" description="暂无训练任务" />
-  <div v-else class="loading-wrap">
-    <el-icon class="is-loading"><Loading /></el-icon>
-    <span>加载中...</span>
+      </ul>
+      <el-empty v-else-if="!loading" description="暂无训练任务" />
+      <div v-else class="loading-wrap">
+        <el-icon class="is-loading"><Loading /></el-icon>
+        <span>加载中...</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -369,6 +373,21 @@ function onTrainConfirm() {
 </script>
 
 <style lang="less" scoped>
+.train-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.train-header {
+  flex-shrink: 0;
+}
+.task-list-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin-top: 16px;
+}
 .task-list {
   list-style: none;
   padding: 0;
