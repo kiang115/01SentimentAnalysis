@@ -85,6 +85,7 @@ CREATE TABLE `train_tasks` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '训练任务id',
     `creator_id` BIGINT DEFAULT 0 NOT NULL COMMENT '发起人id',
     `domain_id` BIGINT NOT NULL COMMENT '领域id',
+    `domain_name` VARCHAR(100) NOT NULL COMMENT '领域中文名字',
     `status` INTEGER NOT NULL DEFAULT 0 COMMENT '训练状态 (0:待处理, 1:处理中, 2:成功完成, 3:失败完成)',
 
     -- 2. 时间与统计
@@ -94,6 +95,9 @@ CREATE TABLE `train_tasks` (
     `total_data` BIGINT DEFAULT 0 COMMENT '训练总评论数',
 
     -- 3. 训练参数配置
+    `correctedNum` BIGINT DEFAULT 0 COMMENT '来源于评论审核的数据数量',
+    `uploadNum` BIGINT DEFAULT 0 COMMENT '来源于手动上传的数据数量',
+    `originalNum` BIGINT DEFAULT 0 COMMENT '来源于初始数据集的数据数量',
     `lora_r` INTEGER  DEFAULT 8 COMMENT 'LORA_R',
     `lora_alpha` INTEGER  DEFAULT 16 COMMENT 'lora_alpha',
     `epochs` INTEGER  DEFAULT 5 COMMENT '训练轮数',
@@ -106,6 +110,7 @@ CREATE TABLE `train_tasks` (
 
     -- 4. 训练产出与指标
     `model_id` BIGINT  DEFAULT NULL COMMENT '训练得到的模型id',
+    `model_version` VARCHAR(20) NULL COMMENT '模型版本号(两位小数, 如1.12)',
     `accuracy` DECIMAL(5, 2) DEFAULT NULL COMMENT '总体准确率(%)',
     `precision_rate` DECIMAL(5, 4) DEFAULT NULL COMMENT '精确率(准确率)',
     `recall_rate` DECIMAL(5, 4) DEFAULT NULL COMMENT '召回率',
@@ -126,6 +131,7 @@ CREATE TABLE `train_tasks` (
     INDEX `idx_domain` (`domain_id`),
     INDEX `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练任务管理表';
+
 
 
 训练参数表
@@ -153,9 +159,7 @@ CREATE TABLE `train_para` (
     INDEX `idx_domain` (`domain_id`),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练参数配置模板表';
 
-
-
-
+训练数据表
 CREATE TABLE `train_data` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '训练数据id (主键)',
     `domain_id` BIGINT NOT NULL COMMENT '领域id',

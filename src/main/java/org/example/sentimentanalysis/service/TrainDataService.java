@@ -1,5 +1,6 @@
 package org.example.sentimentanalysis.service;
 
+import org.example.sentimentanalysis.dto.responseDto.TrainLineChartSend;
 import org.example.sentimentanalysis.model.TrainData;
 import com.baomidou.mybatisplus.extension.service.IService;
 

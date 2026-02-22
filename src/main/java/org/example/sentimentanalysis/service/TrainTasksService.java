@@ -5,6 +5,7 @@ import org.example.sentimentanalysis.dto.requestDto.TrainPanelRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataSend;
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.example.sentimentanalysis.dto.responseDto.TrainLineChartSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainTasksSend;
 import org.example.sentimentanalysis.model.TrainTasks;
 
@@ -24,4 +25,6 @@ public interface TrainTasksService extends IService<TrainTasks> {
     void updateByTrainRec(TrainResultRec trainRec, Long modelId);
 
     TrainTasksSend listTrainTask();
+
+    TrainLineChartSend getTrainLineChart();
 }

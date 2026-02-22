@@ -7,6 +7,7 @@ import org.example.sentimentanalysis.assembler.TrainDataAssembler;
 import org.example.sentimentanalysis.dto.requestDto.TrainPanelRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataSend;
+import org.example.sentimentanalysis.dto.responseDto.TrainLineChartSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainTasksSend;
 import org.example.sentimentanalysis.enums.TaskStatusEnum;
 import org.example.sentimentanalysis.enums.TrainDataSourceEnum;
@@ -23,8 +24,10 @@ import org.example.sentimentanalysis.service.TrainTasksService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * <p>
@@ -190,6 +193,70 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         return trainTasksSend;
     }
 
+    @Override
+    public TrainLineChartSend getTrainLineChart() {
+        // 1. 数据来源：domains 表一次查询，train_tasks 表一次查询（仅 status=2 已完成任务）
+        List<Domains> domains = domainsService.list();
+        Map<Long, String> domainIdToName = domains.stream()
+                .collect(Collectors.toMap(Domains::getDomainId, Domains::getDomainName, (a, b) -> a));
+        List<TrainTasks> successTasks = list(new LambdaQueryWrapper<TrainTasks>()
+                .eq(TrainTasks::getStatus, TaskStatusEnum.SUCCESS.getCode()));
+        Map<Long, List<TrainTasks>> tasksByDomain = successTasks.stream()
+                .collect(Collectors.groupingBy(TrainTasks::getDomainId));
+
+        List<String> domainNameList = new ArrayList<>();
+        List<TrainLineChartSend.DomainLinesData> domainLinesDataList = new ArrayList<>();
+
+        // 2. 按领域顺序遍历，保证 domainNameList 与 domainLinesDataList 一一对应
+        for (Domains domain : domains) {
+            Long domainId = domain.getDomainId();
+            String domainName = domainIdToName.get(domainId);
+            List<TrainTasks> tasks = tasksByDomain.getOrDefault(domainId, Collections.emptyList());
+
+            // 3. 版本解析与范围：解析 model_version 得到 maxMajor、maxMinor；无任务时均为 0（解析失败由 parseVersion 直接抛异常）
+            List<VersionParts> parts = tasks.stream()
+                    .map(t -> parseVersion(t.getModelVersion()))
+                    .toList();
+            int maxMajor = parts.isEmpty() ? 0 : parts.stream().mapToInt(VersionParts::major).max().orElse(0);
+            int maxMinor = parts.isEmpty() ? 0 : parts.stream().mapToInt(VersionParts::minor).max().orElse(0);
+
+            // 4. version -> accuracy 映射，便于 O(1) 查找（同上，非法 version 已在步骤 3 抛异常）
+            Map<String, BigDecimal> versionToAccuracy = tasks.stream()
+                    .filter(t -> t.getModelVersion() != null && t.getAccuracy() != null)
+                    .collect(Collectors.toMap(TrainTasks::getModelVersion, TrainTasks::getAccuracy, (a, b) -> b));
+
+            // 5. 组装 DTO：横坐标小版本号 X.0、X.1、X.2…；大版本号 0.X、1.X、2.X
+            List<String> allSmallVersions = IntStream.rangeClosed(0, maxMinor)
+                    .mapToObj(m -> "X." + m)
+                    .toList();
+            List<TrainLineChartSend.MajorVersionData> majorVersionDataList = new ArrayList<>();
+            List<String> allMajorVersions = new ArrayList<>();
+            for (int major = 0; major <= maxMajor; major++) {
+                final int majorVal = major;
+                List<BigDecimal> versionAccuracyList = IntStream.rangeClosed(0, maxMinor)
+                        .mapToObj(minor -> versionToAccuracy.get(majorVal + "." + minor))
+                        .toList();
+                majorVersionDataList.add(TrainLineChartSend.MajorVersionData.builder()
+                        .majorVersion(majorVal + ".X")
+                        .versionAccuracyList(versionAccuracyList)
+                        .build());
+                allMajorVersions.add(majorVal + ".X");
+            }
+            domainLinesDataList.add(TrainLineChartSend.DomainLinesData.builder()
+                    .domainName(domainName)
+                    .allSmallVersions(allSmallVersions)
+                    .allMajorVersions(allMajorVersions)
+                    .majorVersionDataList(majorVersionDataList)
+                    .build());
+            domainNameList.add(domainName);
+        }
+
+        return TrainLineChartSend.builder()
+                .domainNameList(domainNameList)
+                .domainLinesDataList(domainLinesDataList)
+                .build();
+    }
+
     /**
      * 随机筛选指定数量训练数据，不足直接抛业务异常
      */
@@ -213,16 +280,23 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
     }
 
     /**
-     * 解析版本号，格式为 x.y（仅一个点分隔）
+     * 解析版本号，格式为 x.y（仅一个点分隔）；解析出现任何问题均抛 CustomBusinessException，并表述异常信息。
      */
     private VersionParts parseVersion(String version) {
+        if (version == null || version.isBlank()) {
+            throw new CustomBusinessException("训练数据装配失败：模型版本不能为空");
+        }
         String[] parts = version.split("\\.");
         if (parts.length != 2) {
-            throw new CustomBusinessException("训练数据装配失败：模型版本格式非法，version=" + version);
+            throw new CustomBusinessException("训练数据装配失败：模型版本格式非法，应为 x.y，version=" + version);
         }
-        int major = Integer.parseInt(parts[0]);
-        int minor = Integer.parseInt(parts[1]);
-        return new VersionParts(major, minor);
+        try {
+            int major = Integer.parseInt(parts[0]);
+            int minor = Integer.parseInt(parts[1]);
+            return new VersionParts(major, minor);
+        } catch (NumberFormatException e) {
+            throw new CustomBusinessException("训练数据装配失败：模型版本格式非法，非数字，version=" + version);
+        }
     }
 
     /**

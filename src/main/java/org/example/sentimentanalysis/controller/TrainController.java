@@ -6,6 +6,7 @@ import org.example.sentimentanalysis.config.FastApiClient;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainPanelRec;
+import org.example.sentimentanalysis.dto.responseDto.TrainLineChartSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainTasksSend;
@@ -88,4 +89,17 @@ public class TrainController {
         System.out.println("训练数据表进行更新");
         return Response.success();
     }
+
+    @Operation(summary = "训练准确率折线图")
+    @GetMapping("/TrainLineChart")
+    public Response<TrainLineChartSend> InferLineChart() {
+        TrainLineChartSend trainLineChartSend = trainTasksService.getTrainLineChart();
+        return Response.data(trainLineChartSend);
+    }
+
+//    @Operation(summary = "推理数据饼状图")
+//    @GetMapping("/InferPieChart")
+//    public Response<InferPieChartSend> InferPieChart() {
+//
+//    }
 }
