@@ -7,6 +7,7 @@ import org.example.sentimentanalysis.dto.requestDto.InferPanelRec;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
 import org.example.sentimentanalysis.dto.responseDto.InferPanelSend;
+import org.example.sentimentanalysis.dto.responseDto.InferPieChartSend;
 import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.enums.TaskStatusEnum;
@@ -95,5 +96,12 @@ public class InferenceController {
 //       更新推理任务表
         inferenceTasksService.setInferenceTaskSuccess(inferResultRec);
         return Response.success();
+    }
+
+    @Operation(summary = "推理数据饼状图")
+    @GetMapping("/InferPieChart")
+    public Response<InferPieChartSend> InferPieChart() {
+        InferPieChartSend inferPieChartSend = inferenceTasksService.getInferPieChart();
+        return Response.data(inferPieChartSend);
     }
 }

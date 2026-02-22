@@ -6,18 +6,12 @@ import org.example.sentimentanalysis.config.FastApiClient;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainPanelRec;
-import org.example.sentimentanalysis.dto.responseDto.TrainLineChartSend;
-import org.example.sentimentanalysis.dto.responseDto.TrainDataSend;
-import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
-import org.example.sentimentanalysis.dto.responseDto.TrainTasksSend;
+import org.example.sentimentanalysis.dto.responseDto.*;
 import org.example.sentimentanalysis.enums.TaskStatusEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.TrainTasks;
 import org.example.sentimentanalysis.response.Response;
-import org.example.sentimentanalysis.service.DomainsService;
-import org.example.sentimentanalysis.service.ModelsService;
-import org.example.sentimentanalysis.service.TrainDataService;
-import org.example.sentimentanalysis.service.TrainTasksService;
+import org.example.sentimentanalysis.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +27,8 @@ public class TrainController {
     private ModelsService modelsService;
     @Autowired
     private TrainDataService trainDataService;
+    @Autowired
+    private CommentsService commentsService;
 
     @Operation(summary = "列出训练任务列表")
     @GetMapping("/TrainTaskList")
@@ -101,10 +97,4 @@ public class TrainController {
         TrainLineChartSend trainLineChartSend = trainTasksService.getTrainLineChart();
         return Response.data(trainLineChartSend);
     }
-
-//    @Operation(summary = "推理数据饼状图")
-//    @GetMapping("/InferPieChart")
-//    public Response<InferPieChartSend> InferPieChart() {
-//
-//    }
 }

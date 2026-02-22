@@ -1,12 +1,15 @@
 package org.example.sentimentanalysis.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.example.sentimentanalysis.assembler.InferenceDataAssembler;
 import org.example.sentimentanalysis.assembler.InferenceTasksAssembler;
 import org.example.sentimentanalysis.dto.requestDto.InferPanelRec;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
+import org.example.sentimentanalysis.dto.responseDto.InferPieChartSend;
 import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
+import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.enums.TaskStatusEnum;
 import org.example.sentimentanalysis.enums.SortEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
@@ -211,5 +214,76 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
                         .setConfidence(r.getConfidence()))
                 .toList();
         inferenceRecordsService.saveBatch(recordsToSave);
+    }
+
+    @Override
+    public InferPieChartSend getInferPieChart() {
+        // 1. 数据来源：领域列表决定饼图扇区顺序与领域名
+        List<Domains> domains = domainsService.list();
+        if (domains == null || domains.isEmpty()) {
+            return InferPieChartSend.builder()
+                    .pieNameList(List.of("已完成推理评论分布", "未完成推理评论分布"))
+                    .domainNameList(Collections.emptyList())
+                    .inferredPie(Collections.emptyList())
+                    .unInferredPie(Collections.emptyList())
+                    .build();
+        }
+        List<String> domainNameList = domains.stream()
+                .map(Domains::getDomainName)
+                .collect(Collectors.toList());
+
+        // 2. 根据 comments.status=2/3/4 + domain_id 分组统计，得到已推理评论数量
+        QueryWrapper<Comments> inferredWrapper = new QueryWrapper<>();
+        inferredWrapper.select("domain_id", "count(*) as count_num")
+                .lambda()
+                .in(Comments::getStatus,
+                        CommentStatusEnum.INFERRED.getCode(),
+                        CommentStatusEnum.REVIEWING.getCode(),
+                        CommentStatusEnum.CORRECTED.getCode())
+                .groupBy(Comments::getDomainId);
+        List<Map<String, Object>> inferredRows = commentsService.listMaps(inferredWrapper);
+        Map<Long, Long> inferredCountByDomainId = inferredRows.stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row.get("domain_id")).longValue(),
+                        row -> ((Number) row.get("count_num")).longValue()));
+
+        // 3. 根据 comments.status=0/1 + domain_id 分组统计，得到未推理评论数量
+        QueryWrapper<Comments> unInferredWrapper = new QueryWrapper<>();
+        unInferredWrapper.select("domain_id", "count(*) as count_num")
+                .lambda()
+                .in(Comments::getStatus,
+                        CommentStatusEnum.PENDING.getCode(),
+                        CommentStatusEnum.INFERRING.getCode())
+                .groupBy(Comments::getDomainId);
+        List<Map<String, Object>> unInferredRows = commentsService.listMaps(unInferredWrapper);
+        Map<Long, Long> unInferredCountByDomainId = unInferredRows.stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row.get("domain_id")).longValue(),
+                        row -> ((Number) row.get("count_num")).longValue()));
+
+        // 4. 按领域顺序组装 inferredPie、unInferredPie（无数据的领域数量为 0）
+        List<InferPieChartSend.PieData> inferredPie = new ArrayList<>();
+        List<InferPieChartSend.PieData> unInferredPie = new ArrayList<>();
+        for (Domains domain : domains) {
+            Long domainId = domain.getDomainId();
+            String domainName = domain.getDomainName();
+            Long inferredNum = inferredCountByDomainId.getOrDefault(domainId, 0L);
+            Long unInferredNum = unInferredCountByDomainId.getOrDefault(domainId, 0L);
+            inferredPie.add(InferPieChartSend.PieData.builder()
+                    .domainName(domainName)
+                    .commentNum(inferredNum)
+                    .build());
+            unInferredPie.add(InferPieChartSend.PieData.builder()
+                    .domainName(domainName)
+                    .commentNum(unInferredNum)
+                    .build());
+        }
+
+        return InferPieChartSend.builder()
+                .pieNameList(List.of("已完成推理评论分布", "未完成推理评论分布"))
+                .domainNameList(domainNameList)
+                .inferredPie(inferredPie)
+                .unInferredPie(unInferredPie)
+                .build();
     }
 }

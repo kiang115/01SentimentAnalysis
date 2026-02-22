@@ -1,15 +1,23 @@
 package org.example.sentimentanalysis.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
+import org.example.sentimentanalysis.dto.responseDto.InferPieChartSend;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.model.Comments;
+import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.mapper.CommentsMapper;
 import org.example.sentimentanalysis.service.CommentsService;
+import org.example.sentimentanalysis.service.DomainsService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**

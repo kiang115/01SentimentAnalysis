@@ -3,6 +3,7 @@ package org.example.sentimentanalysis.service;
 import org.example.sentimentanalysis.dto.requestDto.InferPanelRec;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
+import org.example.sentimentanalysis.dto.responseDto.InferPieChartSend;
 import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
 import org.example.sentimentanalysis.model.InferenceTasks;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -28,4 +29,6 @@ public interface InferenceTasksService extends IService<InferenceTasks> {
     void setInferenceTaskStatus(Long taskId, Integer status);
 
     void setInferenceTaskSuccess(InferResultRec inferResultRec);
+
+    InferPieChartSend getInferPieChart();
 }
