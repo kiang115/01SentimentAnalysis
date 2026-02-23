@@ -60,4 +60,12 @@ export const modelApi = {
     addTrainData: (para: TrainDataAddSend) => {
         return post('/TrainDataAdd', para) as Promise<ApiResponse<void>>
     },
+    // 上传训练数据csv文件
+    uploadTrainData: (formData: FormData) => {
+        return post('/uploadTrainDataCsv', formData) as Promise<ApiResponse<void>>;
+    }
+//     这里的formData 包含两部分 一部分上传的csvFile 名字为file 一部分是domainId 名字为domainId
+//     可以这样写  const formData = new FormData();
+//     formData.append('file', file);
+//     formData.append('domainId', '12345'); // 假设 domainId 是 12345
 }
