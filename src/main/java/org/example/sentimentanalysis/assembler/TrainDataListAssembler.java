@@ -1,0 +1,51 @@
+package org.example.sentimentanalysis.assembler;
+
+import org.example.sentimentanalysis.dto.responseDto.TrainDataListSend;
+import org.example.sentimentanalysis.model.Domains;
+import org.example.sentimentanalysis.model.TrainData;
+import org.springframework.stereotype.Component;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Component
+public class TrainDataListAssembler {
+
+    /**
+     * 将训练数据列表 + 领域 id->name 映射转换为 TrainDataInfo 列表（用于分页列表面板）
+     */
+    public List<TrainDataListSend.TrainDataInfo> toTrainDataInfoList(List<TrainData> trainDataList, Map<Long, String> domainIdToName) {
+        if (trainDataList == null || domainIdToName == null) {
+            return Collections.emptyList();
+        }
+        return trainDataList.stream()
+                .map(d -> TrainDataListSend.TrainDataInfo.builder()
+                        .id(d.getId())
+                        .content(d.getContent())
+                        .trainCount(d.getTrainCount())
+                        .domainId(d.getDomainId())
+                        .domainName(domainIdToName.get(d.getDomainId()))
+                        .label(d.getLabel())
+                        .source(d.getSource())
+                        .createdAt(d.getCreatedAt())
+                        .build())
+                .toList();
+    }
+
+    /**
+     * 将领域实体列表转换为 domainInfo 列表（用于分页列表面板下拉）
+     */
+    public List<TrainDataListSend.domainInfo> toDomainInfoList(List<Domains> domains) {
+        if (domains == null || domains.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return domains.stream()
+                .map(d -> TrainDataListSend.domainInfo.builder()
+                        .domainId(d.getDomainId())
+                        .domainName(d.getDomainName())
+                        .build())
+                .collect(Collectors.toList());
+    }
+}

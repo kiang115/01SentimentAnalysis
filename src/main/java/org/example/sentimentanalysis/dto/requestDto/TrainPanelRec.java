@@ -1,5 +1,6 @@
 package org.example.sentimentanalysis.dto.requestDto;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,6 +16,7 @@ import jakarta.validation.constraints.NotNull;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Valid
 public class TrainPanelRec {
 
     @NotNull(message = "领域ID不能为空")
