@@ -1,6 +1,7 @@
 package org.example.sentimentanalysis.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import org.example.sentimentanalysis.assembler.TrainDataListAssembler;
@@ -50,6 +51,8 @@ public class TrainParaServiceImpl extends ServiceImpl<TrainParaMapper, TrainPara
     public TrainParaListSend listTrainPara(TrainParaQueryRec trainParaQueryRec) {
         int pageNum = trainParaQueryRec.getPageNum() != null ? trainParaQueryRec.getPageNum() : 1;
         int pageSize = trainParaQueryRec.getPageSize() != null ? trainParaQueryRec.getPageSize() : 8;
+
+        domainsService.checkIdExist(trainParaQueryRec.getDomainId());
 
         LambdaQueryWrapper<TrainPara> wrapper = new LambdaQueryWrapper<>();
 //        筛选相应的参数表
@@ -103,5 +106,15 @@ public class TrainParaServiceImpl extends ServiceImpl<TrainParaMapper, TrainPara
             throw new CustomBusinessException("操作失败：请求的部分数据不存在或已被删除");
         }
         this.removeBatchByIds(distinctIds);
+    }
+
+    @Override
+    public void checkIdExist(Long id) {
+        boolean exist = this.exists(
+                Wrappers.<TrainPara>lambdaQuery().eq(TrainPara::getParaId, id)
+        );
+        if (!exist) {
+            throw new CustomBusinessException("训练参数id" + id + "不存在");
+        }
     }
 }

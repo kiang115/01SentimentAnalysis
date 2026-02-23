@@ -21,4 +21,6 @@ public interface TrainParaService extends IService<TrainPara> {
     void addTrainPara(TrainParaAddRec trainPara);
 
     void deleteByIds(Long[] ids);
+
+    void checkIdExist(Long id);
 }

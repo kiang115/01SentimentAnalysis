@@ -57,6 +57,9 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
     public TrainDataListSend listTrainDataList(TrainDataQueryRec queryRec) {
         int pageNum = queryRec.getPageNum() != null ? queryRec.getPageNum() : 1;
         int pageSize = queryRec.getPageSize() != null ? queryRec.getPageSize() : 8;
+
+        domainsService.checkIdExist(queryRec.getDomainId());
+
         LambdaQueryWrapper<TrainData> wrapper = new LambdaQueryWrapper<>();
         String content = queryRec.getContent();
         if (content != null && !content.isBlank()) {
@@ -69,10 +72,6 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
         String source = queryRec.getSource();
         if (source != null && DataSourceEnum.isCodeExist(source)) {
             wrapper.eq(TrainData::getSource, source);
-        }
-        Long domainId = queryRec.getDomainId();
-        if (domainId != null) {
-            wrapper.eq(TrainData::getDomainId, domainId);
         }
 
         String orderName = queryRec.getOrderName();
