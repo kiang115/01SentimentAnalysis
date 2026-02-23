@@ -8,6 +8,9 @@ import type {TrainTasksRec} from '@/Dto/ReceiveDto/TrainTasksRec'
 import type {TrainLineChart} from '@/Dto/ReceiveDto/TrainLineChart'
 import type {TasksHotChart} from '@/Dto/ReceiveDto/TasksHotChart'
 import type {InferPieChart} from '@/Dto/ReceiveDto/InferPieChart'
+import type {TrainDataQuerySend} from '@/Dto/SendDto/TrainDataQuerySend'
+import type {TrainDataListRec} from "../Dto/ReceiveDto/TrainDataListRec";
+import type {TrainDataAddSend} from "../Dto/SendDto/TrainDataAddSend";
 // 定义标准返回类型
 // todo 把vue接收到的非标准的api返回值统一处理为ApiResponse<T>类型 特别是train.vue中的ListTrainTasksRes类型需要被替代
 export interface ApiResponse<T = any> {
@@ -38,15 +41,23 @@ export const modelApi = {
         return post('/TrainDataCheck', para)
     },
     // 训练折线图
-    listTrainLineChart:()=>{
-        return get('/TrainLineChart',{}) as Promise<ApiResponse<TrainLineChart>>
+    listTrainLineChart: () => {
+        return get('/TrainLineChart', {}) as Promise<ApiResponse<TrainLineChart>>
     },
 //     任务热力图
-    listTasksHotChart:()=>{
-        return get('/TasksHotChart',{}) as Promise<ApiResponse<TasksHotChart>>
+    listTasksHotChart: () => {
+        return get('/TasksHotChart', {}) as Promise<ApiResponse<TasksHotChart>>
     },
 //     推理饼图
-    listInferPieChart:()=>{
-        return get('/InferPieChart',{}) as Promise<ApiResponse<InferPieChart>>
+    listInferPieChart: () => {
+        return get('/InferPieChart', {}) as Promise<ApiResponse<InferPieChart>>
+    },
+    // 训练数据查询
+    listTrainData: (para: TrainDataQuerySend) => {
+        return post('/TrainDataQuery', para) as Promise<ApiResponse<TrainDataListRec>>
+    },
+//     增加单条训练数据
+    addTrainData: (para: TrainDataAddSend) => {
+        return post('/TrainDataAdd', para) as Promise<ApiResponse<void>>
     },
 }
