@@ -11,6 +11,7 @@ import type {InferPieChart} from '@/Dto/ReceiveDto/InferPieChart'
 import type {TrainDataQuerySend} from '@/Dto/SendDto/TrainDataQuerySend'
 import type {TrainDataListRec} from "../Dto/ReceiveDto/TrainDataListRec";
 import type {TrainDataAddSend} from "../Dto/SendDto/TrainDataAddSend";
+import type {TrainParaListRec} from "../Dto/ReceiveDto/TrainParaListRec";
 // 定义标准返回类型
 // todo 把vue接收到的非标准的api返回值统一处理为ApiResponse<T>类型 特别是train.vue中的ListTrainTasksRes类型需要被替代
 export interface ApiResponse<T = any> {
@@ -63,9 +64,21 @@ export const modelApi = {
     // 上传训练数据csv文件
     uploadTrainData: (formData: FormData) => {
         return post('/uploadTrainDataCsv', formData) as Promise<ApiResponse<void>>;
-    }
-//     这里的formData 包含两部分 一部分上传的csvFile 名字为file 一部分是domainId 名字为domainId
-//     可以这样写  const formData = new FormData();
-//     formData.append('file', file);
-//     formData.append('domainId', '12345'); // 假设 domainId 是 12345
+    },
+    // 批量删除训练数据
+    deleteTrainData: (para: number[]) => {
+        return post('/deleteTrainData', para) as Promise<ApiResponse<void>>;
+    },
+//     训练参数列表查询
+    listTrainParam: () => {
+        return get('/listTrainParam', {}) as Promise<ApiResponse<TrainParaListRec>>
+    },
+//     删除训练参数
+    deleteTrainParam: (para: number[]   ) => {
+        return post('/deleteTrainPara', para) as Promise<ApiResponse<void>>
+    },
+//     增加训练参数
+    addTrainParam: (para: AddTrainParaSend) => {
+        return post('/addTrainPara', para) as Promise<ApiResponse<void>>
+    },
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { Search, Plus, Upload } from '@element-plus/icons-vue'
+import { Search, Plus, Upload, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElForm } from 'element-plus'
 import { modelApi } from '@/api/model-api'
 import jschardet from 'jschardet'
@@ -12,6 +12,8 @@ import type { PageInfo } from '@/Dto/ReceiveDto/PageInfo'
 
 const tableRef = ref()
 const loading = ref(false)
+const selectedRows = ref<DataItem[]>([])
+const deleteLoading = ref(false)
 const tableData = ref<DataItem[]>([])
 const pageInfo = ref<PageInfo<DataItem>>()
 const domains = ref<DomainItem[]>([])
@@ -60,6 +62,25 @@ async function fetchData() {
     domains.value = res.data.domains
   } finally {
     loading.value = false
+  }
+}
+
+function handleSelectionChange(selection: DataItem[]) {
+  selectedRows.value = selection
+}
+
+async function handleDelete() {
+  if (selectedRows.value.length === 0) return
+  deleteLoading.value = true
+  try {
+    await modelApi.deleteTrainData(selectedRows.value.map(r => r.id))
+    ElMessage.success('删除成功')
+    selectedRows.value = []
+    fetchData()
+  } catch {
+    ElMessage.error('删除失败')
+  } finally {
+    deleteLoading.value = false
   }
 }
 
@@ -237,6 +258,16 @@ onMounted(() => {
       <el-button type="success" :icon="Upload" @click="uploadDialogVisible = true" style="margin-left: 12px">
         上传数据文件
       </el-button>
+      <el-button
+        type="danger"
+        :icon="Delete"
+        :disabled="selectedRows.length === 0"
+        :loading="deleteLoading"
+        @click="handleDelete"
+        style="margin-left: 12px"
+      >
+        批量删除
+      </el-button>
     </div>
 
     <el-table
@@ -248,8 +279,10 @@ onMounted(() => {
       border
       @sort-change="handleSortChange"
       @filter-change="handleFilterChange"
+      @selection-change="handleSelectionChange"
       style="width: 100%"
     >
+      <el-table-column type="selection" width="55" />
       <el-table-column prop="id" label="数据编号" width="100" align="center" />
       <el-table-column prop="content" label="数据内容" min-width="300" show-overflow-tooltip />
       <el-table-column
