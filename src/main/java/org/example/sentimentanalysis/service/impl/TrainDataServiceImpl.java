@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.example.sentimentanalysis.dto.requestDto.TrainDataAddRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainDataQueryRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataListSend;
@@ -18,7 +21,14 @@ import org.example.sentimentanalysis.service.TrainDataService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -102,6 +112,60 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
         trainData.setContent(addDataRec.getContent()).setLabel(addDataRec.getLabel()).setDomainId(addDataRec.getDomainId()).setSource(DataSourceEnum.UPLOAD.getCode());
         this.save(trainData);
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void importCsv(MultipartFile file, Long domainId) throws IOException {
+        // 1. 使用新的 Builder 模式替换已弃用的 with... 方法
+        CSVFormat csvFormat = CSVFormat.Builder.create(CSVFormat.DEFAULT)
+                .setHeader()              // 自动处理表头
+                .setSkipHeaderRecord(true) // 跳过表头行
+                .setIgnoreHeaderCase(true) // 忽略表头大小写
+                .setTrim(true)             // 自动去空格
+                .get();
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
+             CSVParser csvParser = csvFormat.parse(reader)) {
+
+            List<TrainData> dataList = new ArrayList<>();
+
+            for (CSVRecord record : csvParser) {
+                // 使用 Optional 或简单的判空简化逻辑
+                String content = record.isMapped("content") ? record.get("content") : null;
+                String labelStr = record.isMapped("label") ? record.get("label") : null;
+
+                // --- 校验逻辑 ---
+                if (content == null || content.isBlank() || labelStr == null) {
+                    continue;
+                }
+
+                try {
+                    int label = Integer.parseInt(labelStr);
+                    if (label != 0 && label != 1) continue;
+
+                    // --- 构建对象 (建议使用构造函数或 Builder) ---
+                    TrainData data = new TrainData();
+                    data.setDomainId(domainId);
+                    data.setContent(content);
+                    data.setLabel(label);
+                    data.setSource("upload");
+                    data.setTrainCount(0);
+
+                    dataList.add(data);
+                } catch (NumberFormatException e) {
+                    // label 不是数字，忽略此行
+                }
+            }
+
+            // 2. 利用 MyBatis Plus 自身的分批插入功能
+            // 第二个参数 1000 表示每 1000 条执行一次 SQL 插入，无需手动写 if(size >= 1000)
+            if (!dataList.isEmpty()) {
+                this.saveBatch(dataList, 1000);
+            }
+        }
+    }
+
 
     @Override
     public void updateTrainCount(List<Long> ids) {

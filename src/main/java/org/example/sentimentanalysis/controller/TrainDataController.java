@@ -9,7 +9,11 @@ import org.example.sentimentanalysis.service.TrainDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 public class TrainDataController {
@@ -24,12 +28,31 @@ public class TrainDataController {
         return Response.data(trainDataService.listTrainDataList(queryRec));
     }
 
-//    单个上传训练数据
+    //    单个上传训练数据
     @Operation(summary = "上传单个训练数据")
     @PostMapping("/TrainDataAdd")
     public Response<Void> addTrainData(@RequestBody TrainDataAddRec trainData) {
         trainDataService.addBySingleData(trainData);
         return Response.success();
+    }
+
+    //    上传训练数据
+    @PostMapping("/uploadTrainDataCsv")
+    public Response<Void> uploadTrainData(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("domainId") Long domainId) {
+
+        if (file.isEmpty()) {
+            return Response.fail("文件为空");
+        }
+
+        try {
+            trainDataService.importCsv(file, domainId);
+        }
+        catch (IOException e){
+            return Response.fail("数据导入失败:"+e.getMessage());
+        }
+        return Response.success("数据导入成功");
     }
 }
 
