@@ -2,17 +2,22 @@ package org.example.sentimentanalysis.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import org.apache.catalina.User;
 import org.example.sentimentanalysis.assembler.InferencePanelAssembler;
 import org.example.sentimentanalysis.assembler.TrainPanelAssembler;
+import org.example.sentimentanalysis.dto.commonDto.DomainsInfo;
 import org.example.sentimentanalysis.dto.responseDto.InferPanelSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
+import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.mapper.DomainsMapper;
 import org.example.sentimentanalysis.model.Models;
 import org.example.sentimentanalysis.model.TrainData;
 import org.example.sentimentanalysis.model.TrainPara;
+import org.example.sentimentanalysis.response.ResponseCode;
 import org.example.sentimentanalysis.service.CommentsService;
 import org.example.sentimentanalysis.service.DomainsService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -22,10 +27,7 @@ import org.example.sentimentanalysis.service.TrainParaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -121,5 +123,55 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
 
 //        6. 委托 assembler 进行 DTO 组装
         return trainPanelAssembler.toDto(domains, sourceCountMap, trainParaMap);
+    }
+
+    @Override
+    public List<DomainsInfo> listAllDomainsInfo() {
+        List<Domains> domains = this.list();
+        if (domains == null || domains.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return domains.stream()
+                .map(d -> DomainsInfo.builder()
+                        .domainId(d.getDomainId())
+                        .domainName(d.getDomainName())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<Long, String> getDomainIdToName() {
+        List<Domains> domains = this.list();
+        return domains.stream()
+                .collect(Collectors.toMap(Domains::getDomainId, Domains::getDomainName, (a, b) -> a));
+    }
+
+    @Override
+    public void checkIdExist(Long domainId) {
+        boolean exist = this.exists(
+                Wrappers.<Domains>lambdaQuery().eq(Domains::getDomainId, domainId)
+        );
+        if (!exist) {
+            throw new CustomBusinessException("领域id" + domainId + "不存在");
+        }
+    }
+
+    @Override
+    public void checkIdsExist(Long[] domainIds) {
+        if(domainIds == null)
+        {
+            throw new CustomBusinessException("请选择要删除的领域");
+        }
+        // 1. 去重，防止前端传了重复的ID导致数量对不上
+        List<Long> distinctIds = Arrays.stream(domainIds).distinct().collect(Collectors.toList());
+
+        // 2. 查询数据库里实际存在的数量
+        long count = this.count(new LambdaQueryWrapper<Domains>()
+                .in(Domains::getDomainId, distinctIds));
+
+        // 3. 对比数量
+        if (count != distinctIds.size()) {
+            throw new CustomBusinessException("操作失败：领域id部分不匹配");
+        }
     }
 }

@@ -33,19 +33,4 @@ public class TrainDataListAssembler {
                         .build())
                 .toList();
     }
-
-    /**
-     * 将领域实体列表转换为 domainInfo 列表（用于分页列表面板下拉）
-     */
-    public List<TrainDataListSend.domainInfo> toDomainInfoList(List<Domains> domains) {
-        if (domains == null || domains.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return domains.stream()
-                .map(d -> TrainDataListSend.domainInfo.builder()
-                        .domainId(d.getDomainId())
-                        .domainName(d.getDomainName())
-                        .build())
-                .collect(Collectors.toList());
-    }
 }

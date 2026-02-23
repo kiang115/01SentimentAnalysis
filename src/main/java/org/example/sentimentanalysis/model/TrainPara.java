@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.Fastjson2TypeHandler;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -12,6 +13,7 @@ import lombok.experimental.Accessors;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * <p>
@@ -25,7 +27,7 @@ import java.time.LocalDateTime;
 @Setter
 @ToString
 @Accessors(chain = true)
-@TableName("train_para")
+@TableName(value = "train_para", autoResultMap = true)
 public class TrainPara implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -81,8 +83,8 @@ public class TrainPara implements Serializable {
     /**
      * Lora模块列表, 可能的值: ["query", "key", "value", "dense"]
      */
-    @TableField("lora_modules")
-    private String loraModules;
+    @TableField(value = "lora_modules", typeHandler = Fastjson2TypeHandler.class)
+    private List<String> loraModules;
 
     /**
      * 训练集比例, eg: 0.80

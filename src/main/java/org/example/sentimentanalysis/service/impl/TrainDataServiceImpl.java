@@ -17,9 +17,12 @@ import org.example.sentimentanalysis.mapper.DomainsMapper;
 import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.model.TrainData;
 import org.example.sentimentanalysis.mapper.TrainDataMapper;
+import org.example.sentimentanalysis.response.Response;
+import org.example.sentimentanalysis.service.DomainsService;
 import org.example.sentimentanalysis.service.TrainDataService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,10 +31,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -49,12 +49,14 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
     private DomainsMapper domainsMapper;
     @Autowired
     private TrainDataListAssembler trainDataListAssembler;
+    @Autowired
+    @Lazy
+    private DomainsService domainsService;
 
     @Override
     public TrainDataListSend listTrainDataList(TrainDataQueryRec queryRec) {
         int pageNum = queryRec.getPageNum() != null ? queryRec.getPageNum() : 1;
         int pageSize = queryRec.getPageSize() != null ? queryRec.getPageSize() : 8;
-
         LambdaQueryWrapper<TrainData> wrapper = new LambdaQueryWrapper<>();
         String content = queryRec.getContent();
         if (content != null && !content.isBlank()) {
@@ -86,10 +88,8 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
         PageHelper.startPage(pageNum, pageSize);
 
         List<TrainData> trainDatalist = this.list(wrapper);
-        List<Domains> domains = domainsMapper.selectList(null);
 
-        Map<Long, String> domainIdToName = domains.stream()
-                .collect(Collectors.toMap(Domains::getDomainId, Domains::getDomainName, (a, b) -> a));
+        Map<Long, String> domainIdToName = domainsService.getDomainIdToName();
 
         List<TrainDataListSend.TrainDataInfo> infoList = trainDataListAssembler.toTrainDataInfoList(trainDatalist, domainIdToName);
 
@@ -98,11 +98,9 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
         PageInfo<TrainDataListSend.TrainDataInfo> pageInfo = (PageInfo<TrainDataListSend.TrainDataInfo>) (PageInfo<?>) new PageInfo<>(trainDatalist);
         pageInfo.setList(infoList);
 
-        List<TrainDataListSend.domainInfo> domainInfoList = trainDataListAssembler.toDomainInfoList(domains);
-
         return TrainDataListSend.builder()
                 .pageInfo(pageInfo)
-                .domains(domainInfoList)
+                .domains(domainsService.listAllDomainsInfo())
                 .build();
     }
 
@@ -164,6 +162,26 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
                 this.saveBatch(dataList, 1000);
             }
         }
+    }
+
+    @Override
+    public void deleteByIds(Long[] ids) {
+        if (ids == null || ids.length == 0) {
+            throw new CustomBusinessException("操作失败：请选择要删除的数据");
+        }
+
+        // 1. 去重，防止前端传了重复的ID导致数量对不上
+        List<Long> distinctIds = Arrays.stream(ids).distinct().collect(Collectors.toList());
+
+        // 2. 查询数据库里实际存在的数量
+        long count = this.count(new LambdaQueryWrapper<TrainData>()
+                .in(TrainData::getId, distinctIds));
+
+        // 3. 对比数量
+        if (count != distinctIds.size()) {
+            throw new CustomBusinessException("操作失败：请求的部分数据不存在或已被删除");
+        }
+        this.removeBatchByIds(distinctIds);
     }
 
 

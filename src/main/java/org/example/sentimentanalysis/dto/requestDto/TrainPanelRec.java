@@ -16,7 +16,6 @@ import jakarta.validation.constraints.NotNull;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Valid
 public class TrainPanelRec {
 
     @NotNull(message = "领域ID不能为空")

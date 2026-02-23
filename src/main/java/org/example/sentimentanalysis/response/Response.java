@@ -38,9 +38,13 @@ public class Response<T> {
         this.code = code;
         this.message = message;
     }
+    private Response(ResponseCode responseCode){
+        this.code = responseCode.getCode();
+        this.message = responseCode.getMessage();
+    }
 
     public static <T> Response<T> success() {
-        return new Response<>(ResponseCode.SUCCESS.getCode());
+        return new Response<>(ResponseCode.SUCCESS);
     }
 
     public static <T> Response<T> success(String message) {
@@ -55,7 +59,7 @@ public class Response<T> {
     }
 
     public static <T> Response<T> fail() {
-        return new Response<>(ResponseCode.ERROR.getCode(), ResponseCode.ERROR.getMessage());
+        return new Response<>(ResponseCode.ERROR);
     }
 
     public static <T> Response<T> fail(String message) {

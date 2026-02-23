@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.example.sentimentanalysis.model.TrainData;
+import org.example.sentimentanalysis.dto.commonDto.DomainsInfo;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,16 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 public class TrainDataListSend {
     private PageInfo<TrainDataInfo> pageInfo;//用分页器得到的数据
-    private List<domainInfo> domains;//从domains数据库中得到的信息
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class domainInfo {
-        private Long domainId;
-        private String domainName;
-    }
+    private List<DomainsInfo> domains;//从domains数据库中得到的信息
 
     @Data
     @Builder

@@ -1,9 +1,12 @@
 package org.example.sentimentanalysis.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import org.example.sentimentanalysis.dto.requestDto.TrainDataAddRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainDataQueryRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataListSend;
+import org.example.sentimentanalysis.model.TrainData;
 import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.TrainDataService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 public class TrainDataController {
@@ -31,12 +37,13 @@ public class TrainDataController {
     //    单个上传训练数据
     @Operation(summary = "上传单个训练数据")
     @PostMapping("/TrainDataAdd")
-    public Response<Void> addTrainData(@RequestBody TrainDataAddRec trainData) {
+    public Response<Void> addTrainData(@RequestBody @Valid TrainDataAddRec trainData) {
         trainDataService.addBySingleData(trainData);
         return Response.success();
     }
 
     //    上传训练数据
+    @Operation(summary = "上传训练数据csv文件")
     @PostMapping("/uploadTrainDataCsv")
     public Response<Void> uploadTrainData(
             @RequestParam("file") MultipartFile file,
@@ -48,11 +55,18 @@ public class TrainDataController {
 
         try {
             trainDataService.importCsv(file, domainId);
-        }
-        catch (IOException e){
-            return Response.fail("数据导入失败:"+e.getMessage());
+        } catch (IOException e) {
+            return Response.fail("数据导入失败:" + e.getMessage());
         }
         return Response.success("数据导入成功");
+    }
+
+    //    删除训练数据
+    @Operation(summary = "删除训练数据")
+    @PostMapping("/deleteTrainData")
+    public Response<Void> deleteTrainData(@RequestBody Long[] ids) {
+        trainDataService.deleteByIds(ids);
+        return Response.success();
     }
 }
 

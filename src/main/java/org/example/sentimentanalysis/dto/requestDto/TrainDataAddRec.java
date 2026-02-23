@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Valid
 public class TrainDataAddRec {
     @NotNull(message = "内容不能为空")
     private String content;

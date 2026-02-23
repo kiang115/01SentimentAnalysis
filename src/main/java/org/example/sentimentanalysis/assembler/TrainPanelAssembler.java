@@ -65,10 +65,6 @@ public class TrainPanelAssembler {
      * 训练参数实体转响应DTO
      */
     private TrainPanelSend.TrainParaDTO toTrainParaDto(TrainPara trainPara) {
-        String loraModules = trainPara.getLoraModules();
-        List<String> loraModuleList = (loraModules == null || loraModules.isBlank())
-                ? Collections.emptyList()
-                : JSON.parseArray(loraModules, String.class);
 
         return TrainPanelSend.TrainParaDTO.builder()
                 .paraId(trainPara.getParaId())
@@ -78,7 +74,7 @@ public class TrainPanelAssembler {
                 .batchSize(trainPara.getBatchSize())
                 .learningRate(trainPara.getLearningRate())
                 .randomSeed(trainPara.getRandomSeed())
-                .loraModules(loraModuleList)
+                .loraModules(trainPara.getLoraModules())
                 .trainSplitRatio(trainPara.getTrainSplitRatio())
                 .build();
     }
