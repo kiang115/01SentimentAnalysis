@@ -9,7 +9,7 @@ import org.example.sentimentanalysis.model.Domains;
  * </p>
  *
  * @author kiang
- * @since 2026-02-20
+ * @since 2026-02-24
  */
 public interface DomainsMapper extends BaseMapper<Domains> {
 

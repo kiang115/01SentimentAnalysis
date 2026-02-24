@@ -9,8 +9,8 @@ import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainLineChartSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainTasksSend;
+import org.example.sentimentanalysis.enums.TaskDataSourceEnum;
 import org.example.sentimentanalysis.enums.TaskStatusEnum;
-import org.example.sentimentanalysis.enums.TrainDataSourceEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.mapper.TrainTasksMapper;
 import org.example.sentimentanalysis.model.Domains;
@@ -62,7 +62,7 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         if (domainModels.isEmpty()) {
             throw new CustomBusinessException("训练数据装配失败：领域[" + domain.getDomainName() + "]没有可用模型版本");
         }
-
+//    获取模型版本
         Models latestModel = domainModels.stream()
                 .max(Comparator.comparing(m -> parseVersion(m.getModelVersion()),
                         Comparator.comparingInt(VersionParts::major).thenComparingInt(VersionParts::minor)))
@@ -74,35 +74,36 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         String nextModelVersion = nextVersion(latestVersionParts, trainPanelRec.getIsOverTrain());
         String baseModelVersion = Boolean.FALSE.equals(trainPanelRec.getIsOverTrain()) ? latestVersionStr : null;
 
-//        4. 按领域+来源批量查询训练数据（source固定三类）
+//        4. 按领域批量查询训练数据
         List<TrainData> allTrainDataList = trainDataService.list(
                 new LambdaQueryWrapper<TrainData>()
-                        .eq(TrainData::getDomainId, trainPanelRec.getDomainId())
-                        .in(TrainData::getSource, TrainDataSourceEnum.allCodes())
-        );
+                        .eq(TrainData::getDomainId, trainPanelRec.getDomainId()));
+//        将查询结果按数据来源(source字段)进行分组，形成 Map<数据来源, 数据列表> 的结构
         Map<String, List<TrainData>> sourceDataMap = allTrainDataList.stream()
                 .collect(Collectors.groupingBy(TrainData::getSource));
 
 //        5. 按前端配置数量随机筛选；不足直接抛异常
         Random random = new Random(trainPanelRec.getRandomSeed());
+//       6. 根据sourceMap中遍历，对每个数据来源进行筛选 sourceDataMap可能只包含某两个或者一个领域，并非全部领域
+
         List<TrainData> correctedDataList = pickTrainDataBySource(
-                sourceDataMap.getOrDefault(TrainDataSourceEnum.CORRECTED.getCode(), Collections.emptyList()),
+                sourceDataMap.getOrDefault(TaskDataSourceEnum.CORRECTED.getCode(), Collections.emptyList()),
                 trainPanelRec.getCorrectedNum(),
-                TrainDataSourceEnum.CORRECTED.getCode(),
+                TaskDataSourceEnum.CORRECTED.getCode(),
                 domain.getDomainName(),
                 random
         );
         List<TrainData> uploadDataList = pickTrainDataBySource(
-                sourceDataMap.getOrDefault(TrainDataSourceEnum.UPLOAD.getCode(), Collections.emptyList()),
+                sourceDataMap.getOrDefault(TaskDataSourceEnum.UPLOAD.getCode(), Collections.emptyList()),
                 trainPanelRec.getUploadNum(),
-                TrainDataSourceEnum.UPLOAD.getCode(),
+                TaskDataSourceEnum.UPLOAD.getCode(),
                 domain.getDomainName(),
                 random
         );
         List<TrainData> originalDataList = pickTrainDataBySource(
-                sourceDataMap.getOrDefault(TrainDataSourceEnum.ORIGINAL.getCode(), Collections.emptyList()),
+                sourceDataMap.getOrDefault(TaskDataSourceEnum.ORIGINAL.getCode(), Collections.emptyList()),
                 trainPanelRec.getOriginalNum(),
-                TrainDataSourceEnum.ORIGINAL.getCode(),
+                TaskDataSourceEnum.ORIGINAL.getCode(),
                 domain.getDomainName(),
                 random
         );
@@ -265,9 +266,6 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
                                                   String source,
                                                   String domainName,
                                                   Random random) {
-        if (requiredCount <= 0) {
-            throw new CustomBusinessException("训练数据装配失败：领域[" + domainName + "] source[" + source + "] 目标数量必须大于0");
-        }
         if (sourceDataList.size() < requiredCount) {
             throw new CustomBusinessException(
                     "训练数据装配失败：领域[" + domainName + "] source[" + source + "] 数据不足，目标数量="

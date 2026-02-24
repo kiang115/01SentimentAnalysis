@@ -9,7 +9,7 @@ import org.example.sentimentanalysis.model.TrainData;
  * </p>
  *
  * @author kiang
- * @since 2026-02-20
+ * @since 2026-02-24
  */
 public interface TrainDataMapper extends BaseMapper<TrainData> {
 

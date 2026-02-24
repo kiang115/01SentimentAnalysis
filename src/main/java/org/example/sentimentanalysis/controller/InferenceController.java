@@ -14,6 +14,7 @@ import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.CommentsService;
 import org.example.sentimentanalysis.service.DomainsService;
 import org.example.sentimentanalysis.service.InferenceTasksService;
+import org.example.sentimentanalysis.service.ModelsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +33,8 @@ public class InferenceController {
     private FastApiClient fastApiClient; // 注入 Feign 客户端
     @Autowired
     private CommentsService commentsService;
+    @Autowired
+    private ModelsService modelsService;
 
     @Operation(summary = "列出推理任务列表")
     @GetMapping("/InferenceTasksList")
@@ -92,6 +95,8 @@ public class InferenceController {
         commentsService.updateCommentStatus(inferResultRec, CommentStatusEnum.INFERRED.getCode());
 //       更新推理任务表
         inferenceTasksService.setInferenceTaskSuccess(inferResultRec);
+//        更新模型已推理评论数量
+        modelsService.updateInferredNum(inferResultRec);
         return Response.success();
     }
 

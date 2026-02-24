@@ -10,7 +10,7 @@ import java.util.Objects;
  * 包含corrected(人工修正数据集)、upload(手动上传书籍)、original(原始数据集)
  */
 @Getter
-public enum DataSourceEnum {
+public enum TaskDataSourceEnum {
     // 枚举值定义：英文标识 + 中文描述
     CORRECTED("corrected", "人工修正数据集"),
     UPLOAD("upload", "手动上传数据集"),
@@ -21,7 +21,7 @@ public enum DataSourceEnum {
     private final String desc;    // 中文描述
 
     // 构造方法
-    DataSourceEnum(String code, String desc) {
+    TaskDataSourceEnum(String code, String desc) {
         this.code = code;
         this.desc = desc;
     }
@@ -33,7 +33,7 @@ public enum DataSourceEnum {
      * @param code 英文标识（如"corrected"）
      * @return 对应的枚举对象，不存在则返回null
      */
-    public static DataSourceEnum getByCode(String code) {
+    public static TaskDataSourceEnum getByCode(String code) {
         // 判空，避免空指针
         if (Objects.isNull(code)) {
             return null;
@@ -51,7 +51,7 @@ public enum DataSourceEnum {
      * @return 中文描述，不存在则返回空字符串
      */
     public static String getDescByCode(String code) {
-        DataSourceEnum enumObj = getByCode(code);
+        TaskDataSourceEnum enumObj = getByCode(code);
         return enumObj != null ? enumObj.getDesc() : "";
     }
 

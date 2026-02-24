@@ -2,7 +2,7 @@ package org.example.sentimentanalysis.assembler;
 
 import org.example.sentimentanalysis.dto.requestDto.TrainPanelRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataSend;
-import org.example.sentimentanalysis.enums.TrainDataSourceEnum;
+import org.example.sentimentanalysis.enums.TaskDataSourceEnum;
 import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.model.TrainData;
 import org.springframework.stereotype.Component;
@@ -42,9 +42,9 @@ public class TrainDataAssembler {
                 .trainSplitRatio(trainPanelRec.getTrainSplitRatio())
                 .ifOverTrain(trainPanelRec.getIsOverTrain())
                 .trainDataList(List.of(
-                        toTrainSourceData(TrainDataSourceEnum.CORRECTED.getCode(), correctedDataList),
-                        toTrainSourceData(TrainDataSourceEnum.UPLOAD.getCode(), uploadDataList),
-                        toTrainSourceData(TrainDataSourceEnum.ORIGINAL.getCode(), originalDataList)
+                        toTrainSourceData(TaskDataSourceEnum.CORRECTED.getCode(), correctedDataList),
+                        toTrainSourceData(TaskDataSourceEnum.UPLOAD.getCode(), uploadDataList),
+                        toTrainSourceData(TaskDataSourceEnum.ORIGINAL.getCode(), originalDataList)
                 ))
                 .build();
     }
@@ -57,7 +57,7 @@ public class TrainDataAssembler {
                 .map(trainData -> TrainDataSend.TrainBaseData.builder()
                         .id(trainData.getId())
                         .content(trainData.getContent())
-                        .label(trainData.getLabel() != null ? trainData.getLabel() : null)
+                        .label(trainData.getLabel())
                         .build())
                 .collect(Collectors.toList());
 

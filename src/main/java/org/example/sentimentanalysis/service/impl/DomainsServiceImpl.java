@@ -158,8 +158,7 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
 
     @Override
     public void checkIdsExist(Long[] domainIds) {
-        if(domainIds == null)
-        {
+        if (domainIds == null) {
             throw new CustomBusinessException("请选择要删除的领域");
         }
         // 1. 去重，防止前端传了重复的ID导致数量对不上

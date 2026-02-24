@@ -21,7 +21,7 @@ import java.util.List;
  * </p>
  *
  * @author kiang
- * @since 2026-02-20
+ * @since 2026-02-24
  */
 @Getter
 @Setter
@@ -194,7 +194,7 @@ public class TrainTasks implements Serializable {
     @TableField("f1_score")
     private BigDecimal f1Score;
 
-     /**
+    /**
      * 训练集loss变化趋势数组
      */
     @TableField(value = "train_loss_list", typeHandler = Fastjson2TypeHandler.class)

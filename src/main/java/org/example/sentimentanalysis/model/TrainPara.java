@@ -21,7 +21,7 @@ import java.util.List;
  * </p>
  *
  * @author kiang
- * @since 2026-02-20
+ * @since 2026-02-24
  */
 @Getter
 @Setter
@@ -80,9 +80,6 @@ public class TrainPara implements Serializable {
     @TableField("random_seed")
     private Integer randomSeed;
 
-    /**
-     * Lora模块列表, 可能的值: ["query", "key", "value", "dense"]
-     */
     @TableField(value = "lora_modules", typeHandler = Fastjson2TypeHandler.class)
     private List<String> loraModules;
 

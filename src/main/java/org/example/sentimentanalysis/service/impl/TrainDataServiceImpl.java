@@ -11,13 +11,11 @@ import org.example.sentimentanalysis.dto.requestDto.TrainDataAddRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainDataQueryRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataListSend;
 import org.example.sentimentanalysis.assembler.TrainDataListAssembler;
-import org.example.sentimentanalysis.enums.DataSourceEnum;
+import org.example.sentimentanalysis.enums.TaskDataSourceEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.mapper.DomainsMapper;
-import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.model.TrainData;
 import org.example.sentimentanalysis.mapper.TrainDataMapper;
-import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.DomainsService;
 import org.example.sentimentanalysis.service.TrainDataService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -72,7 +70,7 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
             wrapper.eq(TrainData::getLabel, label);
         }
         String source = queryRec.getSource();
-        if (source != null && DataSourceEnum.isCodeExist(source)) {
+        if (source != null && TaskDataSourceEnum.isCodeExist(source)) {
             wrapper.eq(TrainData::getSource, source);
         }
 
@@ -108,7 +106,7 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
     @Override
     public void addBySingleData(TrainDataAddRec addDataRec) {
         TrainData trainData = new TrainData();
-        trainData.setContent(addDataRec.getContent()).setLabel(addDataRec.getLabel()).setDomainId(addDataRec.getDomainId()).setSource(DataSourceEnum.UPLOAD.getCode());
+        trainData.setContent(addDataRec.getContent()).setLabel(addDataRec.getLabel()).setDomainId(addDataRec.getDomainId()).setSource(TaskDataSourceEnum.UPLOAD.getCode());
         this.save(trainData);
     }
 

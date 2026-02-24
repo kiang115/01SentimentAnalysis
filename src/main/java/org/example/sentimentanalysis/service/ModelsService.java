@@ -1,5 +1,6 @@
 package org.example.sentimentanalysis.service;
 
+import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.model.Models;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -14,4 +15,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface ModelsService extends IService<Models> {
     Long addModelByTrainResult(TrainResultRec trainRec);
+
+    void updateInferredNum(InferResultRec inferResultRec);
+
+//    验证逻辑
+    void checkIdExist(Long modelId);
+    void checkIdsExist(Long[] modelIds);
 }
