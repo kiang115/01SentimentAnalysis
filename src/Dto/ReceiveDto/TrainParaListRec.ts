@@ -160,7 +160,7 @@ export interface TrainParaListRec {
 //       "startRow": 1,
 //       "total": 6
 //     },
-//     "domainsInfo": [
+//     "domains": [
 //       {
 //         "domainId": 1,
 //         "domainName": "外卖"

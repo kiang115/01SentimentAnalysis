@@ -12,6 +12,7 @@ import {saveLocalStorage, getLocalStorage, clearLocalStorage} from '@/utils/util
 import Constants from '@/utils/constants';
 import {ElMessage, ElMessageBox} from 'element-plus';
 import {userStore} from '@/stores/user'
+import type { ApiResponse } from '@/api/model-api';
 
 // token的名称  需要和服务端配置的对应
 const TOKEN_NAME = 'satoken';
@@ -122,25 +123,25 @@ request.interceptors.response.use(
 
 /**
  * 通用请求封装
- * @param config
+ * 这里使用泛型 T 来表示业务数据的类型（即 ApiResponse 里的内容）
  */
-export const http = (config: AxiosRequestConfig<any>) => {
-    return request.request(config);
+export const http = <T = any>(config: AxiosRequestConfig): Promise<T> => {
+    // 这里使用 unknown 中转强转，因为我们明确知道拦截器改变了返回结构
+    return request.request(config) as unknown as Promise<T>;
 };
 
 /**
  * get请求
  */
-export const get = (url: string, params: any) => {
-    return http({url, method: 'get', params});
+export const get = <T = any>(url: string, params?: any): Promise<ApiResponse<T>> => {
+    return http<ApiResponse<T>>({ url, method: 'get', params });
 };
-// get('/api/users', { page: 1, size: 10 })
 
 /**
  * post请求
  */
-export const post = (url: string, data: {}) => {
-    return http({
+export const post = <T = any>(url: string, data?: any): Promise<ApiResponse<T>> => {
+    return http<ApiResponse<T>>({
         data,
         url,
         method: 'post',

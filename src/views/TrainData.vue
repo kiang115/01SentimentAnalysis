@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import TrainDataTable from '@/components/TrainDataTable.vue'
+import TrainParaTable from '@/components/TrainParaTable.vue';
 </script>
 
 <template>
   <div class="train-data-page">
     <TrainDataTable />
+  </div>
+  <div class="train-data-page">
+    <TrainParaTable />
   </div>
 </template>
 

@@ -10,3 +10,4 @@ export interface AddTrainParaSend {
     loraModules: string[]; // lora模块
     trainSplitRatio: number;// 训练集比例
 }
+// 
