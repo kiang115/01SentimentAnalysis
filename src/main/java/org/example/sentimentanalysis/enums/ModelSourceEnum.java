@@ -1,19 +1,35 @@
 package org.example.sentimentanalysis.enums;
 
-import lombok.Data;
 import lombok.Getter;
 
 @Getter
 public enum ModelSourceEnum {
-    TRAIN("train", "训练得到"),
+    TRAIN("train", "训练模型"),
     UPLOAD("upload", "手动上传");
 
     private final String code;
     private final String desc;
 
-    // 构造方法
     ModelSourceEnum(String code, String desc) {
         this.code = code;
         this.desc = desc;
+    }
+
+    public static String getDescByCode(String code) {
+        for (ModelSourceEnum e : values()) {
+            if (e.code.equals(code)) {
+                return e.desc;
+            }
+        }
+        return code;
+    }
+
+    public static boolean isCodeExist(String code) {
+        for (ModelSourceEnum e : values()) {
+            if (e.code.equals(code)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

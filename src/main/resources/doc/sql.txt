@@ -62,12 +62,26 @@ CREATE TABLE `inference_tasks` (
 
 模型表
 CREATE TABLE models (
-    model_id  BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '模型ID',
-    domain_id BIGINT NOT NULL COMMENT '领域id',
-    model_version VARCHAR(20) NOT NULL COMMENT '模型版本号(两位小数, 如1.12)',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间(年月日时分秒)',
-    INDEX idx_model_id (model_id),
-    INDEX idx_created_at (created_at)
+    model_id      BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '模型ID',
+    domain_id     BIGINT NOT NULL COMMENT '领域id',
+    model_version VARCHAR(20) NOT NULL COMMENT '模型版本号',
+    source        ENUM('train', 'upload') NOT NULL COMMENT '来源',
+    inferred_num BIGINT NOT NULL DEFAULT 0 COMMENT '总推理数',
+    corrected_num  BIGINT NOT NULL DEFAULT 0 COMMENT '被修正数(错误数)',
+
+    -- 虚拟生成的准确率字段
+    -- 逻辑：如果总数为0则为0，否则计算 (1 - 修正/总数) * 100
+    accuracy      DECIMAL(5, 2) GENERATED ALWAYS AS (
+        CASE
+            WHEN inferred_num = 0 THEN 0
+            ELSE (1 - (corrected_num / inferred_num)) * 100
+        END
+    ) VIRTUAL COMMENT '最终准确率%',
+
+    train_task_id BIGINT DEFAULT NULL,
+    description   TEXT,
+    created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_domain_id (domain_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='模型表';
 
 领域表

@@ -57,8 +57,8 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
     public InferPanelSend ListInferencePanelDto() {
 //        列举领域map
         List<Domains> domains = list();
-//        列举所有modelmap
-        List<Models> models = modelsService.list();
+//        列举所有没被删除的modelmap
+        List<Models> models = modelsService.list(new LambdaQueryWrapper<Models>().eq(Models::getDeleted, 0));
 //     计算comment表中未推理的评论数
         QueryWrapper<Comments> wrapper = new QueryWrapper<>();
 

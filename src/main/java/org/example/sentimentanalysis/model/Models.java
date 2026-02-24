@@ -75,6 +75,9 @@ public class Models implements Serializable {
     @TableField("description")
     private String description;
 
+    @TableField("deleted")
+    private Integer deleted;
+
     @TableField("created_at")
     private LocalDateTime createdAt;
 }

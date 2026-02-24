@@ -11,7 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TrainDataQueryRec {
 //    以下数据，为null表示不筛选
+    @Builder.Default
     private Integer pageNum=1;//页码
+    @Builder.Default
     private Integer pageSize=8;//每页数量
     private String content;//搜索content内容 仅在content不为空或者非全空格时生效
     private Integer label;//按标签筛选 仅在label=0|1 时生效

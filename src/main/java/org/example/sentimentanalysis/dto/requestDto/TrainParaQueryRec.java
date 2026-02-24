@@ -12,7 +12,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TrainParaQueryRec {
     //    以下数据，为null表示不筛选
+    @Builder.Default
     private Integer pageNum=1;//页码
+    @Builder.Default
     private Integer pageSize=8;//每页数量
     private Long paraId;//输入筛选特定id的参数模板
     private Long domainId;//按照domainId筛选
