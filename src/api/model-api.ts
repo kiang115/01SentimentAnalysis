@@ -14,6 +14,8 @@ import type {TrainDataAddSend} from "../Dto/SendDto/TrainDataAddSend";
 import type {TrainParaListRec} from "../Dto/ReceiveDto/TrainParaListRec";
 import type {TrainParaQuerySend} from "@/Dto/SendDto/TrainParaQuerySend"
 import type {AddTrainParaSend} from "@/Dto/SendDto/AddTrainParaSend"
+import type { ModelsQuerySend } from '@/Dto/SendDto/ModelsQuerySend'
+import type { ModelsListRec } from '@/Dto/ReceiveDto/ModelsListRec'
 // 定义标准返回类型
 // todo 把vue接收到的非标准的api返回值统一处理为ApiResponse<T>类型 特别是train.vue中的ListTrainTasksRes类型需要被替代
 export interface ApiResponse<T = any> {
@@ -82,5 +84,13 @@ export const modelApi = {
 //     增加训练参数
     addTrainParam: (para: AddTrainParaSend) => {
         return post('/addTrainPara', para) as Promise<ApiResponse<void>>
+    },
+    //  模型列表查询
+    listModels: (para : ModelsQuerySend) => {
+        return post('/listModels', para) as Promise<ApiResponse<ModelsListRec>>
+    },
+    //  模型删除
+    deleteModels: (para: number[]) => {
+        return post('/deleteModels', para) as Promise<ApiResponse<void>>
     },
 }
