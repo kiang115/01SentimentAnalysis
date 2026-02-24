@@ -51,8 +51,9 @@ public class TrainParaServiceImpl extends ServiceImpl<TrainParaMapper, TrainPara
     public TrainParaListSend listTrainPara(TrainParaQueryRec trainParaQueryRec) {
         int pageNum = trainParaQueryRec.getPageNum() != null ? trainParaQueryRec.getPageNum() : 1;
         int pageSize = trainParaQueryRec.getPageSize() != null ? trainParaQueryRec.getPageSize() : 8;
-
-        domainsService.checkIdExist(trainParaQueryRec.getDomainId());
+        if (trainParaQueryRec.getDomainId() != null) {
+            domainsService.checkIdExist(trainParaQueryRec.getDomainId());
+        }
 
         LambdaQueryWrapper<TrainPara> wrapper = new LambdaQueryWrapper<>();
 //        筛选相应的参数表
@@ -72,7 +73,7 @@ public class TrainParaServiceImpl extends ServiceImpl<TrainParaMapper, TrainPara
         pageInfo.setList(infoList);
         return TrainParaListSend.builder()
                 .pageInfo(pageInfo)
-                .domainsInfo(domainsService.listAllDomainsInfo())
+                .domains(domainsService.listAllDomainsInfo())
                 .build();
     }
 

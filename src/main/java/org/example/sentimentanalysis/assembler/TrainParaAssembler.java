@@ -28,6 +28,7 @@ public class TrainParaAssembler {
                         .learningRate(raw.getLearningRate())
                         .randomSeed(raw.getRandomSeed())
                         .loraModules(raw.getLoraModules())
+                        .trainSplitRatio(raw.getTrainSplitRatio())
                         .build()
                 ).toList();
     }

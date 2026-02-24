@@ -16,7 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 public class TrainParaListSend {
     private PageInfo<TrainParaInfo> pageInfo;
-    private List<DomainsInfo> domainsInfo;
+    private List<DomainsInfo> domains;
 
     @Data
     @Builder

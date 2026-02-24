@@ -58,7 +58,9 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
         int pageNum = queryRec.getPageNum() != null ? queryRec.getPageNum() : 1;
         int pageSize = queryRec.getPageSize() != null ? queryRec.getPageSize() : 8;
 
-        domainsService.checkIdExist(queryRec.getDomainId());
+        if (queryRec.getDomainId() != null) {
+            domainsService.checkIdExist(queryRec.getDomainId());
+        }
 
         LambdaQueryWrapper<TrainData> wrapper = new LambdaQueryWrapper<>();
         String content = queryRec.getContent();
