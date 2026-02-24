@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
-
+#todo  统一status的含义与springboot后台的含义
 @dataclass
 class InferTaskSnapshot:
     taskId: int

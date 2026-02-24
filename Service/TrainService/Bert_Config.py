@@ -67,7 +67,7 @@ def get_save_path(exp_type: str) -> str:
         return CONFIG["SAVE_PATH_TEXTCNN"]
     raise ValueError("exp_type 仅支持 all / lora / no / lstm / textcnn")
 
-
+# todo 将这里面的setup_seed分离到TrainEngine中
 def setup_seed(seed: int) -> None:
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)

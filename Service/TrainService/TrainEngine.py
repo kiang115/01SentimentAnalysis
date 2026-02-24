@@ -294,8 +294,8 @@ class TrainEngine:
                 snap = TrainTaskSnapshot(
                     taskId=task_id,
                     duration=duration,
-                    status=0,
-                    statusMsg=f"Epoch {epoch + 1}/{epochs}, Batch {current_batch}/{epoch_total_batches}",
+                    status=1,
+                    statusMsg="处理中",
                     currentEpoch=epoch + 1,
                     totalEpochs=epochs,
                     currentBatch=current_batch,
@@ -340,7 +340,7 @@ class TrainEngine:
             taskId=task_id,
             domainId=request.domainId,
             modelVersion=model_version,
-            processStatus=1,
+            processStatus=2,
             endTime=end_time_str,
             duration=round(duration, 2),
             results=ids,  # 全部训练样本 id 列表
@@ -378,13 +378,14 @@ class TrainEngine:
                 taskId=task_id,
                 duration=0.0,
                 status=0,
-                statusMsg="ready",
+                statusMsg="待处理",
                 currentEpoch=0,
                 totalEpochs=request.epochs,
                 currentBatch=0,
                 epochTotalBatches=0,
                 progressPercent=0.0,
             )
+
         )
         try:
             # 在独立线程中执行同步训练主流程，不阻塞 FastAPI 事件循环
@@ -401,7 +402,7 @@ class TrainEngine:
                 TrainTaskSnapshot(
                     taskId=task_id,
                     duration=train_result.duration,
-                    status=1,
+                    status=2,
                     statusMsg="已完成",
                     currentEpoch=request.epochs,
                     totalEpochs=request.epochs,
@@ -425,7 +426,7 @@ class TrainEngine:
                 taskId=task_id,
                 domainId=request.domainId,
                 modelVersion=request.modelVersion,
-                processStatus=2,
+                processStatus=3,
                 endTime=end_time_str,
                 duration=0.0,
                 results=[],
@@ -442,7 +443,7 @@ class TrainEngine:
                 TrainTaskSnapshot(
                     taskId=task_id,
                     duration=0.0,
-                    status=2,
+                    status=3,
                     statusMsg=error_msg,
                 )
             )

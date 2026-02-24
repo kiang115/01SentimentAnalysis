@@ -7,7 +7,7 @@ from datetime import datetime
 class TrainTaskSnapshot:
     taskId: int
     duration: float
-    status: int
+    status: int # 0-待处理, 1-处理中, 2-已完成 3-失败
     statusMsg: str
     currentEpoch: int = 0
     totalEpochs: int = 0

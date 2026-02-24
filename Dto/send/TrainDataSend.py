@@ -7,7 +7,7 @@ class TrainDataSend(BaseModel):
     taskId: int
     domainId: int
     modelVersion:str
-    processStatus: int  # 0-进行中, 1-完成, 2-异常
+    processStatus: int  # 0-待处理, 1-处理中, 2-已完成 3-失败
     endTime: str
     duration: float
     results: List[int] # 训练数据的id列表
