@@ -290,6 +290,9 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
 
     @Override
     public List<Integer> getMajorVersionList(List<Models> models) {
+        if(models==null || models.isEmpty()){
+            return List.of();
+        }
         return models.stream().map(m -> {
             ModelsServiceImpl.VersionParts versionParts = this.parseVersion(m.getModelVersion());
             return versionParts.major();

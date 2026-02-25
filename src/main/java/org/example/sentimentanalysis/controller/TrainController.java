@@ -52,6 +52,7 @@ public class TrainController {
     public Response<TrainDataSend> trainDataCheck(@RequestBody @Valid TrainPanelRec trainPanelRec) {
 //      得到发送给fastapi的数据
         TrainDataSend trainDataSend = trainTasksService.getTrainData(trainPanelRec);
+//        todo 模型界面需要增加一个字段 叫做使用的基础模型的版本号
         Long taskId = trainTasksService.addTrainTask(trainPanelRec);
         trainDataSend.setTaskId(taskId);
 
@@ -71,7 +72,7 @@ public class TrainController {
 
     @Operation(summary = "训练结果解析和处理")
     @PostMapping("/TrainResultProcess")
-    public Response<TrainDataSend> trainResultProcess(@RequestBody @Valid Response<TrainResultRec> trainDataRec) {
+    public Response<Void> trainResultProcess(@RequestBody @Valid Response<TrainResultRec> trainDataRec) {
         TrainResultRec trainRec = trainDataRec.getData();
         if (trainDataRec.getCode() != 200) {
             trainTasksService.updateById(new TrainTasks().setId(trainRec.getTaskId()).setStatus(TaskStatusEnum.FAILED.getCode()));

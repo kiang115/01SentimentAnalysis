@@ -121,11 +121,11 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
         Map<Long, List<TrainPara>> trainParaMap = trainParas.stream()
                 .collect(Collectors.groupingBy(TrainPara::getDomainId));
 
-        // 1. 查询所有模型
-        List<Models> allModels = modelsService.list();
+        // 1. 查询所有现存模型
+        List<Models> allExistModels = modelsService.list(new LambdaQueryWrapper<Models>().eq(Models::getDeleted, 0));
 
         // 2. 分组
-        Map<Long, List<Models>> domainModelMap = allModels.stream()
+        Map<Long, List<Models>> domainModelMap = allExistModels.stream()
                 .collect(Collectors.groupingBy(Models::getDomainId));
 
         Map<Long, List<Integer>> domainMajorVersionList = new HashMap<>();

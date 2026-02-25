@@ -3,6 +3,7 @@ package org.example.sentimentanalysis.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.bouncycastle.math.raw.Mod;
 import org.example.sentimentanalysis.assembler.TrainDataAssembler;
 import org.example.sentimentanalysis.dto.requestDto.TrainPanelRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
@@ -54,23 +55,34 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         Domains domain = Optional.ofNullable(domainsService.getById(trainPanelRec.getDomainId()))
                 .orElseThrow(() -> new CustomBusinessException("训练数据装配失败：领域不存在，domainId=" + trainPanelRec.getDomainId()));
 
+        if (trainPanelRec.getIsOverTrain() == false && trainPanelRec.getMajorVersion() == null) {
+            throw new CustomBusinessException("增量训练需要选择大版本号");
+        }
 //        得到大版本号前缀
-        String majorPrefix = trainPanelRec.getMajorVersion()+".";
+        String majorPrefix = trainPanelRec.getMajorVersion() + ".";
 //        2. 查询当前领域或者当前领域+大版本 的模型列表
         List<Models> domainModels = modelsService.list(
                 new LambdaQueryWrapper<Models>()
                         .eq(Models::getDomainId, trainPanelRec.getDomainId())
-                        .like(trainPanelRec.getIsOverTrain()==false,Models::getModelVersion,majorPrefix)
+                        .like(trainPanelRec.getIsOverTrain() == false, Models::getModelVersion, majorPrefix)
         );
 
-//      1. 获取最大版本号
-        String latestVersionStr = modelsService.getMaxVersion(domainModels);
+//      1. 获取全部的最大版本号
+        String latestAllVersionStr = modelsService.getMaxVersion(domainModels);
 
-//          2. 生成下一个版本号
-        String nextModelVersion = modelsService.getNextModelVersion(latestVersionStr, trainPanelRec.getIsOverTrain());
+//          2. 生成下一个版本号(只能使用历史历史全部模型生成唯一的版本号,无论是否被删除了)
+        String nextModelVersion = modelsService.getNextModelVersion(latestAllVersionStr, trainPanelRec.getIsOverTrain());
 
-//          3. 计算回填的基准版本号 (只有非全量训练才需要回填)
-        String baseModelVersion = Boolean.FALSE.equals(trainPanelRec.getIsOverTrain()) ? latestVersionStr : null;
+//          3. 计算回填的基准版本号 (如果需要增量训练,用现存版本号回填,不存在抛异常)
+        String baseModelVersion = null;
+        if (trainPanelRec.getIsOverTrain() == false) {
+            List<Models> domainExistModels = domainModels.stream().filter(model->model.getDeleted()==0).toList();
+            if (domainExistModels.isEmpty()) {
+                throw new CustomBusinessException("选择增量训练,但是本大模型版本已无可用基础版本");
+            }
+            baseModelVersion = modelsService.getMaxVersion(domainExistModels);
+        }
+
 
 //        4. 按领域批量查询训练数据
         List<TrainData> allTrainDataList = trainDataService.list(
@@ -81,6 +93,7 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
                 .collect(Collectors.groupingBy(TrainData::getSource));
 
 //        5. 按前端配置数量随机筛选；不足直接抛异常
+//      todo  需要根据训练数据标签 每个标签各一半筛选,否者导致标签分布不均匀
         Random random = new Random(trainPanelRec.getRandomSeed());
 //       6. 根据sourceMap中遍历，对每个数据来源进行筛选 sourceDataMap可能只包含某两个或者一个领域，并非全部领域
 
@@ -192,64 +205,100 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         return trainTasksSend;
     }
 
+    /**
+     * 获取训练任务折线图数据
+     * 逻辑：按领域(Domain)分组，以小版本(Minor)为横坐标，大版本(Major)为不同的折线，展示准确率(Accuracy)走势。
+     */
     @Override
     public TrainLineChartSend getTrainLineChart() {
-        // 1. 数据来源：domains 表一次查询，train_tasks 表一次查询（仅 status=2 已完成任务）
+        // --- 1. 数据准备阶段 ---
+
+        // 查询所有领域信息，用于后续构建 ID 与 名称 的映射，避免在循环中重复查库
         List<Domains> domains = domainsService.list();
         Map<Long, String> domainIdToName = domains.stream()
                 .collect(Collectors.toMap(Domains::getDomainId, Domains::getDomainName, (a, b) -> a));
+
+        // 只查询状态为“成功(SUCCESS)”的训练任务，失败的任务不计入准确率统计
         List<TrainTasks> successTasks = list(new LambdaQueryWrapper<TrainTasks>()
                 .eq(TrainTasks::getStatus, TaskStatusEnum.SUCCESS.getCode()));
+
+        // 将所有成功的任务按 domainId 进行分组，形成 Map<领域ID, 任务列表>，方便 O(1) 时间复杂度提取特定领域的任务
         Map<Long, List<TrainTasks>> tasksByDomain = successTasks.stream()
                 .collect(Collectors.groupingBy(TrainTasks::getDomainId));
 
+        // 用于存储最终返回给前端的领域名称列表和各领域的数据详情
         List<String> domainNameList = new ArrayList<>();
         List<TrainLineChartSend.DomainLinesData> domainLinesDataList = new ArrayList<>();
 
-        // 2. 按领域顺序遍历，保证 domainNameList 与 domainLinesDataList 一一对应
+        // --- 2. 核心逻辑处理阶段：按领域遍历 ---
         for (Domains domain : domains) {
             Long domainId = domain.getDomainId();
             String domainName = domainIdToName.get(domainId);
+            // 获取当前领域下所有的成功任务，如果没有则返回空列表
             List<TrainTasks> tasks = tasksByDomain.getOrDefault(domainId, Collections.emptyList());
 
-            // 3. 版本解析与范围：解析 model_version 得到 maxMajor、maxMinor；无任务时均为 0（解析失败由 parseVersion 直接抛异常）
+            // --- 3. 版本号解析与范围确定 ---
+            // 将版本号字符串（如 "1.2"）解析成对象（major=1, minor=2），便于比较和计算
             List<ModelsServiceImpl.VersionParts> parts = tasks.stream()
                     .map(t -> modelsService.parseVersion(t.getModelVersion()))
                     .toList();
+
+            // 计算当前领域内出现的最大大版本号（Major）和最大小版本号（Minor）
+            // 这决定了图表的 X 轴长度（由 maxMinor 决定）和折线的条数（由 maxMajor 决定）
             int maxMajor = parts.isEmpty() ? 0 : parts.stream().mapToInt(ModelsServiceImpl.VersionParts::major).max().orElse(0);
             int maxMinor = parts.isEmpty() ? 0 : parts.stream().mapToInt(ModelsServiceImpl.VersionParts::minor).max().orElse(0);
 
-            // 4. version -> accuracy 映射，便于 O(1) 查找（同上，非法 version 已在步骤 3 抛异常）
+            // --- 4. 建立“版本->准确率”映射表 ---
+            // 将任务列表转换为 Map，Key 是版本号字符串，Value 是准确率。
+            // 目的是为了在构建数据矩阵时，能快速找到某个特定版本对应的准确率。
             Map<String, BigDecimal> versionToAccuracy = tasks.stream()
                     .filter(t -> t.getModelVersion() != null && t.getAccuracy() != null)
                     .collect(Collectors.toMap(TrainTasks::getModelVersion, TrainTasks::getAccuracy, (a, b) -> b));
 
-            // 5. 组装 DTO：横坐标小版本号 X.0、X.1、X.2…；大版本号 0.X、1.X、2.X
+            // --- 5. 组装前端绘图所需的数据结构 ---
+
+            // 生成横坐标（X轴）标签：例如 maxMinor 为 2，则生成 ["X.0", "X.1", "X.2"]
             List<String> allSmallVersions = IntStream.rangeClosed(0, maxMinor)
                     .mapToObj(m -> "X." + m)
                     .toList();
+
             List<TrainLineChartSend.MajorVersionData> majorVersionDataList = new ArrayList<>();
             List<String> allMajorVersions = new ArrayList<>();
+
+            // 遍历从 0 到 maxMajor 的每一个大版本（每一条折线）
             for (int major = 0; major <= maxMajor; major++) {
                 final int majorVal = major;
+
+                // 关键逻辑：补齐数据。
+                // 遍历从 0 到 maxMinor 的每一个小版本，如果数据库中存在该版本（如 1.1），则取准确率；
+                // 如果不存在（如 1.2），则放入 null。这保证了每条折线在同一小版本位置都有对应点，方便前端渲染。
                 List<BigDecimal> versionAccuracyList = IntStream.rangeClosed(0, maxMinor)
                         .mapToObj(minor -> versionToAccuracy.get(majorVal + "." + minor))
                         .toList();
+
+                // 封装单条折线的数据（例如 "1.X" 这一层级的所有准确率点）
                 majorVersionDataList.add(TrainLineChartSend.MajorVersionData.builder()
-                        .majorVersion(majorVal + ".X")
-                        .versionAccuracyList(versionAccuracyList)
+                        .majorVersion(majorVal + ".X") // 折线名称，如 "1.X"
+                        .versionAccuracyList(versionAccuracyList) // 该折线的纵坐标数值列表
                         .build());
+
+                // 记录所有的大版本名称，通常用于图例显示
                 allMajorVersions.add(majorVal + ".X");
             }
+
+            // --- 6. 汇总当前领域的所有数据 ---
             domainLinesDataList.add(TrainLineChartSend.DomainLinesData.builder()
                     .domainName(domainName)
-                    .allSmallVersions(allSmallVersions)
-                    .allMajorVersions(allMajorVersions)
-                    .majorVersionDataList(majorVersionDataList)
+                    .allSmallVersions(allSmallVersions) // 统一的 X 轴
+                    .allMajorVersions(allMajorVersions)   // 所有的折线名
+                    .majorVersionDataList(majorVersionDataList) // 详细的折线数据
                     .build());
+
+            // 记录领域名称，用于外层 Tab 或 菜单 切换
             domainNameList.add(domainName);
         }
 
+        // --- 7. 返回最终的 DTO 结果 ---
         return TrainLineChartSend.builder()
                 .domainNameList(domainNameList)
                 .domainLinesDataList(domainLinesDataList)

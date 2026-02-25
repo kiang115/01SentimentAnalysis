@@ -113,7 +113,6 @@ public class ModelController {
             if ("adapter_config.json".equals(name)) hasConfig = true;
             if ("adapter_model.bin".equals(name)) hasBin = true;
         }
-
         if (!hasConfig || !hasBin) {
             throw new CustomBusinessException("模型文件解析失败");
         }
@@ -123,7 +122,6 @@ public class ModelController {
 //        如果有模型(包括被删除的模型)->版本就是{最大版本+1}.0
         domainsService.checkIdExist(domainId);
         List<Models> domainModels = modelsService.list(new LambdaQueryWrapper<Models>().eq(Models::getDomainId, domainId));
-
         String maxVersion = modelsService.getMaxVersion(domainModels);
         String nextVersion = modelsService.getNextModelVersion(maxVersion, true);
         // 3. 组装转发给 FastAPI

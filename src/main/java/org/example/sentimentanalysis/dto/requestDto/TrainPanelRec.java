@@ -54,12 +54,9 @@ public class TrainPanelRec {
     @NotNull(message = "训练集比例不能为空")
     private BigDecimal trainSplitRatio;
 
-    /**
-     * 建议使用 Boolean 包装类型，以便进行 @NotNull 验证
-     * 如果使用基本类型 boolean，它默认为 false，无法判断是用户传的还是默认的
-     */
+//    为true 全新训练 false 增量训练
     @NotNull(message = "是否覆盖训练标识不能为空")
     private Boolean isOverTrain;
-//    如果不是重训模式，需要选择大模型版本
+//    当overtrain为false时->全新模式，需要选择大模型版本
     private Integer  majorVersion;
 }

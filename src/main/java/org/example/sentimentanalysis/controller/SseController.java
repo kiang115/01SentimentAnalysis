@@ -30,3 +30,5 @@ public class SseController {
         return trainSseService.addConnection();
     }
 }
+
+// todo 推理端需要统一statuscode 训练+推理 需要增加错误原因字段 训练需要将字段传入vue中,并让vue根据传入的信息写错误原因 推理服务需要增加判断是否无需要建立连接的isfinished字段,并应用于vue中
