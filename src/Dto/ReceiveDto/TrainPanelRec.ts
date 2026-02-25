@@ -20,6 +20,7 @@ export interface TrainDomainItem {
   uploadNum: number
   originalNum: number
   defaultParaList: DefaultParaItem[]
+  majorVersionList:number[]
 }
 
 export interface TrainPanelRec {

@@ -39,7 +39,7 @@
           <el-select
             v-model="row.state.selectedModelId"
             placeholder="选择模型"
-            :disabled="row.item.uninferencedCommentNums === 0"
+            :disabled="row.item.uninferencedCommentNums === 0 || !(row.item.domainModelsDataList?.length)"
             style="width: 100%"
           >
             <el-option
@@ -56,7 +56,7 @@
 
     <template #footer>
       <el-button @click="close">取消</el-button>
-      <el-button type="primary" :loading="confirmLoading" @click="handleConfirm">点击推理</el-button>
+      <el-button type="primary" :loading="confirmLoading" :disabled="confirmDisabled" @click="handleConfirm">点击推理</el-button>
     </template>
   </el-dialog>
 </template>
@@ -84,7 +84,7 @@ const dialogVisible = computed({
 })
 
 const configList = ref<InferenceConfigItem[]>([])
-const rowState = ref<Array<{ commentCount: number; selectedModelId: number }>>([])
+const rowState = ref<Array<{ commentCount: number; selectedModelId: number | undefined }>>([])
 const loading = ref(false)
 const confirmLoading = ref(false)
 const sort = ref<'newest' | 'lastest'>('newest')
@@ -95,6 +95,20 @@ const configWithState = computed(() =>
     state: rowState.value[i]!,
   }))
 )
+
+function isModelValid(row: { item: InferenceConfigItem; state: { selectedModelId: number | undefined } }): boolean {
+  const id = row.state.selectedModelId
+  if (id == null || id === 0) return false
+  return row.item.domainModelsDataList?.some((m) => m.modelId === id) ?? false
+}
+
+const confirmDisabled = computed(() => {
+  const rows = configWithState.value
+  const hasAnyCount = rows.some((r) => r.state.commentCount > 0)
+  if (!hasAnyCount) return true
+  const hasInvalidRow = rows.some((r) => r.state.commentCount > 0 && !isModelValid(r))
+  return hasInvalidRow
+})
 
 /** 模型版本展示：直接展示后端返回的字符串 */
 function formatModelVersion(version: string): string {
@@ -117,13 +131,10 @@ async function fetchPanel() {
     const data = res.data
     const list = data?.inferenceConfigDataList ?? []
     configList.value = list
-    rowState.value = list.map((item) => {
-      const first = item.domainModelsDataList?.[0]
-      return {
-        commentCount: 0,
-        selectedModelId: first != null ? first.modelId : 0,
-      }
-    })
+    rowState.value = list.map((item) => ({
+      commentCount: 0,
+      selectedModelId: item.domainModelsDataList?.[0]?.modelId ?? undefined,
+    }))
   } catch {
     configList.value = []
     rowState.value = []
@@ -133,13 +144,25 @@ async function fetchPanel() {
 }
 
 async function handleConfirm() {
-  const inferenceDomainPara: InferenceDomainParaItem[] = configWithState.value
-    .map((row) => ({
+  const rows = configWithState.value
+  const inferenceDomainPara: InferenceDomainParaItem[] = []
+  let hasInvalidRow = false
+  for (const row of rows) {
+    if (row.state.commentCount <= 0) continue
+    if (!isModelValid(row)) {
+      hasInvalidRow = true
+      continue
+    }
+    inferenceDomainPara.push({
       domainId: row.item.domainId,
-      modelId: row.state.selectedModelId,
+      modelId: row.state.selectedModelId!,
       inferenceReviewNums: row.state.commentCount,
-    }))
-    .filter((item) => item.inferenceReviewNums > 0)
+    })
+  }
+  if (hasInvalidRow) {
+    ElMessage.warning('请为每个有推理数量的领域选择有效模型')
+    return
+  }
   if (inferenceDomainPara.length === 0) {
     ElMessage.warning('请至少为一个领域设置推理数量')
     return

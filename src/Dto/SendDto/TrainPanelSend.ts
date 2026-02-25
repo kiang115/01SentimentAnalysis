@@ -15,4 +15,5 @@ export interface TrainPanelSend {
   loraModules: Array<'query' | 'key' | 'value' | 'dense'>
   trainSplitRatio: number
   isOverTrain: boolean
+  majorVersion: number | null
 }
