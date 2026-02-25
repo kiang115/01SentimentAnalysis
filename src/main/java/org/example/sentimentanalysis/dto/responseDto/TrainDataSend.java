@@ -64,7 +64,8 @@ public class TrainDataSend {
     // 是否需要覆盖训练
     private boolean ifOverTrain;
 
-    //    使用的前一个基础model版本
+    //  覆盖训练->新建一个版本号
+    //  不覆盖->使用的前一个基础model版本
     private String baseModelVersion;
 
     @Data

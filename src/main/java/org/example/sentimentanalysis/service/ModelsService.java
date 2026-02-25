@@ -45,4 +45,7 @@ public interface ModelsService extends IService<Models> {
     String getNextModelVersion(String maxVersionStr, Boolean isOverTrain);
 
     ModelsServiceImpl.VersionParts parseVersion(String version);
+
+    List<Integer> getMajorVersionList(List<Models> models);
+    List<Integer> getSmallVersionList(List<Models> models);
 }

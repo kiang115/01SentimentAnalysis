@@ -5,6 +5,7 @@ import org.example.sentimentanalysis.dto.responseDto.InferPanelSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
 import org.example.sentimentanalysis.model.Domains;
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.example.sentimentanalysis.model.Models;
 
 import java.util.List;
 import java.util.Map;

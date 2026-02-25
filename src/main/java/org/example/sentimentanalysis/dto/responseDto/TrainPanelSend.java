@@ -55,8 +55,11 @@ public class TrainPanelSend {
         //        原始网络数据集的参数数量
         private Long originalNum;
 
-        //        该领域的默认参数配置
+        //     该领域的默认参数配置
         private List<TrainParaDTO> defaultParaList;
+
+//        选择模型版本
+        private List<Integer> majorVersionList;
     }
 
     @Data

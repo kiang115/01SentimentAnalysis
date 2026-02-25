@@ -1,6 +1,5 @@
 package org.example.sentimentanalysis.assembler;
 
-import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
 import org.example.sentimentanalysis.model.Domains;
@@ -18,14 +17,15 @@ public class TrainPanelAssembler {
     /**
      * 将领域列表、训练数据来源统计、训练参数配置组装为训练面板DTO
      *
-     * @param domains        领域列表
-     * @param sourceCountMap 训练数据来源统计（domainId -> source -> count）
-     * @param trainParaMap   训练参数列表（domainId -> TrainPara列表）
+     * @param domains                领域列表
+     * @param sourceCountMap         训练数据来源统计（domainId -> source -> count）
+     * @param trainParaMap           训练参数列表（domainId -> TrainPara列表）
+     * @param domainMajorVersionList
      * @return TrainPanelSend
      */
     public TrainPanelSend toDto(List<Domains> domains,
                                 Map<Long, Map<String, Long>> sourceCountMap,
-                                Map<Long, List<TrainPara>> trainParaMap) {
+                                Map<Long, List<TrainPara>> trainParaMap, Map<Long, List<Integer>> domainMajorVersionList) {
         // 1. 边界处理：无领域直接返回空列表
         if (CollectionUtils.isEmpty(domains)) {
             return TrainPanelSend.builder()
@@ -45,6 +45,7 @@ public class TrainPanelAssembler {
                             .collect(Collectors.toList());
 
                     return TrainPanelSend.TrainPanelDomainDTO.builder()
+                            .majorVersionList(domainMajorVersionList.getOrDefault(domainId, Collections.emptyList()))
                             .domainId(domainId)
                             .domainName(domain.getDomainName())
                             .correctedNum(domainSourceCount.getOrDefault("corrected", 0L))

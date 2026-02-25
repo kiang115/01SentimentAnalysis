@@ -88,7 +88,7 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
 //        1. 查询全部领域（面板按领域展示）
         List<Domains> domains = list();
         if (domains.isEmpty()) {
-            return trainPanelAssembler.toDto(domains, Collections.emptyMap(), Collections.emptyMap());
+            return trainPanelAssembler.toDto(domains, Collections.emptyMap(), Collections.emptyMap(),Collections.emptyMap());
         }
 
 //        2. 提取领域id，供批量查询参数使用
@@ -121,8 +121,19 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
         Map<Long, List<TrainPara>> trainParaMap = trainParas.stream()
                 .collect(Collectors.groupingBy(TrainPara::getDomainId));
 
+        // 1. 查询所有模型
+        List<Models> allModels = modelsService.list();
+
+        // 2. 分组
+        Map<Long, List<Models>> domainModelMap = allModels.stream()
+                .collect(Collectors.groupingBy(Models::getDomainId));
+
+        Map<Long, List<Integer>> domainMajorVersionList = new HashMap<>();
+        domainModelMap.forEach((domainId, models) -> {
+            domainMajorVersionList.put(domainId, modelsService.getMajorVersionList(models));
+        });
 //        6. 委托 assembler 进行 DTO 组装
-        return trainPanelAssembler.toDto(domains, sourceCountMap, trainParaMap);
+        return trainPanelAssembler.toDto(domains, sourceCountMap, trainParaMap,domainMajorVersionList);
     }
 
     @Override
@@ -177,9 +188,11 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
     @Override
     public String getDomainUrlById(Long domainId) {
         Domains domain = this.getOne(new LambdaQueryWrapper<Domains>().eq(Domains::getDomainId, domainId));
-        if(domain == null){
+        if (domain == null) {
             throw new CustomBusinessException("领域id" + domainId + "不存在");
         }
         return domain.getDomainUrl();
     }
+
+
 }

@@ -287,6 +287,23 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
         }
     }
 
+
+    @Override
+    public List<Integer> getMajorVersionList(List<Models> models) {
+        return models.stream().map(m -> {
+            ModelsServiceImpl.VersionParts versionParts = this.parseVersion(m.getModelVersion());
+            return versionParts.major();
+        }).distinct().toList();
+    }
+
+    @Override
+    public List<Integer> getSmallVersionList(List<Models> models) {
+        return models.stream().map(m -> {
+            ModelsServiceImpl.VersionParts versionParts = this.parseVersion(m.getModelVersion());
+            return versionParts.minor();
+        }).distinct().toList();
+    }
+
     public record VersionParts(int major, int minor) {
     }
 }
