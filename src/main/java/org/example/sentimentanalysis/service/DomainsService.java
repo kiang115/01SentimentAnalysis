@@ -25,4 +25,6 @@ public interface DomainsService extends IService<Domains> {
 //    增加校验工具函数
     void checkIdExist(Long domainId);
     void checkIdsExist(Long[] domainIds);
+
+    String getDomainUrlById(Long domainId);
 }

@@ -54,24 +54,22 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         Domains domain = Optional.ofNullable(domainsService.getById(trainPanelRec.getDomainId()))
                 .orElseThrow(() -> new CustomBusinessException("训练数据装配失败：领域不存在，domainId=" + trainPanelRec.getDomainId()));
 
-//        2. 查询领域模型并找到最新版本（版本号格式为 x.y）
+//        得到大版本号前缀
+        String majorPrefix = trainPanelRec.getMajorVersion()+".";
+//        2. 查询当前领域或者当前领域+大版本 的模型列表
         List<Models> domainModels = modelsService.list(
                 new LambdaQueryWrapper<Models>()
                         .eq(Models::getDomainId, trainPanelRec.getDomainId())
+                        .like(trainPanelRec.getIsOverTrain()==false,Models::getModelVersion,majorPrefix)
         );
-        if (domainModels.isEmpty()) {
-            throw new CustomBusinessException("训练数据装配失败：领域[" + domain.getDomainName() + "]没有可用模型版本");
-        }
-//    获取模型版本
-        Models latestModel = domainModels.stream()
-                .max(Comparator.comparing(m -> parseVersion(m.getModelVersion()),
-                        Comparator.comparingInt(VersionParts::major).thenComparingInt(VersionParts::minor)))
-                .orElseThrow(() -> new CustomBusinessException("训练数据装配失败：无法获取领域最新版本"));
-        String latestVersionStr = latestModel.getModelVersion();
-        VersionParts latestVersionParts = parseVersion(latestVersionStr);
 
-//        3. 根据 isOverTrain 规则生成下一个版本号；isOverTrain=false 时需回填 baseModelVersion 为当前最新版本
-        String nextModelVersion = nextVersion(latestVersionParts, trainPanelRec.getIsOverTrain());
+//      1. 获取最大版本号
+        String latestVersionStr = modelsService.getMaxVersion(domainModels);
+
+//          2. 生成下一个版本号
+        String nextModelVersion = modelsService.getNextModelVersion(latestVersionStr, trainPanelRec.getIsOverTrain());
+
+//          3. 计算回填的基准版本号 (只有非全量训练才需要回填)
         String baseModelVersion = Boolean.FALSE.equals(trainPanelRec.getIsOverTrain()) ? latestVersionStr : null;
 
 //        4. 按领域批量查询训练数据
@@ -215,11 +213,11 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
             List<TrainTasks> tasks = tasksByDomain.getOrDefault(domainId, Collections.emptyList());
 
             // 3. 版本解析与范围：解析 model_version 得到 maxMajor、maxMinor；无任务时均为 0（解析失败由 parseVersion 直接抛异常）
-            List<VersionParts> parts = tasks.stream()
-                    .map(t -> parseVersion(t.getModelVersion()))
+            List<ModelsServiceImpl.VersionParts> parts = tasks.stream()
+                    .map(t -> modelsService.parseVersion(t.getModelVersion()))
                     .toList();
-            int maxMajor = parts.isEmpty() ? 0 : parts.stream().mapToInt(VersionParts::major).max().orElse(0);
-            int maxMinor = parts.isEmpty() ? 0 : parts.stream().mapToInt(VersionParts::minor).max().orElse(0);
+            int maxMajor = parts.isEmpty() ? 0 : parts.stream().mapToInt(ModelsServiceImpl.VersionParts::major).max().orElse(0);
+            int maxMinor = parts.isEmpty() ? 0 : parts.stream().mapToInt(ModelsServiceImpl.VersionParts::minor).max().orElse(0);
 
             // 4. version -> accuracy 映射，便于 O(1) 查找（同上，非法 version 已在步骤 3 抛异常）
             Map<String, BigDecimal> versionToAccuracy = tasks.stream()
@@ -275,38 +273,5 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         List<TrainData> copiedList = new ArrayList<>(sourceDataList);
         Collections.shuffle(copiedList, random);
         return copiedList.subList(0, Math.toIntExact(requiredCount));
-    }
-
-    /**
-     * 解析版本号，格式为 x.y（仅一个点分隔）；解析出现任何问题均抛 CustomBusinessException，并表述异常信息。
-     */
-    private VersionParts parseVersion(String version) {
-        if (version == null || version.isBlank()) {
-            throw new CustomBusinessException("训练数据装配失败：模型版本不能为空");
-        }
-        String[] parts = version.split("\\.");
-        if (parts.length != 2) {
-            throw new CustomBusinessException("训练数据装配失败：模型版本格式非法，应为 x.y，version=" + version);
-        }
-        try {
-            int major = Integer.parseInt(parts[0]);
-            int minor = Integer.parseInt(parts[1]);
-            return new VersionParts(major, minor);
-        } catch (NumberFormatException e) {
-            throw new CustomBusinessException("训练数据装配失败：模型版本格式非法，非数字，version=" + version);
-        }
-    }
-
-    /**
-     * 生成下一版本号：isOverTrain 为大版本+1.0，否则为小版本+1
-     */
-    private String nextVersion(VersionParts latest, Boolean isOverTrain) {
-        if (Boolean.TRUE.equals(isOverTrain)) {
-            return (latest.major() + 1) + ".0";
-        }
-        return latest.major() + "." + (latest.minor() + 1);
-    }
-
-    private record VersionParts(int major, int minor) {
     }
 }

@@ -60,4 +60,6 @@ public class TrainPanelRec {
      */
     @NotNull(message = "是否覆盖训练标识不能为空")
     private Boolean isOverTrain;
+//    如果不是重训模式，需要选择大模型版本
+    private Integer  majorVersion;
 }

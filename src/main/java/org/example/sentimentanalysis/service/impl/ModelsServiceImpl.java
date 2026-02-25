@@ -11,8 +11,10 @@ import org.example.sentimentanalysis.dto.requestDto.ModelAddRec;
 import org.example.sentimentanalysis.dto.requestDto.ModelQueryRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.dto.responseDto.ModelDetailListSend;
+import org.example.sentimentanalysis.dto.commonDto.ModelInfo;
 import org.example.sentimentanalysis.enums.ModelSourceEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
+import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.model.Models;
 import org.example.sentimentanalysis.mapper.ModelsMapper;
 import org.example.sentimentanalysis.service.DomainsService;
@@ -23,9 +25,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -82,35 +82,74 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
     }
 
     @Override
-    public void addModel(ModelAddRec modelAddRec) {
+    public void addModel(ModelAddRec modelAddRec, ModelSourceEnum sourceEnum) {
         domainsService.checkIdExist(modelAddRec.getDomainId());
 
         Models newModel = new Models();
         newModel.setDomainId(modelAddRec.getDomainId())
                 .setModelVersion(modelAddRec.getModelVersion())
-                .setSource(ModelSourceEnum.UPLOAD.getCode())
+                .setSource(sourceEnum.getCode())
                 .setDescription(modelAddRec.getDescription());
         this.save(newModel);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    public void deleteByIds(Long[] ids) {
+    public List<ModelInfo> deleteAndGetModels(Long[] ids) {
+        // 1. 基础校验与去重
         if (ids == null || ids.length == 0) {
             throw new CustomBusinessException("操作失败：请选择要删除的数据");
         }
-
         List<Long> distinctIds = Arrays.stream(ids).distinct().collect(Collectors.toList());
 
-        // 直接更新，update 返回的是实际受影响的行数
-        boolean success = this.update(new LambdaUpdateWrapper<Models>()
-                .set(Models::getDeleted, 1)
+        // 2. 查询待删除的模型详情 (涉及 domainId 和 modelVersion)
+        List<Models> modelList = this.list(new LambdaQueryWrapper<Models>()
+                .select(Models::getModelId, Models::getDomainId, Models::getModelVersion)
                 .eq(Models::getDeleted, 0)
                 .in(Models::getModelId, distinctIds));
 
-        if (!success) {
-            throw new CustomBusinessException("操作失败：数据状态已变更或不存在");
+        // 3. 严格校验数量一致性
+        if (modelList.size() != distinctIds.size()) {
+            throw new CustomBusinessException("操作失败：待删除的模型id不存在或者已经被删除");
         }
+
+        // 4. 提取所有的 domainId 并查询对应的 domainUrl
+        Set<Long> domainIds = modelList.stream()
+                .map(Models::getDomainId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, String> domainUrlMap = new HashMap<>();
+        if (!domainIds.isEmpty()) {
+            // 假设域名的 Service 名为 domainService，实体类为 Domains
+            List<Domains> domainList = domainsService.list(new LambdaQueryWrapper<Domains>()
+                    .select(Domains::getDomainId, Domains::getDomainUrl)
+                    .in(Domains::getDomainId, domainIds));
+
+            // 生成 domainId -> domainUrl 的映射 Map
+            domainUrlMap = domainList.stream().collect(Collectors.toMap(
+                    Domains::getDomainId,
+                    Domains::getDomainUrl,
+                    (v1, v2) -> v1 // 防止重复 key
+            ));
+        }
+
+        // 5. 组装返回列表
+        Map<Long, String> finalDomainUrlMap = domainUrlMap; // 用于 lambda
+        List<ModelInfo> deleteInfoList = modelList.stream().map(m -> ModelInfo.builder()
+                .domainUrl(finalDomainUrlMap.get(m.getDomainId()))
+                .modelVersion(m.getModelVersion())
+                .build()).collect(Collectors.toList());
+
+        // 6. 执行逻辑删除
+        this.update(new LambdaUpdateWrapper<Models>()
+                .set(Models::getDeleted, 1)
+                .in(Models::getModelId, distinctIds));
+
+        // 7. 返回组装好的信息
+        return deleteInfoList;
     }
+
 
     @Override
     public Long addModelByTrainResult(TrainResultRec trainRec) {
@@ -179,5 +218,75 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
         if (count != distinctIds.size()) {
             throw new CustomBusinessException("操作失败：模型id部分不匹配");
         }
+    }
+
+    @Override
+    public ModelInfo getModelInfoById(Long modelId) {
+        LambdaQueryWrapper<Models> wrapper = new LambdaQueryWrapper<Models>().eq(Models::getModelId, modelId).eq(Models::getDeleted, 0);
+        Models model = getOne(wrapper);
+        if (model != null) {
+            return ModelInfo.builder()
+                    .domainUrl(domainsService.getDomainUrlById(model.getDomainId()))
+                    .modelVersion(model.getModelVersion())
+                    .build();
+        }
+        return null;
+    }
+
+    @Override
+//    输入为空返回null
+    public String getMaxVersion(List<Models> domainModels) {
+        return domainModels.stream()
+                // 提取版本号字符串
+                .map(Models::getModelVersion)
+                // 使用自定义比较逻辑：先比 major，再比 minor
+                .max(Comparator.comparing(this::parseVersion,
+                        Comparator.comparingInt(VersionParts::major)
+                                .thenComparingInt(VersionParts::minor)))
+                // 如果列表为空，返回null
+//                .orElseThrow(() -> new CustomBusinessException("训练数据装配失败：无法获取领域最新版本"));
+                .orElse(null);
+    }
+
+    @Override
+    public String getNextModelVersion(String maxVersionStr, Boolean isOverTrain) {
+        if(maxVersionStr==null){
+            return "0.0";
+        }
+        // 解析字符串为结构化对象
+        VersionParts latest = parseVersion(maxVersionStr);
+
+        // 执行版本递增逻辑
+        if (isOverTrain) {
+            // 全量训练：大版本+1，小版本归零 (1.5 -> 2.0)
+            return (latest.major() + 1) + ".0";
+        } else {
+            // 增量训练：小版本+1 (1.5 -> 1.6)
+            return latest.major() + "." + (latest.minor() + 1);
+        }
+    }
+
+    /**
+     * 解析版本号，格式为 x.y（仅一个点分隔）；解析出现任何问题均抛 CustomBusinessException，并表述异常信息。
+     */
+    @Override
+    public VersionParts parseVersion(String version) {
+        if (version == null || version.isBlank()) {
+            return null;
+        }
+        String[] parts = version.split("\\.");
+        if (parts.length != 2) {
+            throw new CustomBusinessException("训练数据装配失败：模型版本格式非法，应为 x.y，version=" + version);
+        }
+        try {
+            int major = Integer.parseInt(parts[0]);
+            int minor = Integer.parseInt(parts[1]);
+            return new VersionParts(major, minor);
+        } catch (NumberFormatException e) {
+            throw new CustomBusinessException("训练数据装配失败：模型版本格式非法，非数字，version=" + version);
+        }
+    }
+
+    public record VersionParts(int major, int minor) {
     }
 }

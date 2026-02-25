@@ -173,4 +173,13 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
             throw new CustomBusinessException("操作失败：领域id部分不匹配");
         }
     }
+
+    @Override
+    public String getDomainUrlById(Long domainId) {
+        Domains domain = this.getOne(new LambdaQueryWrapper<Domains>().eq(Domains::getDomainId, domainId));
+        if(domain == null){
+            throw new CustomBusinessException("领域id" + domainId + "不存在");
+        }
+        return domain.getDomainUrl();
+    }
 }

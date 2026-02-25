@@ -65,6 +65,7 @@ public class TrainController {
             trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()));
             throw new CustomBusinessException("error-模型服务未启动:"+e.getMessage());
         }
+//        要解决并行同时对同一个大版本进行训练的问题+(模型大版本可选化,可以选择在那个基线版本上进行训练)
         return Response.success();
     }
 
