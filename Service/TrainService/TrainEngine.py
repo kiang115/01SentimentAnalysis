@@ -398,6 +398,7 @@ class TrainEngine:
             end_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             # 训练成功：回调 SpringBoot 并写入完成快照
+            await post_springboot(SendBody.success(data=train_result), back_url)
             await update_train_task(
                 TrainTaskSnapshot(
                     taskId=task_id,
@@ -416,7 +417,6 @@ class TrainEngine:
                 ),
                 currentTime=end_time_str,
             )
-            await post_springboot(SendBody.success(data=train_result), back_url)
         except Exception as e:
             error_msg = str(e)
             end_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -439,6 +439,8 @@ class TrainEngine:
                 valLossList=[],
                 valAccList=[],
             )
+            await post_springboot(SendBody.fail(message=error_msg, code=500, data=fail_data), back_url)
+
             await update_train_task(
                 TrainTaskSnapshot(
                     taskId=task_id,
@@ -447,4 +449,3 @@ class TrainEngine:
                     statusMsg=error_msg,
                 )
             )
-            await post_springboot(SendBody.fail(message=error_msg, code=500, data=fail_data), back_url)
