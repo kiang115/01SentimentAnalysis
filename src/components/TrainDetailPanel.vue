@@ -78,10 +78,9 @@
 import { computed, watch, onBeforeUnmount, ref, nextTick } from 'vue'
 import type { TrainTasksItem } from '@/Dto/ReceiveDto/TrainTasksRec'
 import * as echarts from 'echarts/core'
-import { LineChart } from 'echarts/charts'
+import { LineChart, type LineSeriesOption } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import type { LineSeriesOption } from 'echarts/charts';
 
 echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
@@ -155,7 +154,7 @@ const dataSourceRatioText = computed(() => {
   return `模型初始数据集 ${a} : 人工修正数据集 ${b} : 手动上传数据 ${c}`
 })
 
-function buildChartOption(): echarts.ComposeOption<echarts.LineSeriesOption> {
+function buildChartOption(): echarts.ComposeOption<LineSeriesOption> {
   const t = props.task
   if (!t) return {}
   const trainAcc = t.trainAccList ?? []

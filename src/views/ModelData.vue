@@ -1,8 +1,10 @@
 <template>
-    <div>
-    <ModelTable/>
-    </div>
+  <div>
+    <ModelDetailPanel />
+    <ModelTable />
+  </div>
 </template>
 <script setup lang="ts">
-import ModelTable from "@/components/ModelTable.vue";
+import ModelDetailPanel from '@/components/ModelDetailPanel.vue'
+import ModelTable from '@/components/ModelTable.vue'
 </script>

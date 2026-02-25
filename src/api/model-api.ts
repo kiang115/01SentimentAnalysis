@@ -18,6 +18,8 @@ import type { ModelsQuerySend } from "@/Dto/SendDto/ModelsQuerySend";
 import type { ModelsListRec } from "@/Dto/ReceiveDto/ModelsListRec";
 import type { ModelFilesSend } from "@/Dto/SendDto/ModelFilesSend";
 import Constants from "@/utils/constants";
+import type { ModelLineChart } from "@/Dto/ReceiveDto/ModelLineChart";
+import type { ModelPieChart } from "@/Dto/ReceiveDto/ModelPieChart";
 // 定义标准返回类型
 // todo 把vue接收到的非标准的api返回值统一处理为ApiResponse<T>类型 特别是train.vue中的ListTrainTasksRes类型需要被替代
 export interface ApiResponse<T = any> {
@@ -108,5 +110,13 @@ export const modelApi = {
   // 上传模型文件
   uploadModel: (formData: FormData) => {
     return post('/upload-model', formData) as Promise<ApiResponse<void>>;
-  }
+  },
+  // 得到模型准确率折线图
+  listModelLineChart: () => {
+    return get("/ModelLineChart", {}) as Promise<ApiResponse<ModelLineChart>>;
+  },
+  // 整体 评论状态饼图+真实准确率
+  listModelPieChart: () => {
+    return get("/ModelPieChart", {}) as Promise<ApiResponse<ModelPieChart>>;
+  },
 };
