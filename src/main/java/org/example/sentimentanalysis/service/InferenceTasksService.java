@@ -2,10 +2,7 @@ package org.example.sentimentanalysis.service;
 
 import org.example.sentimentanalysis.dto.requestDto.InferPanelRec;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
-import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
-import org.example.sentimentanalysis.dto.responseDto.InferPieChartSend;
-import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
-import org.example.sentimentanalysis.dto.responseDto.TasksHotChartSend;
+import org.example.sentimentanalysis.dto.responseDto.*;
 import org.example.sentimentanalysis.model.InferenceTasks;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -21,13 +18,13 @@ import java.util.List;
  */
 public interface InferenceTasksService extends IService<InferenceTasks> {
 
-    List<InferTasksDetailSend> listAllTasks(List<InferenceTasks> tasks);
+    List<InferTasksSend.InferTasksDetailSend> listAllTasks(List<InferenceTasks> tasks);
 
     InferDataSend getInferenceData(InferPanelRec inferPanelRec);
 
     Long addInferenceTasks(InferDataSend inferDataSend);
 
-    void setInferenceTaskStatus(Long taskId, Integer status);
+    void setInferenceTaskStatus(Long taskId, Integer status, String statusMsg);
 
     void setInferenceTaskSuccess(InferResultRec inferResultRec);
 

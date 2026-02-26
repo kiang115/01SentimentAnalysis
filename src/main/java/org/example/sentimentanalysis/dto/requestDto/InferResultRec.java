@@ -19,7 +19,7 @@ public class InferResultRec {
     private Long taskId;
 
     @NotNull(message = "处理状态不能为空")
-    private Integer processStatus;//# 0-进行中, 1-完成, 2-异常
+    private Integer processStatus;//#0待处理 1处理中 2完成 3失败
 
     @NotNull(message = "处理评论数不能为空")
     private Long processCount;
@@ -28,7 +28,7 @@ public class InferResultRec {
     private String taskEndTime;
 
 //    @NotNull(message = "处理进度不能为空")
-    private Float taskDuration;
+    private Long taskDuration;
 
     // 可以是空集合 []，但不能是 null。同时开启级联校验以校验 List 内部的对象
 //    @NotEmpty(message = "评论结果列表不能为null")

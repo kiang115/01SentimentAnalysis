@@ -21,7 +21,7 @@ import java.util.List;
  * </p>
  *
  * @author kiang
- * @since 2026-02-24
+ * @since 2026-02-26
  */
 @Getter
 @Setter
@@ -57,7 +57,7 @@ public class InferenceTasks implements Serializable {
     private LocalDateTime inferenceEndTime;
 
     /**
-     * 推理持续时间 (单位: 毫秒)
+     * 推理持续时间 (单位: 秒)
      */
     @TableField("inference_duration")
     private Long inferenceDuration;
@@ -81,14 +81,20 @@ public class InferenceTasks implements Serializable {
     private List<Long> usedModelIds;
 
     /**
-     * 涉及领域id json存储eg[0,3,4]
+     * 涉及领域id json存储eg[0,3,4]models
      */
     @TableField(value = "domain_ids", typeHandler = Fastjson2TypeHandler.class)
     private List<Long> domainIds;
 
     /**
-     * 处理状态 ( 0:处理中, 1:成功完成, 2:失败完成)
+     * 处理状态 ( 0：待处理 1:处理中, 2:成功完成, 3:失败完成)
      */
-    @TableField("process_status")
-    private Integer processStatus;
+    @TableField("status")
+    private Integer status;
+
+    /**
+     * 处理状态文字记录
+     */
+    @TableField("status_msg")
+    private String statusMsg;
 }

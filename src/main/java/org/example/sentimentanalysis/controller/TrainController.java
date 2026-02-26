@@ -27,8 +27,6 @@ public class TrainController {
     private ModelsService modelsService;
     @Autowired
     private TrainDataService trainDataService;
-    @Autowired
-    private CommentsService commentsService;
 
     @Operation(summary = "列出训练任务列表")
     @GetMapping("/TrainTaskList")
@@ -59,14 +57,14 @@ public class TrainController {
         try {
             Response<InferResultRec> response = fastApiClient.sendTrainData(trainDataSend);
             if (response.getCode() != 200) {
-                trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()));
+                trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()).setStatusMsg(response.getMessage()));
                 throw new CustomBusinessException("error-模型训练失败:"+response.getMessage());
             }
         } catch (Exception e) {
-            trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()));
+            trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()).setStatusMsg("error-模型服务未启动:"+e.getMessage()));
             throw new CustomBusinessException("error-模型服务未启动:"+e.getMessage());
         }
-//        要解决并行同时对同一个大版本进行训练的问题+(模型大版本可选化,可以选择在那个基线版本上进行训练)
+//      todo  要能允许选择基线模型版本
         return Response.success();
     }
 
@@ -75,7 +73,7 @@ public class TrainController {
     public Response<Void> trainResultProcess(@RequestBody @Valid Response<TrainResultRec> trainDataRec) {
         TrainResultRec trainRec = trainDataRec.getData();
         if (trainDataRec.getCode() != 200) {
-            trainTasksService.updateById(new TrainTasks().setId(trainRec.getTaskId()).setStatus(TaskStatusEnum.FAILED.getCode()));
+            trainTasksService.updateById(new TrainTasks().setId(trainRec.getTaskId()).setStatus(TaskStatusEnum.FAILED.getCode()).setStatusMsg(trainDataRec.getMessage()));
             throw new CustomBusinessException("训练任务失败");
         }
 //        添加训练得到的新模型
@@ -86,7 +84,6 @@ public class TrainController {
         }
 //        对训练任务表(end_time,duration,model_id,accuracy,precision_rate,recall_rate,f1_score，train_loss_list，train_acc_list,val_loss_list，val_acc_list)进行更新
         trainTasksService.updateByTrainRec(trainRec, modelId);
-        System.out.println("对训练任务表进行更新");
 //        训练数据表，进行更新(trainCount++)。
         trainDataService.updateTrainCount(trainRec.getResults());
         System.out.println("训练数据表进行更新");

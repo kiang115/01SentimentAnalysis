@@ -6,10 +6,7 @@ import org.example.sentimentanalysis.assembler.InferenceDataAssembler;
 import org.example.sentimentanalysis.assembler.InferenceTasksAssembler;
 import org.example.sentimentanalysis.dto.requestDto.InferPanelRec;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
-import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
-import org.example.sentimentanalysis.dto.responseDto.InferPieChartSend;
-import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
-import org.example.sentimentanalysis.dto.responseDto.TasksHotChartSend;
+import org.example.sentimentanalysis.dto.responseDto.*;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.enums.TaskStatusEnum;
 import org.example.sentimentanalysis.enums.SortEnum;
@@ -70,7 +67,7 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
     private TrainTasksService trainTasksService;
 
     @Override
-    public List<InferTasksDetailSend> listAllTasks(List<InferenceTasks> tasks) {
+    public List<InferTasksSend.InferTasksDetailSend> listAllTasks(List<InferenceTasks> tasks) {
 //         加载所有的modelId->model映射
         Map<Long, Models> modelMap = modelsService.list().stream().collect(Collectors.toMap(Models::getModelId, model -> model));
 //        加载所有domainId->domain映射
@@ -161,8 +158,8 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
                 .filter(Objects::nonNull)
                 .mapToLong(item -> item.getInferenceCommentNums() == null ? 0L : item.getInferenceCommentNums())
                 .sum();
-//        设置默认的发起人id为1 处理中状态默认为0，无需设置
-        task.setDomainIds(domainIds).setUsedModelIds(modelIds).setProcessedCount(totalComments).setInitiatorId(1L);
+//        设置默认的发起人id为1
+        task.setDomainIds(domainIds).setUsedModelIds(modelIds).setProcessedCount(totalComments).setInitiatorId(1L).setStatus(TaskStatusEnum.PROCESSING.getCode()).setStatusMsg(TaskStatusEnum.PROCESSING.getName());
         save(task);
         if (task.getTaskId() == null) {
             throw new CustomBusinessException("添加推理任务失败，未生成主键！");
@@ -171,11 +168,10 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
     }
 
     @Override
-    public void setInferenceTaskStatus(Long taskId, Integer status) {
+    public void setInferenceTaskStatus(Long taskId, Integer status, String statusMsg) {
         if (TaskStatusEnum.existsByCode(status)) {
-            updateById(new InferenceTasks().setTaskId(taskId).setProcessStatus(status));
+            updateById(new InferenceTasks().setTaskId(taskId).setStatus(status).setStatusMsg(statusMsg));
         }
-        return;
     }
 
     @Override
@@ -185,18 +181,18 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
         LocalDateTime taskEndTime = LocalDateTime.parse(inferResultRec.getTaskEndTime(), formatter);
 
         Long taskId = inferResultRec.getTaskId();
-        Float taskDuration = inferResultRec.getTaskDuration();
+        long taskDuration = inferResultRec.getTaskDuration();
         Long processCount = inferResultRec.getProcessCount();
 
-        long inferenceDurationMs = (long) (taskDuration * 1000);
         BigDecimal avgProcessSpeed = BigDecimal.valueOf(processCount).divide(BigDecimal.valueOf(taskDuration), 2, RoundingMode.HALF_UP);
 
         this.updateById(new InferenceTasks()
                 .setTaskId(taskId)
                 .setInferenceEndTime(taskEndTime)
-                .setInferenceDuration(inferenceDurationMs)
+                .setInferenceDuration(taskDuration)
                 .setAvgProcessSpeed(avgProcessSpeed)
-                .setProcessStatus(SUCCESS.getCode()));
+                .setStatus(SUCCESS.getCode())
+                .setStatusMsg(SUCCESS.getName()));
 
         List<InferResultRec.CommentResultList> results = inferResultRec.getResults();
         List<Comments> commentsToUpdate = results.stream()

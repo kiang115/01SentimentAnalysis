@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author kiang
- * @since 2026-02-24
+ * @since 2026-02-26
  */
 @Getter
 @Setter
@@ -75,9 +75,12 @@ public class Models implements Serializable {
     @TableField("description")
     private String description;
 
-    @TableField("deleted")
-    private Integer deleted;
-
     @TableField("created_at")
     private LocalDateTime createdAt;
+
+    /**
+     * 1表示删除，0表示没被删除
+     */
+    @TableField("deleted")
+    private Integer deleted;
 }

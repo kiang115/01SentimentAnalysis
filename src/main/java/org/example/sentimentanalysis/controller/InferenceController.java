@@ -1,5 +1,6 @@
 package org.example.sentimentanalysis.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.example.sentimentanalysis.config.FastApiClient;
@@ -19,8 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Objects;
 
+import static com.baomidou.mybatisplus.extension.toolkit.Db.count;
 import static org.example.sentimentanalysis.enums.TaskStatusEnum.*;
 
 @RestController
@@ -38,13 +39,16 @@ public class InferenceController {
 
     @Operation(summary = "列出推理任务列表")
     @GetMapping("/InferenceTasksList")
-    public Response<List<InferTasksDetailSend>> InferenceTasksList() {
+    public Response<InferTasksSend> InferenceTasksList() {
 
         List<InferenceTasks> tasks = inferenceTasksService.list();
+        List<InferTasksSend.InferTasksDetailSend> tasksDetailSend = inferenceTasksService.listAllTasks(tasks);
 //          在这里查找tasks中是否有任务状态为待处理的，如果有返回false 否者true
-        boolean hasProcessingTask = tasks.stream().anyMatch(task ->
-                Objects.equals(task.getProcessStatus(), TaskStatusEnum.PROCESSING.getCode()));
-        return Response.success(inferenceTasksService.listAllTasks(tasks), hasProcessingTask ? "processing" : "completed");
+        LambdaQueryWrapper<InferenceTasks> queryWrapper = new LambdaQueryWrapper<InferenceTasks>()
+                .eq(InferenceTasks::getStatus, TaskStatusEnum.PROCESSING.getCode());
+        Integer ifAllFinished = inferenceTasksService.count(queryWrapper) > 0 ? 0 : 1;
+        InferTasksSend inferTasksSend = InferTasksSend.builder().inferenceTasksList(tasksDetailSend).ifAllFinished(ifAllFinished).build();
+        return Response.data(inferTasksSend);
     }
 
     @Operation(summary = "列出推理数据配置面板")
@@ -67,12 +71,12 @@ public class InferenceController {
 //        4. 异常处理
             if (response.getCode() != 200) {
 //            推理任务状态设置为failed
-                inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, TaskStatusEnum.FAILED.getCode());
+                inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, TaskStatusEnum.FAILED.getCode(), response.getMessage());
                 throw new CustomBusinessException("error-模型推理失败:" + response.getMessage());
             }
         } catch (Exception e) {
-            inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, TaskStatusEnum.FAILED.getCode());
-            throw new CustomBusinessException("error-模型服务未启动:" + e.getMessage());
+            inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, TaskStatusEnum.FAILED.getCode(), "error-模型服务通信异常:" + e.getMessage());
+            throw new CustomBusinessException("error-模型服务通信异常:" + e.getMessage());
         }
 //        5.更新评论状态 为推理中
         commentsService.updateCommentStatus(inferDataSend);
@@ -86,7 +90,7 @@ public class InferenceController {
         InferResultRec inferResultRec = inferenceResultDtoResponse.getData();
 
         if (inferenceResultDtoResponse.getCode() != 200) {
-            inferenceTasksService.setInferenceTaskStatus(inferResultRec.getTaskId(), FAILED.getCode());
+            inferenceTasksService.setInferenceTaskStatus(inferResultRec.getTaskId(), FAILED.getCode(), inferenceResultDtoResponse.getMessage());
 //            设置评论状态重新为待处理
             commentsService.updateCommentStatus(inferResultRec, CommentStatusEnum.PENDING.getCode());
             throw new CustomBusinessException("error:" + inferenceResultDtoResponse.getMessage());
@@ -106,7 +110,8 @@ public class InferenceController {
         InferPieChartSend inferPieChartSend = inferenceTasksService.getInferPieChart();
         return Response.data(inferPieChartSend);
     }
-//    月度日历热力图
+
+    //    月度日历热力图
     @Operation(summary = "数据月度日历热力图")
     @GetMapping("/TasksHotChart")
     public Response<TasksHotChartSend> TasksHotChart() {

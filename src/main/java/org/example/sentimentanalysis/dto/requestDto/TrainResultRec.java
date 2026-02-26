@@ -50,7 +50,7 @@ public class TrainResultRec {
     /**
      * 训练时长（单位：秒）
      */
-    private Double duration;
+    private Long duration;
 
     /**
      * 训练数据的ID列表

@@ -1,8 +1,7 @@
 package org.example.sentimentanalysis.assembler;
 
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
-import org.example.sentimentanalysis.dto.responseDto.InferTasksDetailSend;
-import org.example.sentimentanalysis.enums.TaskStatusEnum;
+import org.example.sentimentanalysis.dto.responseDto.InferTasksSend;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.model.InferenceTasks;
@@ -26,7 +25,7 @@ public class InferenceTasksAssembler {
      * @param domainMap 领域ID->领域实体的映射（提前批量查询，避免N+1）
      * @return 转换后的DTO列表
      */
-    public List<InferTasksDetailSend> toDtoList(List<InferenceTasks> tasks, Map<Long, Models> modelMap, Map<Long, Domains> domainMap) {
+    public List<InferTasksSend.InferTasksDetailSend> toDtoList(List<InferenceTasks> tasks, Map<Long, Models> modelMap, Map<Long, Domains> domainMap) {
         if (CollectionUtils.isEmpty(tasks)) {
             return Collections.emptyList();
         }
@@ -42,16 +41,17 @@ public class InferenceTasksAssembler {
      * @param modelMap 模型ID->模型实体的映射
      * @return 转换后的DTO
      */
-    public InferTasksDetailSend toDto(InferenceTasks task, Map<Long, Models> modelMap, Map<Long, Domains> domainMap) {
+    public InferTasksSend.InferTasksDetailSend toDto(InferenceTasks task, Map<Long, Models> modelMap, Map<Long, Domains> domainMap) {
 
-        InferTasksDetailSend dto = InferTasksDetailSend.builder()
+        InferTasksSend.InferTasksDetailSend dto = InferTasksSend.InferTasksDetailSend.builder()
                 .taskId(task.getTaskId())
                 .inferenceStartTime(task.getInferenceStartTime())
                 .inferenceEndTime(task.getInferenceEndTime())
                 .inferenceDuration(task.getInferenceDuration())
                 .processedCount(task.getProcessedCount())
                 .avgProcessSpeed(task.getAvgProcessSpeed())
-                .processStatusName(TaskStatusEnum.getStatusNameByCode(task.getProcessStatus()))
+                .status(task.getStatus())
+                .statusMsg((task.getStatusMsg()))
                 .build();
 
         // 2. 模型信息字段赋值（含空指针+业务校验）
@@ -67,8 +67,8 @@ public class InferenceTasksAssembler {
      * @param modelMap     模型ID->模型实体的映射
      * @return 模型信息DTO列表
      */
-    private List<InferTasksDetailSend.ModelInfo> buildModelInfoList(List<Long> usedModelIds, Map<Long, Models> modelMap, Map<Long, Domains> domainMap) {
-        List<InferTasksDetailSend.ModelInfo> modelInfoList = new ArrayList<>();
+    private List<InferTasksSend.InferTasksDetailSend.ModelInfo> buildModelInfoList(List<Long> usedModelIds, Map<Long, Models> modelMap, Map<Long, Domains> domainMap) {
+        List<InferTasksSend.InferTasksDetailSend.ModelInfo> modelInfoList = new ArrayList<>();
         if (CollectionUtils.isEmpty(usedModelIds)) {
             return modelInfoList;
         }
@@ -84,7 +84,7 @@ public class InferenceTasksAssembler {
                 // 保持原业务的异常逻辑，也可改为日志提醒（根据业务需求调整）
                 throw new CustomBusinessException("模型对应的领域ID[" + model.getDomainId() + "]不存在");
             }
-            InferTasksDetailSend.ModelInfo modelInfo = new InferTasksDetailSend.ModelInfo();
+            InferTasksSend.InferTasksDetailSend.ModelInfo modelInfo = new InferTasksSend.InferTasksDetailSend.ModelInfo();
             modelInfo.setDomainName(domain.getDomainName());
             modelInfo.setModelId(model.getModelId());
             modelInfo.setModelVersion(model.getModelVersion());

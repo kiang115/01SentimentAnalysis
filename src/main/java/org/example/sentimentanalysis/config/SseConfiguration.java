@@ -14,9 +14,6 @@ import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import tools.jackson.databind.ObjectMapper;
 
-import static org.example.sentimentanalysis.enums.RedisInferenceTaskStatusEnum.COMPLETED;
-import static org.example.sentimentanalysis.enums.RedisInferenceTaskStatusEnum.ERRORTASK;
-
 @Configuration
 public class SseConfiguration {
 
@@ -26,7 +23,6 @@ public class SseConfiguration {
     private ObjectMapper objectMapper;
 //   先写类，再注册！！
     // --- 任务 1：推理任务配置 ---
-//    todo 统一使用taskservice的状态标识,现在已经改变了trainservice还需要改变inferservice 下面的服务就要改 + vue前端的也要改
     @Bean
     public GenericSseService<InferTaskSnapshot> inferSseService() {
         return new GenericSseService<>(new SseTaskContext<InferTaskSnapshot>() {
@@ -52,7 +48,7 @@ public class SseConfiguration {
 
             @Override
             public boolean isFinalStatus(InferTaskSnapshot data) {
-                return data.getStatus().equals(COMPLETED.getCode()) || data.getStatus().equals(ERRORTASK.getCode());
+                return data.getStatus().equals(TaskStatusEnum.SUCCESS.getCode()) || data.getStatus().equals(TaskStatusEnum.FAILED.getCode());
             }
         }, redisTemplate, objectMapper);
     }

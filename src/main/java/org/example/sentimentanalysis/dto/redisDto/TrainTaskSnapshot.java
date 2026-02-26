@@ -10,7 +10,7 @@ public class TrainTaskSnapshot {
     //     任务id
     private Long taskId;
     //    已持续时间
-    private Double duration;
+    private Integer duration;
     //  处理状态
     private Integer status;
     private String statusMsg;

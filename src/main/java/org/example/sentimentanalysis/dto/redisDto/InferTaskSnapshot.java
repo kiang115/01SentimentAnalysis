@@ -13,7 +13,7 @@ public class InferTaskSnapshot {
 //    已处理评论数
     private Integer processedCount;
 //    已持续时间
-    private Double duration;
+    private Integer duration;
 //   当前时间
     // 关键点：匹配你的时间格式 "2026-02-13 20:17:02"
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

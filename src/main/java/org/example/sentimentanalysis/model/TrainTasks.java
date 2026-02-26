@@ -21,7 +21,7 @@ import java.util.List;
  * </p>
  *
  * @author kiang
- * @since 2026-02-24
+ * @since 2026-02-26
  */
 @Getter
 @Setter
@@ -63,6 +63,12 @@ public class TrainTasks implements Serializable {
     private Integer status;
 
     /**
+     * 训练状态信息，用于存储错误记录
+     */
+    @TableField("status_msg")
+    private String statusMsg;
+
+    /**
      * 训练开始时间
      */
     @TableField("start_time")
@@ -89,19 +95,19 @@ public class TrainTasks implements Serializable {
     /**
      * 来源于评论审核的数据数量
      */
-    @TableField("corrected_num")
+    @TableField("correctedNum")
     private Long correctedNum;
 
     /**
      * 来源于手动上传的数据数量
      */
-    @TableField("upload_num")
+    @TableField("uploadNum")
     private Long uploadNum;
 
     /**
      * 来源于初始数据集的数据数量
      */
-    @TableField("original_num")
+    @TableField("originalNum")
     private Long originalNum;
 
     /**

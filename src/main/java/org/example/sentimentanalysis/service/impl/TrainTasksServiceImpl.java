@@ -76,7 +76,7 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
 //          3. 计算回填的基准版本号 (如果需要增量训练,用现存版本号回填,不存在抛异常)
         String baseModelVersion = null;
         if (trainPanelRec.getIsOverTrain() == false) {
-            List<Models> domainExistModels = domainModels.stream().filter(model->model.getDeleted()==0).toList();
+            List<Models> domainExistModels = domainModels.stream().filter(model -> model.getDeleted() == 0).toList();
             if (domainExistModels.isEmpty()) {
                 throw new CustomBusinessException("选择增量训练,但是本大模型版本已无可用基础版本");
             }
@@ -148,6 +148,7 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         TrainTasks trainTask = new TrainTasks()
                 .setCreatorId(1L)
                 .setStatus(TaskStatusEnum.PROCESSING.getCode())
+                .setStatusMsg(TaskStatusEnum.PROCESSING.getName())
                 .setDomainId(trainPanelRec.getDomainId())
                 .setDomainName(domain.getDomainName())
                 .setCorrectedNum(trainPanelRec.getCorrectedNum())
@@ -180,7 +181,7 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
                 .setModelVersion(trainRec.getModelVersion())
                 .setModelId(modelId)
                 .setEndTime(trainRec.getEndTime())
-                .setDuration(trainRec.getDuration().longValue())
+                .setDuration(trainRec.getDuration())
                 .setAccuracy(trainRec.getAccuracy())
                 .setPrecisionRate(trainRec.getPrecisionRate())
                 .setRecallRate(trainRec.getRecallRate())
@@ -189,7 +190,8 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
                 .setTrainAccList(trainRec.getTrainAccList())
                 .setValLossList(trainRec.getValLossList())
                 .setValAccList(trainRec.getValAccList())
-                .setStatus(TaskStatusEnum.SUCCESS.getCode());
+                .setStatus(TaskStatusEnum.SUCCESS.getCode())
+                .setStatusMsg(TaskStatusEnum.SUCCESS.getName());
         updateById(trainTasks);
     }
 

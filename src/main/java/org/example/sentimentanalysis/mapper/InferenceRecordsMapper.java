@@ -9,7 +9,7 @@ import org.example.sentimentanalysis.model.InferenceRecords;
  * </p>
  *
  * @author kiang
- * @since 2026-02-24
+ * @since 2026-02-26
  */
 public interface InferenceRecordsMapper extends BaseMapper<InferenceRecords> {
 
