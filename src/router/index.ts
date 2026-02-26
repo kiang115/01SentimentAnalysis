@@ -13,19 +13,29 @@ const router = createRouter({
     },
     {
       path: "/model",
-      name: "model",
       component: () => import("../views/Model.vue"),
+      redirect: { name: "trainData" },
+      children: [
+        {
+          path: "trainData",
+          name: "trainData",
+          component: () => import("../views/TrainData.vue"),
+        },
+        {
+          path: "modelData",
+          name: "modelData",
+          component: () => import("../views/ModelData.vue"),
+        },
+        {
+          path: "Task",
+          name: "Task",
+          component: () => import("../views/Task.vue"),
+        },
+      ],
     },
-    {
-      path: "/data",
-      name: "trainData",
-      component: () => import("../views/TrainData.vue"),
-    },
-    {
-      path: "/modeldata",
-      name: "modelData",
-      component: () => import("../views/ModelData.vue"),
-    },
+    { path: "/Task", redirect: "/model/Task" },
+    { path: "/trainData", redirect: "/model/trainData" },
+    { path: "/modelData", redirect: "/model/modelData" },
   ],
 });
 

@@ -20,6 +20,7 @@ import type { ModelFilesSend } from "@/Dto/SendDto/ModelFilesSend";
 import Constants from "@/utils/constants";
 import type { ModelLineChart } from "@/Dto/ReceiveDto/ModelLineChart";
 import type { ModelPieChart } from "@/Dto/ReceiveDto/ModelPieChart";
+import type { InferTaskRec } from "@/Dto/ReceiveDto/InferTaskRec";
 // 定义标准返回类型
 // todo 把vue接收到的非标准的api返回值统一处理为ApiResponse<T>类型 特别是train.vue中的ListTrainTasksRes类型需要被替代
 export interface ApiResponse<T = any> {
@@ -30,7 +31,7 @@ export interface ApiResponse<T = any> {
 
 export const modelApi = {
   listInferTasks: () => {
-    return get("/InferenceTasksList", {});
+    return get("/InferenceTasksList", {}) as Promise<ApiResponse<InferTaskRec>>;
   },
   listInferPanel: () => {
     return get("/InferencePanel", {}) as Promise<ApiResponse<InferPanelRec>>;
