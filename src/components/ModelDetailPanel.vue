@@ -110,8 +110,8 @@ function buildChartOption(): echarts.ComposeOption<LineSeriesOption> {
       type: 'value',
       name: '准确率',
       min: 0,
-      max: 1,
-      axisLabel: { formatter: (value: number) => Math.round(value * 100) + '%' },
+      max: 100,
+      axisLabel: { formatter: (value: number) => Math.round(value) + '%' },
     },
     series,
   }
@@ -129,7 +129,7 @@ function initChart() {
       window.addEventListener('resize', resizeHandler)
     }
   }
-  chartInstance.setOption(buildChartOption())
+  chartInstance.setOption(buildChartOption(), { notMerge: true })
 }
 
 function buildPieOption() {

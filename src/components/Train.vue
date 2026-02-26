@@ -41,7 +41,10 @@
               <template v-if="displayEndTime(task)"> - {{ displayEndTime(task) }}</template>
               <template v-else> - 进行中</template>
             </div>
-            <el-tag :type="getStatusTagType(task)" size="small">{{ displayStatusText(task) }}</el-tag>
+            <el-tooltip v-if="getEffectiveStatus(task) === 3" :content="effectiveStatusMsg(task)">
+              <el-tag :type="getStatusTagType(task)" size="small">失败</el-tag>
+            </el-tooltip>
+            <el-tag v-else :type="getStatusTagType(task)" size="small">{{ displayStatusText(task) }}</el-tag>
           </div>
         </template>
         <el-row :gutter="16" class="stat-row">
@@ -135,13 +138,6 @@ const snapshotMap = ref<Map<number, TrainTaskSnapshot>>(new Map())
 
 type ListTrainTasksRes = { code: number; data: TrainTasksRec; message: string }
 
-const STATUS_TEXT: Record<number, string> = {
-  0: '待处理',
-  1: '处理中',
-  2: '已完成',
-  3: '失败',
-}
-
 // ==================== 展示用计算 ====================
 
 function getSnapshot(task: TrainTasksItem): TrainTaskSnapshot | undefined {
@@ -158,17 +154,27 @@ function displayEndTime(task: TrainTasksItem): string | null {
   return task.endTime ?? null
 }
 
-/** 状态文案：有快照用 statusMsg，无快照按 status 映射 */
-function displayStatusText(task: TrainTasksItem): string {
+/** 当前任务有效 status（快照优先，否则 DB），用于分支与 tag 类型 */
+function getEffectiveStatus(task: TrainTasksItem): number {
   const snap = getSnapshot(task)
-  if (snap != null) return snap.statusMsg
-  return STATUS_TEXT[task.status] ?? '—'
+  return snap != null ? snap.status : task.status
+}
+
+/** 当前任务有效 statusMsg（快照优先，否则 DB），用于展示与 status=3 的 tooltip */
+function effectiveStatusMsg(task: TrainTasksItem): string {
+  const snap = getSnapshot(task)
+  // 后端保证 statusMsg 存在，这里不再做本地映射
+  return snap?.statusMsg ?? task.statusMsg
+}
+
+/** 状态文案：status 0/1/2 用 statusMsg（status=3 时模板固定显示「失败」+ tooltip） */
+function displayStatusText(task: TrainTasksItem): string {
+  return effectiveStatusMsg(task)
 }
 
 /** 状态对应的标签类型：0 待处理=info，1 处理中=warning，2 已完成=success，3 失败=danger */
 function getStatusTagType(task: TrainTasksItem): 'info' | 'warning' | 'success' | 'danger' {
-  const snap = getSnapshot(task)
-  const status = snap != null ? snap.status : task.status
+  const status = getEffectiveStatus(task)
   const map: Record<number, 'info' | 'warning' | 'success' | 'danger'> = {
     0: 'info',
     1: 'warning',
@@ -180,9 +186,7 @@ function getStatusTagType(task: TrainTasksItem): 'info' | 'warning' | 'success' 
 
 /** 仅当 status=2（已完成）时可点击详情按钮 */
 function isTaskCompleted(task: TrainTasksItem): boolean {
-  const snap = getSnapshot(task)
-  const status = snap != null ? snap.status : task.status
-  return status === 2
+  return getEffectiveStatus(task) === 2
 }
 
 function openDetail(task: TrainTasksItem) {
@@ -221,12 +225,12 @@ function displayProcessSpeed(task: TrainTasksItem): string {
   return Number.isFinite(n) ? n.toFixed(2) : '—'
 }
 
-/** 持续时间：秒数格式化为 分:秒 或 时:分 */
+/** 持续时间：秒数格式化为 分:秒 或 时:分；后端已保证为整数秒，这里不再按小数处理 */
 function displayDuration(task: TrainTasksItem): string {
   const snap = getSnapshot(task)
   const sec = snap != null ? snap.duration : task.duration
   if (sec == null || !Number.isFinite(sec)) return '—'
-  const totalSec = Math.round(Number(sec))
+  const totalSec = Number(sec)
   if (totalSec >= 3600) {
     const h = Math.floor(totalSec / 3600)
     const m = Math.floor((totalSec % 3600) / 60)
@@ -280,23 +284,16 @@ function connectSSE() {
   const url = Constants.BASE_URL + '/api/sse/train/subscribe'
   const es = new EventSource(url)
   eventSourceRef.value = es
-  console.log('[Train] SSE created:', url)
-
-  es.addEventListener('open', () => {
-    console.log('[Train] SSE connection open')
-  })
 
   es.addEventListener('model:train_event:first', (e: MessageEvent) => {
     try {
       const list = JSON.parse(e.data as string) as TrainTaskSnapshot[]
       const hasOngoing = list.some((s) => s.status === 0 || s.status === 1)
-      console.log('[Train] first event: count=', list.length, 'hasOngoing=', hasOngoing, 'snaps=', list.map((s) => ({ taskId: s.taskId, status: s.status, statusMsg: s.statusMsg })))
       if (!hasOngoing) {
         es.close()
         if (eventSourceRef.value === es) {
           eventSourceRef.value = null
         }
-        console.log('[Train] first event had no status 0/1, SSE closed')
         return
       }
       const next = new Map(snapshotMap.value)
@@ -306,9 +303,8 @@ function connectSSE() {
         }
       }
       snapshotMap.value = next
-      console.log('[Train] snapshotMap after first: size=', next.size, 'taskIds=', [...next.keys()])
-    } catch (err) {
-      console.warn('[Train] first event parse error', err)
+    } catch {
+      // 解析失败时忽略
     }
   })
 
@@ -316,14 +312,12 @@ function connectSSE() {
     try {
       const snap = JSON.parse(e.data as string) as TrainTaskSnapshot
       applySnapshot(snap)
-      console.log('[Train] event: taskId=', snap.taskId, 'status=', snap.status, 'progressPercent=', snap.progressPercent)
-    } catch (err) {
-      console.warn('[Train] train_event parse error', err)
+    } catch {
+      // 解析失败时忽略
     }
   })
 
   es.addEventListener('error', () => {
-    console.warn('[Train] SSE error, closing')
     es.close()
     if (eventSourceRef.value === es) {
       eventSourceRef.value = null
@@ -346,17 +340,13 @@ async function loadTaskList() {
     const res = (await modelApi.listTrainTasks()) as unknown as ListTrainTasksRes
     const data = res?.data
     taskList.value = data?.trainTasksList ?? []
-    console.log('[Train] loadTaskList: taskCount=', taskList.value.length, 'ifAllFinished=', data?.ifAllFinished, 'taskIds=', taskList.value.map((t) => t.id))
     if (data?.ifAllFinished === 1) {
       closeSSE()
-      console.log('[Train] ifAllFinished=1, SSE not connected (closed if any)')
     } else {
       snapshotMap.value = new Map()
       connectSSE()
-      console.log('[Train] ifAllFinished=0, SSE connecting...')
     }
-  } catch (e) {
-    console.warn('[Train] loadTaskList failed', e)
+  } catch {
     taskList.value = []
     closeSSE()
   } finally {

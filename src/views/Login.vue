@@ -15,6 +15,7 @@ async function login() {
     ElMessage.success("你的token为" + res.data);
     userStore().setLoginInfo(res.data);
   } catch (e) {
+    console.log(e);
     ElMessage.error("登录失败"); // 建议使用 error 而不是普通消息
   }
 }

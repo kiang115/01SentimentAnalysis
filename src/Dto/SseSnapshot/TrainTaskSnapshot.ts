@@ -1,7 +1,7 @@
 export interface TrainTaskSnapshot {
   /** 任务唯一标识 ID */
   taskId: number;
-  /** 任务已执行时长（秒） */
+  /** 任务已执行时长（秒 ） 整数类型 */
   duration: number;
   /** 任务状态码（0:待处理, 1:运行中, 2:完成, 3:失败） */
   status: number;

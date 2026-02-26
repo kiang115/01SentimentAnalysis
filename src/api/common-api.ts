@@ -25,6 +25,7 @@ export const commonApi = {
     //     return get('/common/getCaptcha', {});
     // },
     login: () => {
+        console.log("请求/login中")
         return get('/login', {});
     },
 };
