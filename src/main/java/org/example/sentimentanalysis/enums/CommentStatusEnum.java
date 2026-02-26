@@ -6,12 +6,12 @@ import lombok.Getter;
 public enum CommentStatusEnum {
 
     // 定义枚举常量
-    PENDING(0, "待推理(pending)"),
-    INFERRING(1, "推理中(inferring)"),
-    INFERRED(2, "已推理(inferred)"),
-    REVIEWING(3, "审核中(reviewing)"),
-    CORRECTED(4, "已修正(corrected)"),
-    REJECTED(5, "已拒绝(rejected)");
+    PENDING(0, "待推理"),
+    INFERRING(1, "推理中"),
+    INFERRED(2, "已推理"),
+    REVIEWING(3, "审核中"),
+    CORRECTED(4, "已修正"),
+    REJECTED(5, "已拒绝");
 
     // Getter 方法
     // 成员变量

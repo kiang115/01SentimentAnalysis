@@ -215,8 +215,7 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
 
         // 查询所有领域信息，用于后续构建 ID 与 名称 的映射，避免在循环中重复查库
         List<Domains> domains = domainsService.list();
-        Map<Long, String> domainIdToName = domains.stream()
-                .collect(Collectors.toMap(Domains::getDomainId, Domains::getDomainName, (a, b) -> a));
+        Map<Long, String> domainIdToName = domainsService.getDomainIdToName();
 
         // 只查询状态为“成功(SUCCESS)”的训练任务，失败的任务不计入准确率统计
         List<TrainTasks> successTasks = list(new LambdaQueryWrapper<TrainTasks>()

@@ -1,6 +1,7 @@
 package org.example.sentimentanalysis.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.github.pagehelper.PageHelper;
@@ -12,11 +13,16 @@ import org.example.sentimentanalysis.dto.requestDto.ModelQueryRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.dto.responseDto.ModelDetailListSend;
 import org.example.sentimentanalysis.dto.commonDto.ModelInfo;
+import org.example.sentimentanalysis.dto.responseDto.ModelLineChartSend;
+import org.example.sentimentanalysis.dto.responseDto.ModelPieChartSend;
+import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.enums.ModelSourceEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
+import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.model.Models;
 import org.example.sentimentanalysis.mapper.ModelsMapper;
+import org.example.sentimentanalysis.service.CommentsService;
 import org.example.sentimentanalysis.service.DomainsService;
 import org.example.sentimentanalysis.service.ModelsService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -25,8 +31,11 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * <p>
@@ -44,6 +53,8 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
     private DomainsService domainsService;
     @Autowired
     private ModelsAssembler modelsAssembler;
+    @Autowired
+    private CommentsService commentsService;
 
     @Override
     public ModelDetailListSend listModels(ModelQueryRec modelQueryRec) {
@@ -250,7 +261,7 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
 
     @Override
     public String getNextModelVersion(String maxVersionStr, Boolean isOverTrain) {
-        if(maxVersionStr==null){
+        if (maxVersionStr == null) {
             return "0.0";
         }
         // 解析字符串为结构化对象
@@ -290,7 +301,7 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
 
     @Override
     public List<Integer> getMajorVersionList(List<Models> models) {
-        if(models==null || models.isEmpty()){
+        if (models == null || models.isEmpty()) {
             return List.of();
         }
         return models.stream().map(m -> {
@@ -306,6 +317,171 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
             return versionParts.minor();
         }).distinct().toList();
     }
+
+    /**
+     * 获取模型折线图数据。
+     * 逻辑：按领域(Domain)分组，以小版本(Minor)为横坐标，大版本(Major)为不同折线，展示模型准确率(Accuracy)走势。
+     * 数据源为 models 表全部记录（不按 deleted 过滤），准确率来自表虚拟列 (1 - corrected_num/inferred_num)*100。
+     */
+    @Override
+    public ModelLineChartSend getModelLineChart() {
+        // --- 1. 数据准备阶段 ---
+
+        // 查询所有领域信息，用于后续构建「领域ID -> 领域名称」的映射，避免在循环中重复查库
+        List<Domains> domains = domainsService.list();
+        Map<Long, String> domainIdToName = domainsService.getDomainIdToName();
+
+        // 查询全部模型（不按 deleted 过滤），用于按领域统计各版本准确率
+        List<Models> allModels = this.list();
+
+        // 将所有模型按 domainId 分组，形成 Map<领域ID, 模型列表>，便于 O(1) 获取某领域下的所有模型
+        Map<Long, List<Models>> modelsByDomain = allModels.stream()
+                .collect(Collectors.groupingBy(Models::getDomainId));
+
+        // 用于存储最终返回前端的：领域名称列表、各领域的折线数据详情
+        List<String> domainNameList = new ArrayList<>();
+        List<ModelLineChartSend.DomainLinesData> domainLinesDataList = new ArrayList<>();
+
+        // --- 2. 核心逻辑：按领域遍历 ---
+        for (Domains domain : domains) {
+            Long domainId = domain.getDomainId();
+            String domainName = domainIdToName.get(domainId);
+            // 获取当前领域下的所有模型，若没有则使用空列表
+            List<Models> domainModels = modelsByDomain.getOrDefault(domainId, Collections.emptyList());
+
+            // --- 3. 版本号解析与范围确定 ---
+            // 将版本号字符串（如 "1.2"）解析为 VersionParts（major=1, minor=2），便于比较与计算
+            List<VersionParts> parts = domainModels.stream()
+                    .map(m -> parseVersion(m.getModelVersion()))
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            // 计算当前领域内出现的最大大版本号（Major）和最大小版本号（Minor）
+            // 二者决定图表的 X 轴长度（maxMinor）以及折线数量（maxMajor）
+            int maxMajor = parts.isEmpty() ? 0 : parts.stream().mapToInt(VersionParts::major).max().orElse(0);
+            int maxMinor = parts.isEmpty() ? 0 : parts.stream().mapToInt(VersionParts::minor).max().orElse(0);
+
+            // --- 4. 建立「版本号 -> 准确率」映射 ---
+            // 将当前领域下的模型列表转为 Map：Key 为 modelVersion，Value 为 accuracy（表虚拟列）
+            // 用于在组装折线时快速按版本取准确率；同版本取后者 (a, b) -> b
+            Map<String, BigDecimal> versionToAccuracy = domainModels.stream()
+                    .filter(m -> m.getModelVersion() != null && m.getAccuracy() != null)
+                    .collect(Collectors.toMap(Models::getModelVersion, Models::getAccuracy, (a, b) -> b));
+
+            // --- 5. 组装前端绘图所需的数据结构 ---
+
+            // 生成横坐标（X 轴）标签：如 maxMinor=2 则 ["X.0", "X.1", "X.2"]
+            List<String> allSmallVersions = IntStream.rangeClosed(0, maxMinor)
+                    .mapToObj(m -> "X." + m)
+                    .toList();
+
+            List<ModelLineChartSend.MajorVersionData> majorVersionDataList = new ArrayList<>();
+            List<String> allMajorVersions = new ArrayList<>();
+
+            // 遍历从 0 到 maxMajor 的每个大版本（每条折线）
+            for (int major = 0; major <= maxMajor; major++) {
+                final int majorVal = major;
+
+                // 补齐数据：对 0..maxMinor 的每个小版本，若存在该版本则取准确率，否则为 null，保证每条折线在小版本维度上对齐，便于前端绘制
+                List<BigDecimal> versionAccuracyList = IntStream.rangeClosed(0, maxMinor)
+                        .mapToObj(minor -> versionToAccuracy.get(majorVal + "." + minor))
+                        .toList();
+
+                // 封装单条折线数据（如 "1.X" 下所有小版本对应的准确率点）
+                majorVersionDataList.add(ModelLineChartSend.MajorVersionData.builder()
+                        .majorVersion(majorVal + ".X")
+                        .versionAccuracyList(versionAccuracyList)
+                        .build());
+
+                allMajorVersions.add(majorVal + ".X");
+            }
+
+            // --- 6. 汇总当前领域数据并加入结果集 ---
+            domainLinesDataList.add(ModelLineChartSend.DomainLinesData.builder()
+                    .domainName(domainName)
+                    .allSmallVersions(allSmallVersions)
+                    .allMajorVersions(allMajorVersions)
+                    .majorVersionDataList(majorVersionDataList)
+                    .build());
+            domainNameList.add(domainName);
+        }
+
+        // --- 7. 返回最终 DTO ---
+        return ModelLineChartSend.builder()
+                .domainNameList(domainNameList)
+                .domainLinesDataList(domainLinesDataList)
+                .build();
+    }
+
+    @Override
+    public ModelPieChartSend getModelPieChart() {
+        ModelPieChartSend modelPieChartSend = new ModelPieChartSend();
+        // 1. 从数据库统计各状态的数量
+        QueryWrapper<Comments> queryWrapper = new QueryWrapper<>();
+        queryWrapper.select("status", "count(*) as count_num")
+                .groupBy("status");
+
+        List<Map<String, Object>> resultList = commentsService.listMaps(queryWrapper);
+
+        Map<Integer, Long> dbCountMap = resultList.stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row.get("status")).intValue(),
+                        row -> ((Number) row.get("count_num")).longValue(),
+                        (v1, v2) -> v1 // 防重
+                ));
+
+        List<String> messageList = new ArrayList<>();
+        List<Long> countList = new ArrayList<>();
+        for (CommentStatusEnum statusEnum : CommentStatusEnum.values()) {
+            // 将枚举的描述信息放入列表
+            messageList.add(statusEnum.getMessage());
+            // 从 Map 中获取对应的数量，如果没查到则补 0
+            Long count = dbCountMap.getOrDefault(statusEnum.getCode(), 0L);
+            countList.add(count);
+        }
+        modelPieChartSend.setStatusNameList(messageList);
+        modelPieChartSend.setStatusCountList(countList);
+
+//        统计不同领域整体准确度
+        List<Models> models = this.list();
+        List<Domains> domains = domainsService.list();
+        Map<Long, List<Models>> modelListByDomainId = models.stream().collect(Collectors.groupingBy(Models::getDomainId));
+        List<String> domainNameList = new ArrayList<>();
+        List<Long> inferredNumList = new ArrayList<>();
+        List<Long> rightNumList = new ArrayList<>();
+        List<BigDecimal> domainAccuracyList = domains.stream().map(domain -> {
+                    domainNameList.add(domain.getDomainName());
+                    List<Models> domainModels = modelListByDomainId.get(domain.getDomainId());
+//                    统计domainModels的准确率
+                    return getTotalAccuracy(domainModels,inferredNumList,rightNumList);
+                }
+        ).toList();
+
+
+        return ModelPieChartSend.builder()
+                .statusNameList(messageList)
+                .statusCountList(countList)
+                .domainNameList(domainNameList)
+                .domainAccuracyList(domainAccuracyList)
+                .inferredNumList(inferredNumList)
+                .rightNumList(rightNumList)
+                .build();
+    }
+
+    public BigDecimal getTotalAccuracy(List<Models> models,List<Long> inferredNumList,List<Long> rightNumList) {
+
+        long totalInferredNum = models == null ? 0 :models.stream().mapToLong(Models::getInferredNum).sum();
+        inferredNumList.add(totalInferredNum);
+        long totalCorrectedNum =models==null?0: models.stream().mapToLong(Models::getCorrectedNum).sum();
+        rightNumList.add(totalInferredNum-totalCorrectedNum);
+
+        // 返回百分比形式，保留2位小数，和SQL的DECIMAL(5,2)一致
+        return totalInferredNum == 0 ? BigDecimal.ZERO :
+                BigDecimal.valueOf(totalInferredNum - totalCorrectedNum)
+                        .multiply(BigDecimal.valueOf(100))  // 转换为百分比
+                        .divide(BigDecimal.valueOf(totalInferredNum), 2, RoundingMode.HALF_UP);  // 保留2位小数
+    }
+
 
     public record VersionParts(int major, int minor) {
     }

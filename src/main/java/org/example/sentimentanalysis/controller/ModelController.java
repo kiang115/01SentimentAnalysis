@@ -10,6 +10,8 @@ import org.example.sentimentanalysis.dto.requestDto.ModelFileRec;
 import org.example.sentimentanalysis.dto.requestDto.ModelQueryRec;
 import org.example.sentimentanalysis.dto.responseDto.ModelDetailListSend;
 import org.example.sentimentanalysis.dto.commonDto.ModelInfo;
+import org.example.sentimentanalysis.dto.responseDto.ModelLineChartSend;
+import org.example.sentimentanalysis.dto.responseDto.ModelPieChartSend;
 import org.example.sentimentanalysis.enums.ModelSourceEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Models;
@@ -144,4 +146,17 @@ public class ModelController {
         return Response.success();
     }
 
+    @Operation(summary = "模型整体准确率折线图")
+    @GetMapping("/ModelLineChart")
+    public Response<ModelLineChartSend> ModelLineChart() {
+        ModelLineChartSend modelLineChartSend = modelsService.getModelLineChart();
+        return Response.data(modelLineChartSend);
+    }
+
+    @Operation(summary = "领域整体准确率进度条+饼图")
+    @GetMapping("/ModelPieChart")
+    public Response<ModelPieChartSend> ModelPieChart() {
+        ModelPieChartSend modelPieChartSend = modelsService.getModelPieChart();
+        return Response.data(modelPieChartSend);
+    }
 }
