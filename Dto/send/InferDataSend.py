@@ -15,8 +15,8 @@ class CommentResult(BaseModel):
 
 class InferenceDataResponse(BaseModel):
     taskId: int = 0
-    processStatus: int = 2  # 0-进行中, 1-完成, 2-异常
+    processStatus: int = 3 # 0待处理 1处理中 2完成 3失败
     processCount: int = 0
     taskEndTime: str = ""  # 默认为空字符串而非 None
-    taskDuration: float = 0.0  # 默认 0.00
+    taskDuration: int = 0  # 默认 0
     results: List[CommentResult] = Field(default_factory=list)  # 默认为空列表 []

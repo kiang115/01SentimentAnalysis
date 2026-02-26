@@ -7,7 +7,7 @@ from datetime import datetime
 class InferTaskSnapshot:
     taskId: int
     processedCount: int
-    duration: float
+    duration: int #单位为秒
     status: int
     statusMsg: str
     currentTime: str = None
@@ -17,7 +17,6 @@ class InferTaskSnapshot:
         # 初始化时间并处理浮点数精度
         if not self.currentTime:
             self.currentTime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.duration = round(self.duration, 2)
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), ensure_ascii=False)

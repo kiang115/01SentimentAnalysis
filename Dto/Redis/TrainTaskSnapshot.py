@@ -6,7 +6,7 @@ from datetime import datetime
 @dataclass
 class TrainTaskSnapshot:
     taskId: int
-    duration: float
+    duration: int
     status: int # 0-待处理, 1-处理中, 2-已完成 3-失败
     statusMsg: str
     currentEpoch: int = 0
@@ -25,7 +25,6 @@ class TrainTaskSnapshot:
         if not self.currentTime:
             self.currentTime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        self.duration = round(self.duration, 2)
         self.progressPercent = round(max(0.0, min(100.0, self.progressPercent)), 2)
         self.processSpeed = round(self.processSpeed, 2)
         self.accuracy = round(self.accuracy, 4)

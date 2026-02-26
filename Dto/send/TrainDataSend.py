@@ -9,7 +9,7 @@ class TrainDataSend(BaseModel):
     modelVersion:str
     processStatus: int  # 0-待处理, 1-处理中, 2-已完成 3-失败
     endTime: str
-    duration: float
+    duration: int
     results: List[int] # 训练数据的id列表
     accuracy: float
     precisionRate: float

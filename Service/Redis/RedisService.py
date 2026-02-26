@@ -12,7 +12,7 @@ r = redis.from_url(get_settings().redis_url, decode_responses=True)
 async def update_infer_task(inferTaskSnapshot: InferTaskSnapshot, currentTime=None):
     """
     更新 Redis 中的任务快照并发布实时消息
-    status: 0-进行中, 1-完成, 2-异常
+    status: 0-待处理 1处理中 2成功 3失败
     """
     snapshot = replace(inferTaskSnapshot, currentTime=currentTime)
     try:
@@ -30,14 +30,14 @@ async def update_infer_task(inferTaskSnapshot: InferTaskSnapshot, currentTime=No
 async def update_train_task(trainTaskSnapshot: TrainTaskSnapshot, currentTime=None):
     """
     更新 Redis 中的训练任务快照并发布实时消息
-    status: 0-进行中, 1-完成, 2-异常
+        status: 0-待处理 1处理中 2成功 3失败
     """
     snapshot = replace(trainTaskSnapshot, currentTime=currentTime)
     try:
         # 以已完成的 batch 数量估算训练速度(batch/s)
         if snapshot.epochTotalBatches > 0 and snapshot.currentEpoch > 0:
             processed_batches = (
-                (snapshot.currentEpoch - 1) * snapshot.epochTotalBatches + snapshot.currentBatch
+                    (snapshot.currentEpoch - 1) * snapshot.epochTotalBatches + snapshot.currentBatch
             )
         else:
             processed_batches = snapshot.currentBatch

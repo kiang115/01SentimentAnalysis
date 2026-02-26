@@ -59,6 +59,7 @@ class _TextDataset(Dataset):
     def __getitem__(self, idx):
         return self.texts[idx], torch.tensor(self.labels[idx], dtype=torch.long)
 
+
 # 在黄金验证集中验证训练模型
 def _evaluate_bert(model, dataloader, criterion, device) -> Tuple[float, float, float, float, float]:
     """
@@ -287,7 +288,7 @@ class TrainEngine:
                 scheduler.step()
 
                 # ---- 每 batch 完成后更新进度快照（与 tqdm 时机一致）----
-                duration = time.time() - start_time
+                duration = round(time.time() - start_time)
                 current_batch = batch_idx + 1
                 processed = epoch * epoch_total_batches + current_batch
                 progress_pct = 100.0 * processed / total_batches
@@ -330,7 +331,7 @@ class TrainEngine:
         # 总体训练结束
         print("**********************训练结束")
         # ---- 训练结束：在 GoldTest 测试集上评估，得到最终测试指标（14-17 字段）----
-        duration = time.time() - start_time
+        duration = round(time.time() - start_time)
         test_acc, test_precision, test_recall, test_f1, _ = _evaluate_bert(
             model, test_loader, criterion, self.device
         )
@@ -342,7 +343,7 @@ class TrainEngine:
             modelVersion=model_version,
             processStatus=2,
             endTime=end_time_str,
-            duration=round(duration, 2),
+            duration=duration,
             results=ids,  # 全部训练样本 id 列表
             accuracy=round(test_acc, 4),  # GoldTest 测试集准确率
             precisionRate=round(test_precision, 4),  # GoldTest 测试集精确率
@@ -376,7 +377,7 @@ class TrainEngine:
         await update_train_task(
             TrainTaskSnapshot(
                 taskId=task_id,
-                duration=0.0,
+                duration=0,
                 status=0,
                 statusMsg="待处理",
                 currentEpoch=0,
@@ -428,7 +429,7 @@ class TrainEngine:
                 modelVersion=request.modelVersion,
                 processStatus=3,
                 endTime=end_time_str,
-                duration=0.0,
+                duration=0,
                 results=[],
                 accuracy=0.0,
                 precisionRate=0.0,
@@ -444,7 +445,7 @@ class TrainEngine:
             await update_train_task(
                 TrainTaskSnapshot(
                     taskId=task_id,
-                    duration=0.0,
+                    duration=0,
                     status=3,
                     statusMsg=error_msg,
                 )

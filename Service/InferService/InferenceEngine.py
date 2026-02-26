@@ -105,21 +105,22 @@ class InferenceEngine:
         def on_batch_done(batch_size_count: int):
             nonlocal processed_count
             processed_count += batch_size_count
-            current_duration = time.time() - start_time
-            batch_snapshot = InferTaskSnapshot(task_id, processed_count, current_duration, 0, "处理中")
+            current_duration = round(time.time() - start_time)
+            batch_snapshot = InferTaskSnapshot(task_id, processed_count, current_duration, 1, "处理中")
             loop.call_soon_threadsafe(
                 lambda: asyncio.create_task(
                     update_infer_task(batch_snapshot)
                 )
             )
 
+        # 开始推理任务
         try:
-            await update_infer_task(InferTaskSnapshot(task_id, 0, 0, 0, "处理中"))
+            await update_infer_task(InferTaskSnapshot(task_id, processedCount=0, status=0,duration=0, statusMsg="待处理"))
             for domain_data in request.inferenceDomainDataList:
                 res = await asyncio.to_thread(
                     self.predict_domain_batch,
                     domain_url=domain_data.domainUrl,
-                    version = domain_data.modelVersion,
+                    version=domain_data.modelVersion,
                     comments_data=[c.model_dump() for c in domain_data.inferenceDomainCommentList],
                     on_batch_complete=on_batch_done,
                     modelId=domain_data.modelId,
@@ -127,24 +128,24 @@ class InferenceEngine:
                 )
                 all_results.extend(res)
 
-            duration = time.time() - start_time
+            duration = round(time.time() - start_time)
             currentTime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             final_comment_result = InferenceDataResponse(
                 taskId=task_id,
-                processStatus=1,  # 完成
+                processStatus=2,  # 完成
                 results=all_results,
                 processCount=processed_count,
                 taskEndTime=currentTime,
-                taskDuration=duration
+                taskDuration=duration,
             )
             success_body = SendBody.success(data=final_comment_result)
             await post_springboot(success_body, back_url)
             await update_infer_task(
-                InferTaskSnapshot(task_id, processed_count, duration, 1, "已完成"), currentTime)
+                InferTaskSnapshot(task_id, processed_count, duration, 2, "已完成"), currentTime)
         except Exception as e:
             error_msg = f"任务失败: {str(e)}"
             print(error_msg)
-            all_raw_results=[]
+            all_raw_results = []
             for domain_data in request.inferenceDomainDataList:
                 current_model_id = domain_data.modelId
                 current_domain_id = domain_data.domainId
@@ -163,11 +164,11 @@ class InferenceEngine:
             # 4. 组装响应对象
             fail_response = InferenceDataResponse(
                 taskId=request.taskId,
-                processStatus=2,
+                processStatus=3,
                 processCount=len(all_results),
-                results=all_raw_results
+                results=all_raw_results,
             )
             fail_body = SendBody.fail(message=error_msg, code=500, data=fail_response)
             await post_springboot(fail_body, back_url)
             await update_infer_task(
-                InferTaskSnapshot(task_id, processed_count, time.time() - start_time, 2, error_msg))
+                InferTaskSnapshot(task_id, processed_count, round(time.time() - start_time), 3, error_msg))
