@@ -55,7 +55,7 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         Domains domain = Optional.ofNullable(domainsService.getById(trainPanelRec.getDomainId()))
                 .orElseThrow(() -> new CustomBusinessException("训练数据装配失败：领域不存在，domainId=" + trainPanelRec.getDomainId()));
 
-        Integer baseModelId = trainPanelRec.getBaseModelId();
+        Long baseModelId = trainPanelRec.getBaseModelId();
         boolean isOverTrain = trainPanelRec.getIsOverTrain();//是否重训
 
         String baseModelVersion = null;

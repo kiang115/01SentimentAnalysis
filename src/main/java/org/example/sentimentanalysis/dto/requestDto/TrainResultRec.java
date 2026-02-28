@@ -101,4 +101,9 @@ public class TrainResultRec {
      * 总批次数量
      */
     private Integer epochTotalBatches;
+
+    /**
+     * 模型的对应的基础模型id
+     */
+    private Long baseModelId;
 }

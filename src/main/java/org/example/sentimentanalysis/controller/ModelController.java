@@ -12,6 +12,7 @@ import org.example.sentimentanalysis.dto.responseDto.ModelDetailListSend;
 import org.example.sentimentanalysis.dto.commonDto.ModelInfo;
 import org.example.sentimentanalysis.dto.responseDto.ModelLineChartSend;
 import org.example.sentimentanalysis.dto.responseDto.ModelPieChartSend;
+import org.example.sentimentanalysis.dto.responseDto.ModelTreeChartSend;
 import org.example.sentimentanalysis.enums.ModelSourceEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Models;
@@ -158,5 +159,12 @@ public class ModelController {
     public Response<ModelPieChartSend> ModelPieChart() {
         ModelPieChartSend modelPieChartSend = modelsService.getModelPieChart();
         return Response.data(modelPieChartSend);
+    }
+
+    @Operation(summary = "模型树状图")
+    @GetMapping("/ModelTreeChart")
+    public Response<ModelTreeChartSend> ModelTreeChart() {
+//        结合domain，models表进行
+        return Response.data(modelsService.getModelTreeChart());
     }
 }

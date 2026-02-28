@@ -67,6 +67,8 @@ public class TrainDataSend {
     //  覆盖训练->新建一个版本号
     //  不覆盖->使用的前一个基础model版本
     private String baseModelVersion;
+    //  训练数据源
+    private Long baseModelId;
 
     @Data
     @Builder

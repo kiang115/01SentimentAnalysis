@@ -48,12 +48,13 @@ CREATE TABLE `inference_tasks` (
   `initiator_id` BIGINT  NOT NULL COMMENT '发起人 id',
   `inference_start_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '推理开始时间',
   `inference_end_time` DATETIME DEFAULT NULL COMMENT '推理结束时间',
-  `inference_duration` BIGINT DEFAULT NULL COMMENT '推理持续时间 (单位: 毫秒)',
+  `inference_duration` BIGINT DEFAULT NULL COMMENT '推理持续时间 (单位: 秒)',
   `processed_count` BIGINT DEFAULT NULL COMMENT '评论数 (处理评论总数量)',
   `avg_process_speed` DECIMAL(10, 2) DEFAULT NULL COMMENT '平均处理速度 (单位: 条/秒)',
   `used_model_ids` JSON DEFAULT NULL COMMENT '涉及使用模型id json 存储，eg[1,2,3,4]',
   `domain_ids` JSON DEFAULT NULL COMMENT '涉及领域id json存储eg[0,3,4]',
-  `process_status` INTEGER DEFAULT 0 COMMENT '处理状态 ( 0：待处理1:处理中, 2:成功完成, 3:失败完成)',
+  `status` INTEGER DEFAULT 0 COMMENT '处理状态 ( 0：待处理 1:处理中, 2:成功完成, 3:失败完成)',
+  `status_msg` TEXT COMMENT '处理状态文字记录',
 
   PRIMARY KEY (`task_id`),
   KEY `idx_initiator_id` (`initiator_id`) COMMENT '索引：按发起人查询',
@@ -68,7 +69,8 @@ CREATE TABLE models (
     source        ENUM('train', 'upload') NOT NULL COMMENT '来源',
     inferred_num BIGINT NOT NULL DEFAULT 0 COMMENT '总推理数',
     corrected_num  BIGINT NOT NULL DEFAULT 0 COMMENT '被修正数(错误数)',
-
+    deleted      Integer default 0 not null COMMENT '1表示删除，0表示没被删除';
+    base_model_id BIGINT DEFAULT NULL COMMENT '模型对应的，基础模型id'
     -- 虚拟生成的准确率字段
     -- 逻辑：如果总数为0则为0，否则计算 (1 - 修正/总数) * 100
     accuracy      DECIMAL(5, 2) GENERATED ALWAYS AS (
@@ -101,6 +103,7 @@ CREATE TABLE `train_tasks` (
     `domain_id` BIGINT NOT NULL COMMENT '领域id',
     `domain_name` VARCHAR(100) NOT NULL COMMENT '领域中文名字',
     `status` INTEGER NOT NULL DEFAULT 0 COMMENT '训练状态 (0:待处理, 1:处理中, 2:成功完成, 3:失败完成)',
+    `status_msg` TEXT NULL COMMENT '训练状态信息，用于存储错误记录',
 
     -- 2. 时间与统计
     `start_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '训练开始时间',
@@ -125,8 +128,8 @@ CREATE TABLE `train_tasks` (
     -- 4. 训练产出与指标
     `model_id` BIGINT  DEFAULT NULL COMMENT '训练得到的模型id',
     `model_version` VARCHAR(20) NULL COMMENT '模型版本号(两位小数, 如1.12)',
-    `accuracy` DECIMAL(5, 2) DEFAULT NULL COMMENT '总体准确率(%)',
-    `precision_rate` DECIMAL(5, 4) DEFAULT NULL COMMENT '精确率(准确率)',
+    `accuracy` DECIMAL(5, 4) DEFAULT NULL COMMENT '总体准确率',
+    `precision_rate` DECIMAL(5, 4) DEFAULT NULL COMMENT '精确率',
     `recall_rate` DECIMAL(5, 4) DEFAULT NULL COMMENT '召回率',
     `f1_score` DECIMAL(5, 4) DEFAULT NULL COMMENT 'f1分数',
 
@@ -145,6 +148,7 @@ CREATE TABLE `train_tasks` (
     INDEX `idx_domain` (`domain_id`),
     INDEX `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练任务管理表';
+
 
 
 
@@ -173,12 +177,13 @@ CREATE TABLE `train_para` (
     INDEX `idx_domain` (`domain_id`),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练参数配置模板表';
 
+
 训练数据表
 CREATE TABLE `train_data` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '训练数据id (主键)',
     `domain_id` BIGINT NOT NULL COMMENT '领域id',
     `content` TEXT NOT NULL COMMENT '训练数据内容',
-    `label` INT NOT NULL COMMENT '训练数据标签',
+    `label` INT NOT NULL COMMENT '训练数据标签 0差1好',
     `source` ENUM('corrected', 'upload', 'original') NOT NULL COMMENT '训练数据来源 (corrected/upload/original)',
     `train_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '数据被训练次数',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '数据创建时间',

@@ -11,11 +11,8 @@ import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.requestDto.ModelAddRec;
 import org.example.sentimentanalysis.dto.requestDto.ModelQueryRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
-import org.example.sentimentanalysis.dto.responseDto.ModelDetailListSend;
+import org.example.sentimentanalysis.dto.responseDto.*;
 import org.example.sentimentanalysis.dto.commonDto.ModelInfo;
-import org.example.sentimentanalysis.dto.responseDto.ModelLineChartSend;
-import org.example.sentimentanalysis.dto.responseDto.ModelPieChartSend;
-import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.enums.ModelSourceEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
@@ -174,7 +171,12 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
                 .eq(Models::getDomainId, trainRec.getDomainId());
 
         if (count(wrapper) == 0) {
-            Models newModel = new Models().setModelVersion(trainRec.getModelVersion()).setDomainId(trainRec.getDomainId()).setSource(ModelSourceEnum.TRAIN.getCode()).setTrainTaskId(trainRec.getTaskId());
+            Models newModel = new Models()
+                    .setModelVersion(trainRec.getModelVersion())
+                    .setDomainId(trainRec.getDomainId())
+                    .setSource(ModelSourceEnum.TRAIN.getCode())
+                    .setTrainTaskId(trainRec.getTaskId())
+                    .setBaseModelId(trainRec.getBaseModelId());
             save(newModel);
             return newModel.getModelId();
         }
@@ -487,6 +489,11 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
     public String getModelVersionById(Long modelId) {
         Models model = this.getById(modelId);
         return model.getModelVersion();
+    }
+
+    @Override
+    public ModelTreeChartSend getModelTreeChart() {
+        return null;
     }
 
     public BigDecimal getTotalAccuracy(List<Models> models, List<Long> inferredNumList, List<Long> rightNumList) {

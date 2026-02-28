@@ -58,5 +58,5 @@ public class TrainPanelRec {
     @NotNull(message = "是否覆盖训练标识不能为空")
     private Boolean isOverTrain;
 //    当overtrain为false时->全新模式，需要选择基础模型
-    private Integer  baseModelId;
+    private Long  baseModelId;
 }

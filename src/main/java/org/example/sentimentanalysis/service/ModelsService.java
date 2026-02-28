@@ -4,11 +4,8 @@ import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.requestDto.ModelAddRec;
 import org.example.sentimentanalysis.dto.requestDto.ModelQueryRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
-import org.example.sentimentanalysis.dto.responseDto.ModelDetailListSend;
+import org.example.sentimentanalysis.dto.responseDto.*;
 import org.example.sentimentanalysis.dto.commonDto.ModelInfo;
-import org.example.sentimentanalysis.dto.responseDto.ModelLineChartSend;
-import org.example.sentimentanalysis.dto.responseDto.ModelPieChartSend;
-import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
 import org.example.sentimentanalysis.enums.ModelSourceEnum;
 import org.example.sentimentanalysis.model.Models;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -58,4 +55,6 @@ public interface ModelsService extends IService<Models> {
 
     List<TrainPanelSend.ModelVersionAndId> getModelVersionAndIdList(List<Models> models);
     String getModelVersionById(Long modelId);
+
+    ModelTreeChartSend getModelTreeChart();
 }

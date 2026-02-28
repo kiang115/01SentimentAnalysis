@@ -36,6 +36,7 @@ public class TrainDataAssembler {
                 .loraModules(rec.getLoraModules())
                 .trainSplitRatio(rec.getTrainSplitRatio())
                 .ifOverTrain(rec.getIsOverTrain())
+                .baseModelId(rec.getBaseModelId())
                 // 训练数据
                 .trainDataList(List.of(
                         toTrainSourceData(TaskDataSourceEnum.CORRECTED.getCode(), corrected),
