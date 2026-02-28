@@ -156,7 +156,7 @@
 
     <template #footer>
       <el-button @click="close">取消</el-button>
-      <el-button type="primary" @click="handleConfirm">确认训练</el-button>
+      <el-button type="primary" :loading="confirmLoading" :disabled="confirmLoading" @click="handleConfirm">确认训练</el-button>
     </template>
   </el-dialog>
 </template>
@@ -201,6 +201,7 @@ const selectedParaId = ref<number | undefined>(undefined)
 const activeCollapse = ref<string[]>([])
 const overwriteTrain = ref(false)
 const selectedBaseModelId = ref<number | null>(null)
+const confirmLoading = ref(false)
 
 const counts = ref({
   correctedCount: 0,
@@ -464,9 +465,14 @@ async function handleConfirm() {
     baseModelId: overwriteTrain.value ? null : (selectedBaseModelId.value ?? null),
   }
 
-  await modelApi.checkTrainData(para)
-  emit('confirm')
-  close()
+  confirmLoading.value = true
+  try {
+    await modelApi.checkTrainData(para)
+    emit('confirm')
+    close()
+  } finally {
+    confirmLoading.value = false
+  }
 }
 
 watch(
