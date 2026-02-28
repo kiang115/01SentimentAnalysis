@@ -127,7 +127,7 @@
           <el-radio :label="true">是</el-radio>
           <el-radio
             :label="false"
-            :disabled="(currentDomain?.majorVersionList?.length ?? 0) === 0"
+            :disabled="(currentDomain?.modelVersionAndIdList?.length ?? 0) === 0"
           >
             否
           </el-radio>
@@ -135,18 +135,18 @@
       </div>
 
       <div v-show="!overwriteTrain" class="panel-row-single">
-        <span class="row-label">选择大版本号：</span>
+        <span class="row-label">选择基础模型：</span>
         <el-select
-          v-model="selectedMajorVersion"
+          v-model="selectedBaseModelId"
           clearable
-          placeholder="请选择大版本号"
+          placeholder="请选择基础模型"
           style="width: 220px"
         >
           <el-option
-            v-for="ver in currentDomain?.majorVersionList ?? []"
-            :key="ver"
-            :label="String(ver)"
-            :value="ver"
+            v-for="item in currentDomain?.modelVersionAndIdList ?? []"
+            :key="item.modelId"
+            :label="item.modelVersion"
+            :value="item.modelId"
           />
         </el-select>
       </div>
@@ -200,7 +200,7 @@ const selectedDomainId = ref<number>()
 const selectedParaId = ref<number | undefined>(undefined)
 const activeCollapse = ref<string[]>([])
 const overwriteTrain = ref(false)
-const selectedMajorVersion = ref<number | null>(null)
+const selectedBaseModelId = ref<number | null>(null)
 
 const counts = ref({
   correctedCount: 0,
@@ -364,7 +364,7 @@ function resetDomainState() {
     originalCount: 0,
   }
   selectedParaId.value = undefined
-  selectedMajorVersion.value = null
+  selectedBaseModelId.value = null
   formData.value = emptyForm()
   formRef.value?.clearValidate()
 }
@@ -399,7 +399,7 @@ function onClosed() {
   selectedDomainId.value = undefined
   activeCollapse.value = []
   overwriteTrain.value = false
-  selectedMajorVersion.value = null
+  selectedBaseModelId.value = null
   resetDomainState()
 }
 
@@ -440,8 +440,8 @@ async function handleConfirm() {
     return
   }
 
-  if (!overwriteTrain.value && selectedMajorVersion.value == null) {
-    await ElMessageBox.alert('选择「否」覆盖训练时，请选择大版本号。', '提示', {
+  if (!overwriteTrain.value && selectedBaseModelId.value == null) {
+    await ElMessageBox.alert('选择「否」覆盖训练时，请选择基础模型。', '提示', {
       type: 'warning',
     })
     return
@@ -461,7 +461,7 @@ async function handleConfirm() {
     loraModules: formData.value.loraModules as TrainPanelSend['loraModules'],
     trainSplitRatio: Number(formData.value.trainSplitRatio),
     isOverTrain: overwriteTrain.value,
-    majorVersion: overwriteTrain.value ? null : (selectedMajorVersion.value ?? null),
+    baseModelId: overwriteTrain.value ? null : (selectedBaseModelId.value ?? null),
   }
 
   await modelApi.checkTrainData(para)

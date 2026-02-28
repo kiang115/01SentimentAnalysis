@@ -13,6 +13,11 @@ export interface DefaultParaItem {
   trainSplitRatio: number
 }
 
+export interface ModelVersionAndId {
+  modelId: number
+  modelVersion: string
+}
+
 export interface TrainDomainItem {
   domainId: number
   domainName: string
@@ -20,7 +25,7 @@ export interface TrainDomainItem {
   uploadNum: number
   originalNum: number
   defaultParaList: DefaultParaItem[]
-  majorVersionList:number[]
+  modelVersionAndIdList: ModelVersionAndId[]
 }
 
 export interface TrainPanelRec {
