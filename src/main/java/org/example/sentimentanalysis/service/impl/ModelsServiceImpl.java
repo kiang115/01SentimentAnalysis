@@ -493,7 +493,12 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
 
     @Override
     public ModelTreeChartSend getModelTreeChart() {
-        return null;
+        // 数据来源：domains 按 domain_id 升序；models 全表按 domainId 分组，树形结构由 Assembler 按 base_model_id 递归组装
+        List<Domains> domains = domainsService.list(
+                Wrappers.lambdaQuery(Domains.class).orderByAsc(Domains::getDomainId));
+        List<Models> models = this.list();
+        Map<Long, List<Models>> modelsByDomainId = models.stream().collect(Collectors.groupingBy(Models::getDomainId));
+        return modelsAssembler.toModelTreeChartSend(domains, modelsByDomainId);
     }
 
     public BigDecimal getTotalAccuracy(List<Models> models, List<Long> inferredNumList, List<Long> rightNumList) {
