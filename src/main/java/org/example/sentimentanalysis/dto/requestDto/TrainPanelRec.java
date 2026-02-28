@@ -57,6 +57,6 @@ public class TrainPanelRec {
 //    为true 全新训练 false 增量训练
     @NotNull(message = "是否覆盖训练标识不能为空")
     private Boolean isOverTrain;
-//    当overtrain为false时->全新模式，需要选择大模型版本
-    private Integer  majorVersion;
+//    当overtrain为false时->全新模式，需要选择基础模型
+    private Integer  baseModelId;
 }

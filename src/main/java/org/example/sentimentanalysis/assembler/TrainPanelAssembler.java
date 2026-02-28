@@ -20,12 +20,13 @@ public class TrainPanelAssembler {
      * @param domains                领域列表
      * @param sourceCountMap         训练数据来源统计（domainId -> source -> count）
      * @param trainParaMap           训练参数列表（domainId -> TrainPara列表）
-     * @param domainMajorVersionList
+     * 
+     * @param domainModelsInfoMap
      * @return TrainPanelSend
      */
     public TrainPanelSend toDto(List<Domains> domains,
                                 Map<Long, Map<String, Long>> sourceCountMap,
-                                Map<Long, List<TrainPara>> trainParaMap, Map<Long, List<Integer>> domainMajorVersionList) {
+                                Map<Long, List<TrainPara>> trainParaMap, Map<Long, List<TrainPanelSend.ModelVersionAndId>> domainModelsInfoMap) {
         // 1. 边界处理：无领域直接返回空列表
         if (CollectionUtils.isEmpty(domains)) {
             return TrainPanelSend.builder()
@@ -45,7 +46,7 @@ public class TrainPanelAssembler {
                             .collect(Collectors.toList());
 
                     return TrainPanelSend.TrainPanelDomainDTO.builder()
-                            .majorVersionList(domainMajorVersionList.getOrDefault(domainId, Collections.emptyList()))
+                            .modelVersionAndIdList(domainModelsInfoMap.getOrDefault(domainId, Collections.emptyList()))
                             .domainId(domainId)
                             .domainName(domain.getDomainName())
                             .correctedNum(domainSourceCount.getOrDefault("corrected", 0L))

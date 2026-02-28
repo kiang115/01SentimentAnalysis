@@ -15,39 +15,36 @@ public class TrainDataAssembler {
 
     /**
      * 将训练面板请求参数、领域信息、训练数据组装为训练发送DTO
+     *
      * @param baseModelVersion 非空时写入（一般为 isOverTrain=false 时的当前最新版本）
      */
-    public TrainDataSend toTrainDataSend(TrainPanelRec trainPanelRec,
-                                         Domains domain,
-                                         String nextModelVersion,
-                                         String baseModelVersion,
-                                         List<TrainData> correctedDataList,
-                                         List<TrainData> uploadDataList,
-                                         List<TrainData> originalDataList) {
-        TrainDataSend.TrainDataSendBuilder b = TrainDataSend.builder()
+    public TrainDataSend toTrainDataSend(TrainPanelRec rec, Domains domain, String nextModelVersion, String baseModelVersion,
+                                         List<TrainData> corrected, List<TrainData> upload, List<TrainData> original) {
+        return TrainDataSend.builder()
+                // 基础信息
                 .domainId(domain.getDomainId())
                 .domainUrl(domain.getDomainUrl())
                 .modelVersion(nextModelVersion)
-                .loraR(trainPanelRec.getLoraR());
-        if (baseModelVersion != null) {
-            b.baseModelVersion(baseModelVersion);
-        }
-        return b
-                .loraAlpha(trainPanelRec.getLoraAlpha())
-                .epochs(trainPanelRec.getEpochs())
-                .batchSize(trainPanelRec.getBatchSize())
-                .learningRate(trainPanelRec.getLearningRate())
-                .randomSeed(trainPanelRec.getRandomSeed())
-                .loraModules(trainPanelRec.getLoraModules())
-                .trainSplitRatio(trainPanelRec.getTrainSplitRatio())
-                .ifOverTrain(trainPanelRec.getIsOverTrain())
+                .baseModelVersion(baseModelVersion)
+                // 配置参数 (来自 TrainPanelRec)
+                .loraR(rec.getLoraR())
+                .loraAlpha(rec.getLoraAlpha())
+                .epochs(rec.getEpochs())
+                .batchSize(rec.getBatchSize())
+                .learningRate(rec.getLearningRate())
+                .randomSeed(rec.getRandomSeed())
+                .loraModules(rec.getLoraModules())
+                .trainSplitRatio(rec.getTrainSplitRatio())
+                .ifOverTrain(rec.getIsOverTrain())
+                // 训练数据
                 .trainDataList(List.of(
-                        toTrainSourceData(TaskDataSourceEnum.CORRECTED.getCode(), correctedDataList),
-                        toTrainSourceData(TaskDataSourceEnum.UPLOAD.getCode(), uploadDataList),
-                        toTrainSourceData(TaskDataSourceEnum.ORIGINAL.getCode(), originalDataList)
+                        toTrainSourceData(TaskDataSourceEnum.CORRECTED.getCode(), corrected),
+                        toTrainSourceData(TaskDataSourceEnum.UPLOAD.getCode(), upload),
+                        toTrainSourceData(TaskDataSourceEnum.ORIGINAL.getCode(), original)
                 ))
                 .build();
     }
+
 
     /**
      * 单个source数据转换

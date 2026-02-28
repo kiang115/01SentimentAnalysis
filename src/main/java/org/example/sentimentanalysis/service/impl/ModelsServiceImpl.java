@@ -15,6 +15,7 @@ import org.example.sentimentanalysis.dto.responseDto.ModelDetailListSend;
 import org.example.sentimentanalysis.dto.commonDto.ModelInfo;
 import org.example.sentimentanalysis.dto.responseDto.ModelLineChartSend;
 import org.example.sentimentanalysis.dto.responseDto.ModelPieChartSend;
+import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.enums.ModelSourceEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
@@ -453,7 +454,7 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
                     domainNameList.add(domain.getDomainName());
                     List<Models> domainModels = modelListByDomainId.get(domain.getDomainId());
 //                    统计domainModels的准确率
-                    return getTotalAccuracy(domainModels,inferredNumList,rightNumList);
+                    return getTotalAccuracy(domainModels, inferredNumList, rightNumList);
                 }
         ).toList();
 
@@ -468,12 +469,32 @@ public class ModelsServiceImpl extends ServiceImpl<ModelsMapper, Models> impleme
                 .build();
     }
 
-    public BigDecimal getTotalAccuracy(List<Models> models,List<Long> inferredNumList,List<Long> rightNumList) {
+    @Override
+    public List<TrainPanelSend.ModelVersionAndId> getModelVersionAndIdList(List<Models> models) {
+//        有模型，就传入模型record列表，反着返回空列表
+        if (models.isEmpty()) {
+            return List.of();
+        }
+        return models.stream().map(model ->
+                TrainPanelSend.ModelVersionAndId.builder()
+                        .modelId(model.getModelId())
+                        .modelVersion(model.getModelVersion())
+                        .build()
+        ).toList();
+    }
 
-        long totalInferredNum = models == null ? 0 :models.stream().mapToLong(Models::getInferredNum).sum();
+    @Override
+    public String getModelVersionById(Long modelId) {
+        Models model = this.getById(modelId);
+        return model.getModelVersion();
+    }
+
+    public BigDecimal getTotalAccuracy(List<Models> models, List<Long> inferredNumList, List<Long> rightNumList) {
+
+        long totalInferredNum = models == null ? 0 : models.stream().mapToLong(Models::getInferredNum).sum();
         inferredNumList.add(totalInferredNum);
-        long totalCorrectedNum =models==null?0: models.stream().mapToLong(Models::getCorrectedNum).sum();
-        rightNumList.add(totalInferredNum-totalCorrectedNum);
+        long totalCorrectedNum = models == null ? 0 : models.stream().mapToLong(Models::getCorrectedNum).sum();
+        rightNumList.add(totalInferredNum - totalCorrectedNum);
 
         // 返回百分比形式，保留2位小数，和SQL的DECIMAL(5,2)一致
         return totalInferredNum == 0 ? BigDecimal.ZERO :

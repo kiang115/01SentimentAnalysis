@@ -58,8 +58,9 @@ public class TrainPanelSend {
         //     该领域的默认参数配置
         private List<TrainParaDTO> defaultParaList;
 
-//        选择模型版本
-        private List<Integer> majorVersionList;
+
+        //        选择模型信息
+        private List<ModelVersionAndId> modelVersionAndIdList;
     }
 
     @Data
@@ -111,5 +112,9 @@ public class TrainPanelSend {
          * 训练集比例
          */
         private BigDecimal trainSplitRatio;
+    }
+
+    @Builder
+    public record ModelVersionAndId(Long modelId, String modelVersion) {
     }
 }

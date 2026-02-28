@@ -55,16 +55,30 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
         Domains domain = Optional.ofNullable(domainsService.getById(trainPanelRec.getDomainId()))
                 .orElseThrow(() -> new CustomBusinessException("训练数据装配失败：领域不存在，domainId=" + trainPanelRec.getDomainId()));
 
-        if (trainPanelRec.getIsOverTrain() == false && trainPanelRec.getMajorVersion() == null) {
-            throw new CustomBusinessException("增量训练需要选择大版本号");
+        Integer baseModelId = trainPanelRec.getBaseModelId();
+        boolean isOverTrain = trainPanelRec.getIsOverTrain();//是否重训
+
+        String baseModelVersion = null;
+        String prefix = null;
+        if (!isOverTrain) {//不重训的时候，baseModel不为null，且必须存在
+            if (baseModelId == null) {
+                throw new CustomBusinessException("增量训练需要选择基础模型版本号");
+            }
+            Models model = modelsService.getById(baseModelId);
+            if (model.getModelVersion() == null) {
+                throw new CustomBusinessException("训练数据装配失败：模型版本不存在，modelId=" + baseModelId);
+            }
+            if (model.getDeleted() == 1) {
+                throw new CustomBusinessException("训练数据装配失败：模型版本已删除，modelId=" + baseModelId);
+            }
+            baseModelVersion = model.getModelVersion();
+            prefix = modelsService.parseVersion(baseModelVersion).major() + ".";
         }
-//        得到大版本号前缀
-        String majorPrefix = trainPanelRec.getMajorVersion() + ".";
-//        2. 查询当前领域或者当前领域+大版本 的模型列表
+//        2. 如果重训查询当前领域的全部模型/如果不重训，就找当前基础版本对应的大版本的全部模型
         List<Models> domainModels = modelsService.list(
                 new LambdaQueryWrapper<Models>()
-                        .eq(Models::getDomainId, trainPanelRec.getDomainId())
-                        .like(trainPanelRec.getIsOverTrain() == false, Models::getModelVersion, majorPrefix)
+                        .eq(Models::getDomainId, trainPanelRec.getDomainId())//当前领域
+                        .like(!isOverTrain, Models::getModelVersion, prefix)
         );
 
 //      1. 获取全部的最大版本号
@@ -72,16 +86,6 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
 
 //          2. 生成下一个版本号(只能使用历史历史全部模型生成唯一的版本号,无论是否被删除了)
         String nextModelVersion = modelsService.getNextModelVersion(latestAllVersionStr, trainPanelRec.getIsOverTrain());
-
-//          3. 计算回填的基准版本号 (如果需要增量训练,用现存版本号回填,不存在抛异常)
-        String baseModelVersion = null;
-        if (trainPanelRec.getIsOverTrain() == false) {
-            List<Models> domainExistModels = domainModels.stream().filter(model -> model.getDeleted() == 0).toList();
-            if (domainExistModels.isEmpty()) {
-                throw new CustomBusinessException("选择增量训练,但是本大模型版本已无可用基础版本");
-            }
-            baseModelVersion = modelsService.getMaxVersion(domainExistModels);
-        }
 
 
 //        4. 按领域批量查询训练数据
@@ -96,7 +100,11 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
 //      todo  需要根据训练数据标签 每个标签各一半筛选,否者导致标签分布不均匀
         Random random = new Random(trainPanelRec.getRandomSeed());
 //       6. 根据sourceMap中遍历，对每个数据来源进行筛选 sourceDataMap可能只包含某两个或者一个领域，并非全部领域
-
+//      至少不能三个来源数据之和为0
+        long sourceNums = trainPanelRec.getCorrectedNum() + trainPanelRec.getUploadNum() + trainPanelRec.getOriginalNum();
+        if (sourceNums == 0) {
+            throw new CustomBusinessException("训练数据装配失败：训练数据总数量为0");
+        }
         List<TrainData> correctedDataList = pickTrainDataBySource(
                 sourceDataMap.getOrDefault(TaskDataSourceEnum.CORRECTED.getCode(), Collections.emptyList()),
                 trainPanelRec.getCorrectedNum(),
@@ -314,14 +322,62 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
                                                   String source,
                                                   String domainName,
                                                   Random random) {
-        if (sourceDataList.size() < requiredCount) {
+        // 1. 过滤并分组 (仅保留 0 和 1)
+        List<TrainData> list0 = new ArrayList<>();
+        List<TrainData> list1 = new ArrayList<>();
+        for (TrainData data : sourceDataList) {
+            Integer label = data.getLabel();
+            if (Integer.valueOf(0).equals(label)) {
+                list0.add(data);
+            } else if (Integer.valueOf(1).equals(label)) {
+                list1.add(data);
+            }
+        }
+
+        int totalAvailable = list0.size() + list1.size();
+
+        // 2. 校验总数 (严格保留你原始的详细报错信息)
+        if (totalAvailable < requiredCount) {
             throw new CustomBusinessException(
-                    "训练数据装配失败：领域[" + domainName + "] source[" + source + "] 数据不足，目标数量="
-                            + requiredCount + "，可用数量=" + sourceDataList.size()
+                    "训练数据装配失败：领域[" + domainName + "] source[" + source + "] 合法数据(0/1)不足，目标数量="
+                            + requiredCount + "，可用数量=" + totalAvailable
             );
         }
-        List<TrainData> copiedList = new ArrayList<>(sourceDataList);
-        Collections.shuffle(copiedList, random);
-        return copiedList.subList(0, Math.toIntExact(requiredCount));
+
+        // 3. 组内先分别打乱 (保证稍后 subList 取出的个体是随机的)
+        Collections.shuffle(list0, random);
+        Collections.shuffle(list1, random);
+
+        // 4. 核心平衡逻辑：计算各取多少条，解决 1 vs 100 的分布不均问题
+        int count = Math.toIntExact(requiredCount);
+        int take0, take1;
+        int half = count / 2;
+
+        // 如果 0 和 1 的数量都超过一半，就各取 50%
+        if (list0.size() >= half && list1.size() >= (count - half)) {
+            take0 = half;
+            take1 = count - half;
+        }
+        // 如果 0 太少，把 0 全取走，剩下的名额全给 1
+        else if (list0.size() < half) {
+            take0 = list0.size();
+            take1 = count - take0;
+        }
+        // 如果 1 太少，把 1 全取走，剩下的名额全给 0
+        else {
+            take1 = list1.size();
+            take0 = count - take1;
+        }
+
+        // 5. 提取并合并
+        List<TrainData> resultList = new ArrayList<>(count);
+        resultList.addAll(list0.subList(0, take0));
+        resultList.addAll(list1.subList(0, take1));
+
+        // 6. 最终再次全量打乱 (非常重要！)
+        // 解决标签排列顺序问题，防止结果出现 [0,0,0...1,1,1...] 这种堆叠情况
+        Collections.shuffle(resultList, random);
+
+        return resultList;
     }
 }

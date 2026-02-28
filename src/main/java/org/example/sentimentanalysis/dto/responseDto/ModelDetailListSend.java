@@ -35,5 +35,6 @@ public class ModelDetailListSend {
         private BigDecimal accuracy;
         private String description;
         private LocalDateTime createdAt;
+        private String baseModelVersion;
     }
 }

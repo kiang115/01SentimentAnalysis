@@ -83,4 +83,7 @@ public class Models implements Serializable {
      */
     @TableField("deleted")
     private Integer deleted;
+
+    @TableField("base_model_id")
+    private Long baseModelId;
 }

@@ -3,7 +3,6 @@ package org.example.sentimentanalysis.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import org.apache.catalina.User;
 import org.example.sentimentanalysis.assembler.InferencePanelAssembler;
 import org.example.sentimentanalysis.assembler.TrainPanelAssembler;
 import org.example.sentimentanalysis.dto.commonDto.DomainsInfo;
@@ -17,7 +16,6 @@ import org.example.sentimentanalysis.mapper.DomainsMapper;
 import org.example.sentimentanalysis.model.Models;
 import org.example.sentimentanalysis.model.TrainData;
 import org.example.sentimentanalysis.model.TrainPara;
-import org.example.sentimentanalysis.response.ResponseCode;
 import org.example.sentimentanalysis.service.CommentsService;
 import org.example.sentimentanalysis.service.DomainsService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -88,7 +86,7 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
 //        1. 查询全部领域（面板按领域展示）
         List<Domains> domains = list();
         if (domains.isEmpty()) {
-            return trainPanelAssembler.toDto(domains, Collections.emptyMap(), Collections.emptyMap(),Collections.emptyMap());
+            return trainPanelAssembler.toDto(domains, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
         }
 
 //        2. 提取领域id，供批量查询参数使用
@@ -125,15 +123,17 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
         List<Models> allExistModels = modelsService.list(new LambdaQueryWrapper<Models>().eq(Models::getDeleted, 0));
 
         // 2. 分组
-        Map<Long, List<Models>> domainModelMap = allExistModels.stream()
+        Map<Long, List<Models>> domainModelsMap = allExistModels.stream()
                 .collect(Collectors.groupingBy(Models::getDomainId));
 
-        Map<Long, List<Integer>> domainMajorVersionList = new HashMap<>();
-        domainModelMap.forEach((domainId, models) -> {
-            domainMajorVersionList.put(domainId, modelsService.getMajorVersionList(models));
+//        找到领域id->modelInfo列表的映射
+        Map<Long, List<TrainPanelSend.ModelVersionAndId>> domainModelsInfoMap = new HashMap<>();
+
+        domainModelsMap.forEach((domainId, models) -> {
+            domainModelsInfoMap.put(domainId, modelsService.getModelVersionAndIdList(models));
         });
 //        6. 委托 assembler 进行 DTO 组装
-        return trainPanelAssembler.toDto(domains, sourceCountMap, trainParaMap,domainMajorVersionList);
+        return trainPanelAssembler.toDto(domains, sourceCountMap, trainParaMap, domainModelsInfoMap);
     }
 
     @Override
