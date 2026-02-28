@@ -232,8 +232,9 @@ onMounted(() => {
       <el-table-column prop="domainName" label="领域名称" width="120" align="center"
         column-key="domainId" :filters="domainFilters" :filter-method="serverFilter"
         :filter-multiple="false" />
-
+        
       <el-table-column prop="modelVersion" label="模型版本" width="100" align="center" />
+      <el-table-column prop="baseModelVersion" label="增量模型基础版本" width="140" align="center" />
 
       <el-table-column prop="sourceName" label="模型来源" width="120" align="center"
         column-key="source" :filters="sourceFilters" :filter-method="serverFilter"

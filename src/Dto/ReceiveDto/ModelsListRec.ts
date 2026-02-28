@@ -11,6 +11,7 @@ export interface ModelInfoItem {
         accuracy: number;//模型总体准确率
         description: string;//模型描述
         createdAt: string;//创建时间
+        baseModelVersion:string;//基础模型版本
 }
 
 /**
