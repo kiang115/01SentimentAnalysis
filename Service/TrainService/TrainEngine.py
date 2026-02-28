@@ -153,6 +153,8 @@ class TrainEngine:
         num_classes = settings.num_classes
         dropout = settings.dropout
         weight_decay = settings.weight_decay
+        base_model_id = request.baseModelId
+
 
         # 固定全局随机种子，保证每次训练结果可复现
         setup_seed(seed)
@@ -354,6 +356,7 @@ class TrainEngine:
             valLossList=val_loss_list,  # 各轮验证集 loss
             valAccList=val_acc_list,  # 各轮验证集 acc
             epochTotalBatches=epoch_total_batches,
+            baseModelId=base_model_id,
         )
 
     async def background_train_task(self, request: TrainDataRes) -> None:
@@ -439,6 +442,7 @@ class TrainEngine:
                 trainAccList=[],
                 valLossList=[],
                 valAccList=[],
+                baseModelId=request.baseModelId,
             )
             await post_springboot(SendBody.fail(message=error_msg, code=500, data=fail_data), back_url)
 

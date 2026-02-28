@@ -40,4 +40,5 @@ class TrainDataRes(BaseModel):
     trainSplitRatio: Decimal
     ifOverTrain: bool
     baseModelVersion:Optional[str] = None
+    baseModelId:Optional[int] = None
 

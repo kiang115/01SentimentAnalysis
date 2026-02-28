@@ -20,4 +20,5 @@ class TrainDataSend(BaseModel):
     valLossList: List[float]
     valAccList: List[float]
     epochTotalBatches: int = 0
+    baseModelId: int
 
