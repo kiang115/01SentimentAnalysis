@@ -97,7 +97,7 @@ const chartRef = ref<HTMLElement | null>(null)
 let chartInstance: echarts.ECharts | null = null
 let resizeHandler: (() => void) | null = null
 
-function formatDuration(sec: number | undefined): string {
+function formatDuration(sec: number | null | undefined): string {
   if (sec == null || !Number.isFinite(sec)) return '—'
   const totalSec = Math.round(Number(sec))
   if (totalSec >= 3600) {
@@ -110,7 +110,7 @@ function formatDuration(sec: number | undefined): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-function formatMetric(v: number | undefined): string {
+function formatMetric(v: number | null | undefined): string {
   if (v == null || !Number.isFinite(v)) return '—'
   return Number(v).toFixed(4)
 }

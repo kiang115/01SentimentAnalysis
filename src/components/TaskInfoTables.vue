@@ -100,7 +100,7 @@ function buildTrainLineOption(): EChartsOption {
   const xData = domainLines.allSmallVersions
   const series = domainLines.majorVersionDataList.map((major) => ({
     name: major.majorVersion,
-    type: 'line',
+    type: 'line' as const,
     data: major.versionAccuracyList,
     connectNulls: true
   }))
