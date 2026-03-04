@@ -16,3 +16,4 @@ peft==0.3.0
 
 #运行命令 pip install -r requirements.txt
 pydantic-settings
+aio-pika

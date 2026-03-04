@@ -1,6 +1,7 @@
 import base64
 import os
 import shutil
+from contextlib import asynccontextmanager
 from typing import List
 
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Form, UploadFile, File, Body
@@ -13,6 +14,7 @@ from Dto.receive.ModelInfo import ModelInfo
 from Dto.receive.InferDataRec import InferDataRes
 from Dto.send.InferDataSend import InferenceDataResponse
 from Common.Exception import BusinessException, SendBody, add_exception_handlers
+from RabbitMq import setup_rabbitmq, lifespan
 from Service.InferService.InferenceEngine import InferenceEngine
 from Service.TrainService.TrainEngine import TrainEngine
 from Dto.receive.TrainDataRec import TrainDataRes
@@ -20,7 +22,7 @@ from Config import get_settings, Settings
 
 engine = InferenceEngine()
 train_engine = TrainEngine()
-app = FastAPI(title="Sentiment Analysis API")
+app = FastAPI(title="Sentiment Analysis API",lifespan=lifespan)
 add_exception_handlers(app)
 
 
@@ -117,6 +119,7 @@ async def upload_model(
             f.write(content)
 
     return SendBody.success(message=f"模型已保存至 {lora_path}")
+
 
 
 if __name__ == "__main__":
