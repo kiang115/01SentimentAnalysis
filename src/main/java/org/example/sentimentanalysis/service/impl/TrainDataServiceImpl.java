@@ -73,6 +73,10 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
         if (source != null && TaskDataSourceEnum.isCodeExist(source)) {
             wrapper.eq(TrainData::getSource, source);
         }
+        Long domainId = queryRec.getDomainId();
+        if(domainId!=null){
+            wrapper.eq(TrainData::getDomainId, domainId);
+        }
 
         String orderName = queryRec.getOrderName();
         String order = queryRec.getOrder();
