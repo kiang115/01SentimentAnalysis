@@ -143,6 +143,10 @@ class InferenceEngine:
             await update_infer_task(
                 InferTaskSnapshot(task_id, processed_count, duration, 2, "已完成"), currentTime)
         except Exception as e:
+            retry_count=1#这里应该传入retry_count的
+            if "out of memory" in str(e).lower():
+                if retry_count<3:
+                    raise
             error_msg = f"任务失败: {str(e)}"
             print(error_msg)
             all_raw_results = []
