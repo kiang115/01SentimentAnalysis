@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import net.sf.jsqlparser.Model;
 import org.example.sentimentanalysis.config.FastApiClient;
+import org.example.sentimentanalysis.config.StpKit;
 import org.example.sentimentanalysis.dto.requestDto.ModelAddRec;
 import org.example.sentimentanalysis.dto.requestDto.ModelFileRec;
 import org.example.sentimentanalysis.dto.requestDto.ModelQueryRec;
@@ -43,6 +44,8 @@ public class ModelController {
     @Operation(summary = "模型列表")
     @PostMapping("/listModels")
     public Response<ModelDetailListSend> listModels(@RequestBody ModelQueryRec modelQueryRec) {
+
+//        StpKit.ADMIN.checkLogin();
         return Response.data(modelsService.listModels(modelQueryRec));
     }
 

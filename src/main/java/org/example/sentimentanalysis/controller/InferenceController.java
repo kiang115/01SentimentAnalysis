@@ -1,6 +1,7 @@
 package org.example.sentimentanalysis.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.example.sentimentanalysis.config.FastApiClient;
@@ -16,12 +17,16 @@ import org.example.sentimentanalysis.service.CommentsService;
 import org.example.sentimentanalysis.service.DomainsService;
 import org.example.sentimentanalysis.service.InferenceTasksService;
 import org.example.sentimentanalysis.service.ModelsService;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
 import static com.baomidou.mybatisplus.extension.toolkit.Db.count;
+import static org.example.sentimentanalysis.config.RabbitConfig.EXCHANGE_SENTIMENT;
+import static org.example.sentimentanalysis.config.RabbitConfig.ROUTING_INFER_REQ;
 import static org.example.sentimentanalysis.enums.TaskStatusEnum.*;
 
 @RestController
@@ -36,6 +41,10 @@ public class InferenceController {
     private CommentsService commentsService;
     @Autowired
     private ModelsService modelsService;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Operation(summary = "列出推理任务列表")
     @GetMapping("/InferenceTasksList")
@@ -60,26 +69,45 @@ public class InferenceController {
     @Operation(summary = "使用配置开始推理")
     @PostMapping("/InferenceDataCheck")
     public Response InferenceDataCheck(@RequestBody @Valid InferPanelRec inferPanelRec) {
-//        1.根据参数配置找到对应的inferDataSend
+////        1.根据参数配置找到对应的inferDataSend
+//        InferDataSend inferDataSend = inferenceTasksService.getInferenceData(inferPanelRec);
+////        2. 增加推理任务表
+//        Long inferenceTaskId = inferenceTasksService.addInferenceTasks(inferDataSend);
+//        inferDataSend.setTaskId(inferenceTaskId);
+////        3. 发送数据给fastapi
+//        try {
+//            Response<InferResultRec> response = fastApiClient.sendInferenceData(inferDataSend);
+////        4. 异常处理
+//            if (response.getCode() != 200) {
+////            推理任务状态设置为failed
+//                inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, TaskStatusEnum.FAILED.getCode(), response.getMessage());
+//                throw new CustomBusinessException("error-模型推理失败:" + response.getMessage());
+//            }
+//        } catch (Exception e) {
+//            inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, TaskStatusEnum.FAILED.getCode(), "error-模型服务通信异常:" + e.getMessage());
+//            throw new CustomBusinessException("error-模型服务通信异常:" + e.getMessage());
+//        }
+////        5.更新评论状态 为推理中
+//        commentsService.updateCommentStatus(inferDataSend);
+//        return Response.success();
+
+        // 1. 组装推理数据
         InferDataSend inferDataSend = inferenceTasksService.getInferenceData(inferPanelRec);
-//        2. 增加推理任务表
+        // 2. 新建任务记录
         Long inferenceTaskId = inferenceTasksService.addInferenceTasks(inferDataSend);
         inferDataSend.setTaskId(inferenceTaskId);
-//        3. 发送数据给fastapi
-        try {
-            Response<InferResultRec> response = fastApiClient.sendInferenceData(inferDataSend);
-//        4. 异常处理
-            if (response.getCode() != 200) {
-//            推理任务状态设置为failed
-                inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, TaskStatusEnum.FAILED.getCode(), response.getMessage());
-                throw new CustomBusinessException("error-模型推理失败:" + response.getMessage());
-            }
-        } catch (Exception e) {
-            inferenceTasksService.setInferenceTaskStatus(inferenceTaskId, TaskStatusEnum.FAILED.getCode(), "error-模型服务通信异常:" + e.getMessage());
-            throw new CustomBusinessException("error-模型服务通信异常:" + e.getMessage());
-        }
-//        5.更新评论状态 为推理中
+        // 3. 发送到 RabbitMQ 队列，交给 FastAPI 消费
+        String json = objectMapper.writeValueAsString(inferDataSend);
+        rabbitTemplate.convertAndSend(
+                EXCHANGE_SENTIMENT,
+                ROUTING_INFER_REQ,
+                json
+        );
+
+        // 4. 更新评论状态为推理中（和原来一样）
         commentsService.updateCommentStatus(inferDataSend);
+
+        // 5. 返回“任务已提交”即可，具体结果等 FastAPI 回调 / 或结果队列
         return Response.success();
     }
 

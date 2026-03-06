@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-@FeignClient(name = "fastapiClient", url = "${remote.fastapi.url}")
+@FeignClient(name = "fastapiClient", url = "${remote.fastapi.url}",configuration = FeignInterceptor.class)
 public interface FastApiClient {
 
     @PostMapping("/predict")

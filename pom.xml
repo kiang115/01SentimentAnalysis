@@ -107,6 +107,11 @@
             <artifactId>sa-token-redis-template</artifactId>
             <version>1.44.0</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>cn.dev33</groupId>-->
+<!--            <artifactId>sa-token-alone-redis</artifactId>-->
+<!--            <version>1.44.0</version>-->
+<!--        </dependency>-->
         <!--redis-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -146,6 +151,11 @@
             <artifactId>commons-csv</artifactId>
             <version>1.14.1</version>
             <scope>compile</scope>
+        </dependency>
+        <!-- 引入消息队列-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
     </dependencies>
 

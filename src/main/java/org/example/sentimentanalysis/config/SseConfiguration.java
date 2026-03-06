@@ -82,21 +82,6 @@ public class SseConfiguration {
             }
         }, redisTemplate, objectMapper);
     }
-//        @Bean
-//    public GenericSseService<FileTaskDto> fileSseService() {
-//        return new GenericSseService<>(new SseTaskContext<FileTaskDto>() {
-//            @Override
-//            public String getTopic() { return "file_updates"; }
-//            @Override
-//            public String getHashKey() { return "file_status_hash"; }
-//            @Override
-//            public Class<FileTaskDto> getDataClass() { return FileTaskDto.class; }
-//            @Override
-//            public boolean isFinalStatus(FileTaskDto data) {
-//                return "SUCCESS".equals(data.getState()) || "FAILED".equals(data.getState());
-//            }
-//        }, redisTemplate, objectMapper);
-//    }
 
     // --- 统一注册 Redis 监听器 ---
     @Bean

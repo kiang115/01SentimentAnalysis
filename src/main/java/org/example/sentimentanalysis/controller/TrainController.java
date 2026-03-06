@@ -12,8 +12,12 @@ import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.TrainTasks;
 import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.*;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.ObjectMapper;
+
+import static org.example.sentimentanalysis.config.RabbitConfig.*;
 
 @RestController
 public class TrainController {
@@ -27,6 +31,10 @@ public class TrainController {
     private ModelsService modelsService;
     @Autowired
     private TrainDataService trainDataService;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Operation(summary = "列出训练任务列表")
     @GetMapping("/TrainTaskList")
@@ -48,23 +56,33 @@ public class TrainController {
     @Operation(summary = "使用配置开始训练")
     @PostMapping("/TrainDataCheck")
     public Response<TrainDataSend> trainDataCheck(@RequestBody @Valid TrainPanelRec trainPanelRec) {
-//      得到发送给fastapi的数据
+////      得到发送给fastapi的数据
+//        TrainDataSend trainDataSend = trainTasksService.getTrainData(trainPanelRec);
+////        todo 模型界面需要增加一个字段 叫做使用的基础模型的版本号
+//        Long taskId = trainTasksService.addTrainTask(trainPanelRec);
+//        trainDataSend.setTaskId(taskId);
+//
+//        try {
+//            Response<InferResultRec> response = fastApiClient.sendTrainData(trainDataSend);
+//            if (response.getCode() != 200) {
+//                trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()).setStatusMsg(response.getMessage()));
+//                throw new CustomBusinessException("error-模型训练失败:"+response.getMessage());
+//            }
+//        } catch (Exception e) {
+//            trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()).setStatusMsg("error-模型服务未启动:"+e.getMessage()));
+//            throw new CustomBusinessException("error-模型服务未启动:"+e.getMessage());
+//        }
+        //      得到发送给fastapi的数据
         TrainDataSend trainDataSend = trainTasksService.getTrainData(trainPanelRec);
-//        todo 模型界面需要增加一个字段 叫做使用的基础模型的版本号
         Long taskId = trainTasksService.addTrainTask(trainPanelRec);
         trainDataSend.setTaskId(taskId);
-
-        try {
-            Response<InferResultRec> response = fastApiClient.sendTrainData(trainDataSend);
-            if (response.getCode() != 200) {
-                trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()).setStatusMsg(response.getMessage()));
-                throw new CustomBusinessException("error-模型训练失败:"+response.getMessage());
-            }
-        } catch (Exception e) {
-            trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()).setStatusMsg("error-模型服务未启动:"+e.getMessage()));
-            throw new CustomBusinessException("error-模型服务未启动:"+e.getMessage());
-        }
-//      todo  要能允许选择基线模型版本
+                // 3. 发送到 RabbitMQ 队列，交给 FastAPI 消费
+        String json = objectMapper.writeValueAsString(trainDataSend);
+        rabbitTemplate.convertAndSend(
+                EXCHANGE_SENTIMENT,
+                QUEUE_TRAIN_REQ,
+                json
+        );
         return Response.success();
     }
 
