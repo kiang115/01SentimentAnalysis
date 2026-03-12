@@ -13,6 +13,7 @@ import org.example.sentimentanalysis.model.TrainTasks;
 import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,6 +28,8 @@ public class TrainController {
     private ModelsService modelsService;
     @Autowired
     private TrainDataService trainDataService;
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
     @Operation(summary = "列出训练任务列表")
     @GetMapping("/TrainTaskList")
@@ -50,7 +53,6 @@ public class TrainController {
     public Response<TrainDataSend> trainDataCheck(@RequestBody @Valid TrainPanelRec trainPanelRec) {
 //      得到发送给fastapi的数据
         TrainDataSend trainDataSend = trainTasksService.getTrainData(trainPanelRec);
-//        todo 模型界面需要增加一个字段 叫做使用的基础模型的版本号
         Long taskId = trainTasksService.addTrainTask(trainPanelRec);
         trainDataSend.setTaskId(taskId);
 
@@ -58,13 +60,16 @@ public class TrainController {
             Response<InferResultRec> response = fastApiClient.sendTrainData(trainDataSend);
             if (response.getCode() != 200) {
                 trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()).setStatusMsg(response.getMessage()));
-                throw new CustomBusinessException("error-模型训练失败:"+response.getMessage());
+                throw new CustomBusinessException("error-模型训练失败:" + response.getMessage());
             }
         } catch (Exception e) {
-            trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()).setStatusMsg("error-模型服务未启动:"+e.getMessage()));
-            throw new CustomBusinessException("error-模型服务未启动:"+e.getMessage());
+            trainTasksService.updateById(new TrainTasks().setId(taskId).setStatus(TaskStatusEnum.FAILED.getCode()).setStatusMsg("error-模型服务未启动:" + e.getMessage()));
+            throw new CustomBusinessException("error-模型服务未启动:" + e.getMessage());
         }
-//      todo  要能允许选择基线模型版本
+//        todo 成功发送了，存储这个model号，防止并行训练时被覆盖了 解决方法是存入redis中，下次找版本号的时候，redis中版本号也要加上
+//        存入当前running的版本号到redis中
+        // 将版本号+领域存入redis 的集合中
+        redisTemplate.opsForSet().add(ModelsService.ACTIVE_VERSION_KEY, trainDataSend.getModelVersion()+":"+trainDataSend.getDomainId());
         return Response.success();
     }
 
@@ -78,6 +83,8 @@ public class TrainController {
         }
 //        添加训练得到的新模型
         Long modelId = modelsService.addModelByTrainResult(trainRec);
+//        从redis中删除对应的running版本号
+        redisTemplate.opsForSet().remove(ModelsService.ACTIVE_VERSION_KEY, trainRec.getModelVersion()+":"+trainRec.getDomainId());
         System.out.println("添加训练得到的新模型");
         if (modelId == -1) {
             throw new CustomBusinessException("训练数据装配失败：模型已存在");

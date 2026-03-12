@@ -13,7 +13,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import tools.jackson.databind.ObjectMapper;
-
+// 配置sse服务模板，运行代码在GenericSseService
 @Configuration
 public class SseConfiguration {
 

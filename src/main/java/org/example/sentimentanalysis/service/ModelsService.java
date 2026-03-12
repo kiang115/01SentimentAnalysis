@@ -57,4 +57,6 @@ public interface ModelsService extends IService<Models> {
     String getModelVersionById(Long modelId);
 
     ModelTreeChartSend getModelTreeChart();
+
+    String ACTIVE_VERSION_KEY="running_training_versions";
 }

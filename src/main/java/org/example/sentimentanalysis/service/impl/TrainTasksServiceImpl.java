@@ -3,7 +3,6 @@ package org.example.sentimentanalysis.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import org.bouncycastle.math.raw.Mod;
 import org.example.sentimentanalysis.assembler.TrainDataAssembler;
 import org.example.sentimentanalysis.dto.requestDto.TrainPanelRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
@@ -23,6 +22,7 @@ import org.example.sentimentanalysis.service.ModelsService;
 import org.example.sentimentanalysis.service.TrainDataService;
 import org.example.sentimentanalysis.service.TrainTasksService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -48,6 +48,8 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
     private TrainDataService trainDataService;
     @Autowired
     private TrainDataAssembler trainDataAssembler;
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
     @Override
     public TrainDataSend getTrainData(TrainPanelRec trainPanelRec) {
@@ -80,6 +82,8 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
                         .eq(Models::getDomainId, trainPanelRec.getDomainId())//当前领域
                         .like(!isOverTrain, Models::getModelVersion, prefix)
         );
+//      加入redis中正在running的模型版本号
+        addRedisModels(domainModels,prefix,isOverTrain,trainPanelRec);
 
 //      1. 获取全部的最大版本号
         String latestAllVersionStr = modelsService.getMaxVersion(domainModels);
@@ -137,6 +141,34 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
                 uploadDataList,
                 originalDataList
         );
+    }
+
+    private void addRedisModels(List<Models> domainModels, String prefix, boolean isOverTrain, TrainPanelRec trainPanelRec) {
+//        将redis中真正运行的版本号也要加入到domainModels中
+        Set<String> runningMembers = redisTemplate.opsForSet().members(ModelsService.ACTIVE_VERSION_KEY);
+        for (String member : runningMembers) {
+            // 2. 拆分字符串 (假设格式是 版本号:领域id)
+            String[] parts = member.split(":");
+            if (parts.length == 2) {
+                String version = parts[0];
+                Long domainId = Long.valueOf(parts[1]);
+
+                // 过滤逻辑：
+                // 1. 领域ID必须匹配
+                // 2. 如果不是过采样训练(!isOverTrain)，则版本号必须以 prefix 开头
+                boolean isDomainMatch = domainId.equals(trainPanelRec.getDomainId());
+                boolean isVersionMatch = isOverTrain || version.startsWith(prefix);
+
+                if (isDomainMatch && isVersionMatch) {
+                    Models runningModel = new Models();
+                    runningModel.setModelVersion(version);
+                    runningModel.setDomainId(domainId);
+
+                    // 将符合条件的运行中版本加入列表
+                    domainModels.add(runningModel);
+                }
+            }
+        }
     }
 
     @Override
