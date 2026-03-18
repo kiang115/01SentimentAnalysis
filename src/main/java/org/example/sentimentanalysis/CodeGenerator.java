@@ -30,7 +30,7 @@ public class CodeGenerator {
                     builder.enableSkipView()
                             // model表
                             .entityBuilder()
-                            .enableFileOverride() // 覆盖已生成文件
+//                            .enableFileOverride() // 覆盖已生成文件
                             .enableLombok()
                             .enableTableFieldAnnotation()
                             .enableChainModel()

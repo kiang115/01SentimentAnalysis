@@ -1,5 +1,45 @@
-评论表
-CREATE TABLE `comments` (
+CREATE TABLE `users` (
+  `user_id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '用户唯一标识',
+  `user_name` VARCHAR(50) NOT NULL COMMENT '用户名',
+  `avatar_url` VARCHAR(255) DEFAULT NULL COMMENT '用户头像URL',
+  `user_type` VARCHAR(20) NOT NULL COMMENT '用户类型: consumer, merchant, admin',
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  INDEX `idx_username` (`user_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户信息表';
+
+CREATE TABLE `merchants` (
+  `merchants_id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '商家唯一标识',
+  `name` VARCHAR(100) NOT NULL COMMENT '商家名称',
+  `domain_id` BIGINT NOT NULL COMMENT '领域id: 0=外卖, 1=电商, 2=酒店',
+  `domain_name` VARCHAR(100) NOT NULL COMMENT '领域中文名字',
+  `description` TEXT COMMENT '商家描述',
+  `rating` DECIMAL(3, 2) DEFAULT 0.00 COMMENT '综合得分',
+  `comment_count` BIGINT DEFAULT 0 COMMENT '总评论数',
+  `positive_rate` DECIMAL(5, 4) DEFAULT 0.0000 COMMENT '好评率',
+  `avatar_url` VARCHAR(255) DEFAULT NULL COMMENT '商家头像url',
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  INDEX `idx_domain_id` (`domain_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商家信息表';
+
+CREATE TABLE `products` (
+  `products_id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '商品唯一标识',
+  `merchant_id` BIGINT NOT NULL COMMENT '所属商家id',
+  `name` VARCHAR(150) NOT NULL COMMENT '商品名称',
+  `details` TEXT COMMENT '商品详情',
+  `domain_id` BIGINT NOT NULL COMMENT '所属领域id',
+  `rating` DECIMAL(3, 2) DEFAULT 0.00 COMMENT '综合得分(小数两位)',
+  `comment_count` BIGINT DEFAULT 0 COMMENT '评论数',
+  `price` DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '价格',
+  `image_url` VARCHAR(255) DEFAULT NULL COMMENT '商品头像url',
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  INDEX `idx_merchant_id` (`merchant_id`),
+  INDEX `idx_domain_id` (`domain_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品信息表';
+
+CREATE TABLE IF NOT EXISTS `comments`(
   `comment_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '评论唯一标识',
   `customer_id` BIGINT NOT NULL COMMENT '关联顾客表',
   `content` TEXT NOT NULL COMMENT '评论内容',
@@ -20,8 +60,7 @@ CREATE TABLE `comments` (
   INDEX `idx_final_sentiment` (`final_sentiment`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商家情感分析-评论主表';
 
-推理记录表
-CREATE TABLE `inference_records` (
+CREATE TABLE IF NOT EXISTS `inference_records` (
   `inference_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '推理记录ID',
   `inference_task_id` BIGINT NOT NULL COMMENT '推理任务ID',
   `comment_id` BIGINT NOT NULL COMMENT '关联评论表',
@@ -42,13 +81,12 @@ CREATE TABLE `inference_records` (
   INDEX `idx_domain_time` (`domain_id`, `inference_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推理记录表';
 
-推理任务表
 CREATE TABLE `inference_tasks` (
   `task_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '推理任务 id (主键)',
   `initiator_id` BIGINT  NOT NULL COMMENT '发起人 id',
   `inference_start_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '推理开始时间',
   `inference_end_time` DATETIME DEFAULT NULL COMMENT '推理结束时间',
-  `inference_duration` BIGINT DEFAULT NULL COMMENT '推理持续时间 (单位: 秒)',
+  `inference_duration` BIGINT DEFAULT NULL COMMENT '推理持续时间 (单位: 毫秒)',
   `processed_count` BIGINT DEFAULT NULL COMMENT '评论数 (处理评论总数量)',
   `avg_process_speed` DECIMAL(10, 2) DEFAULT NULL COMMENT '平均处理速度 (单位: 条/秒)',
   `used_model_ids` JSON DEFAULT NULL COMMENT '涉及使用模型id json 存储，eg[1,2,3,4]',
@@ -58,26 +96,21 @@ CREATE TABLE `inference_tasks` (
 
   PRIMARY KEY (`task_id`),
   KEY `idx_initiator_id` (`initiator_id`) COMMENT '索引：按发起人查询',
-  KEY `idx_process_status` (`process_status`) COMMENT '索引：按状态查询'
+  KEY `idx_process_status` (`status`) COMMENT '索引：按状态查询'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推理任务详情表';
 
-模型表
-CREATE TABLE models (
+CREATE TABLE IF NOT EXISTS models (
     model_id      BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '模型ID',
     domain_id     BIGINT NOT NULL COMMENT '领域id',
     model_version VARCHAR(20) NOT NULL COMMENT '模型版本号',
     source        ENUM('train', 'upload') NOT NULL COMMENT '来源',
     inferred_num BIGINT NOT NULL DEFAULT 0 COMMENT '总推理数',
     corrected_num  BIGINT NOT NULL DEFAULT 0 COMMENT '被修正数(错误数)',
-    deleted      Integer default 0 not null COMMENT '1表示删除，0表示没被删除';
-    base_model_id BIGINT DEFAULT NULL COMMENT '模型对应的，基础模型id'
+
     -- 虚拟生成的准确率字段
     -- 逻辑：如果总数为0则为0，否则计算 (1 - 修正/总数) * 100
     accuracy      DECIMAL(5, 2) GENERATED ALWAYS AS (
-        CASE
-            WHEN inferred_num = 0 THEN 0
-            ELSE (1 - (corrected_num / inferred_num)) * 100
-        END
+        IF(inferred_num = 0, 0, (1 - (corrected_num / inferred_num)) * 100)
     ) VIRTUAL COMMENT '最终准确率%',
 
     train_task_id BIGINT DEFAULT NULL,
@@ -86,16 +119,14 @@ CREATE TABLE models (
     INDEX idx_domain_id (domain_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='模型表';
 
-领域表
-CREATE TABLE `domains` (
+CREATE TABLE IF NOT EXISTS `domains` (
     `domain_id` BIGINT AUTO_INCREMENT COMMENT '领域id',
-    `domain_name` VARCHAR(100) NOT NULL COMMENT '领域中文名字',
+    `domain_name` VARCHAR(100) NOT NULL COMMENT '领域名字',
     `domain_url` VARCHAR(100) NOT NULL COMMENT '领域模型路径名字, 如: waimai, hotel, shop',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '领域创建时间',
     PRIMARY KEY (`domain_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='领域信息表';
 
-训练任务表
 CREATE TABLE `train_tasks` (
     -- 1. 基础信息
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '训练任务id',
@@ -128,8 +159,8 @@ CREATE TABLE `train_tasks` (
     -- 4. 训练产出与指标
     `model_id` BIGINT  DEFAULT NULL COMMENT '训练得到的模型id',
     `model_version` VARCHAR(20) NULL COMMENT '模型版本号(两位小数, 如1.12)',
-    `accuracy` DECIMAL(5, 4) DEFAULT NULL COMMENT '总体准确率',
-    `precision_rate` DECIMAL(5, 4) DEFAULT NULL COMMENT '精确率',
+    `accuracy` DECIMAL(5, 2) DEFAULT NULL COMMENT '总体准确率(%)',
+    `precision_rate` DECIMAL(5, 4) DEFAULT NULL COMMENT '精确率(准确率)',
     `recall_rate` DECIMAL(5, 4) DEFAULT NULL COMMENT '召回率',
     `f1_score` DECIMAL(5, 4) DEFAULT NULL COMMENT 'f1分数',
 
@@ -151,9 +182,7 @@ CREATE TABLE `train_tasks` (
 
 
 
-
-训练参数表
-CREATE TABLE `train_para` (
+CREATE TABLE IF NOT EXISTS `train_para` (
     `para_id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '参数配置Id',
     `domain_id` BIGINT NOT NULL COMMENT '领域id',
 
@@ -174,16 +203,15 @@ CREATE TABLE `train_para` (
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
 
     -- 索引
-    INDEX `idx_domain` (`domain_id`),
+    INDEX `idx_domain` (`domain_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练参数配置模板表';
 
 
-训练数据表
-CREATE TABLE `train_data` (
+CREATE TABLE IF NOT EXISTS `train_data` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '训练数据id (主键)',
     `domain_id` BIGINT NOT NULL COMMENT '领域id',
     `content` TEXT NOT NULL COMMENT '训练数据内容',
-    `label` INT NOT NULL COMMENT '训练数据标签 0差1好',
+    `label` INT NOT NULL COMMENT '训练数据标签',
     `source` ENUM('corrected', 'upload', 'original') NOT NULL COMMENT '训练数据来源 (corrected/upload/original)',
     `train_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '数据被训练次数',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '数据创建时间',
@@ -197,3 +225,4 @@ CREATE TABLE `train_data` (
     -- 训练面板按领域+来源聚合时使用
     INDEX `idx_domain_source` (`domain_id`, `source`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练数据表';
+
