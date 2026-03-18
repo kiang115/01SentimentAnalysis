@@ -22,6 +22,8 @@ import type { ModelLineChart } from "@/Dto/ReceiveDto/ModelLineChart";
 import type { ModelPieChart } from "@/Dto/ReceiveDto/ModelPieChart";
 import type { ModelTreeChartRec } from "@/Dto/ReceiveDto/ModelTreeChartRec";
 import type { InferTaskRec } from "@/Dto/ReceiveDto/InferTaskRec";
+import type { MerchantsQuerySend } from "@/Dto/SendDto/MerchantsQuerySend";
+import type { MerchantDataListRec } from "@/Dto/ReceiveDto/MerchantDataListRec";
 // 定义标准返回类型
 // todo 把vue接收到的非标准的api返回值统一处理为ApiResponse<T>类型 特别是train.vue中的ListTrainTasksRes类型需要被替代
 export interface ApiResponse<T = any> {
@@ -36,7 +38,6 @@ export const modelApi = {
   },
   listInferPanel: () => {
     return get("/InferencePanel", {}) as Promise<ApiResponse<InferPanelRec>>;
-    //     todo 要修改这里面的的类型，不要根据message判断是否全部已经完成
   },
   checkInferData: (para: InferPanelSend) => {
     return post("/InferenceDataCheck", para);
@@ -124,5 +125,9 @@ export const modelApi = {
   // 模型树状图（按领域）
   listModelTreeChart: () => {
     return get("/ModelTreeChart", {}) as Promise<ApiResponse<ModelTreeChartRec>>;
+  },
+    // 商铺 列表
+  listMerchantData: (formData: MerchantsQuerySend) => {
+    return post("/ListMerchants", formData) as Promise<ApiResponse<MerchantDataListRec>>;
   },
 };

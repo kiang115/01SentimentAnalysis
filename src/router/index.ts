@@ -12,6 +12,11 @@ const router = createRouter({
       component: () => import("../views/Login.vue"),
     },
     {
+      path: "/merchants",
+      name: "merchants",
+      component: () => import("../components/MerchantsList.vue"),
+    },
+    {
       path: "/model",
       component: () => import("../views/Model.vue"),
       redirect: { name: "trainData" },

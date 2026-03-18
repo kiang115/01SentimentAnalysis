@@ -1,42 +1,7 @@
-# vue
-
-This template should help get you started developing with Vue 3 in Vite.
-
-## Recommended IDE Setup
-
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
-npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
-npm run dev
-```
-
-### Type-Check, Compile and Minify for Production
-
-```sh
-npm run build
-```
+## 本项目开发规范，必须遵守
+- 前端发送的数据，统一需要在Dto-SendDto中进行定义，在组件vue中使用时，必须使用已定义的结构体，无需重新构造结构体
+- 前后接受的数据，在model-api.ts中定义好了返回类型，返回类型一般固定为ApiResponse类型，其中包含
+- code :一般都是200，无需验证，因为非200的数据都会在request.ts中直接拦截并处理了，前端只会接收到success的数据
+  message: 附带的消息类型，需不需要手动ElMessage显示，根据用户要求决定
+  data: T; 这部分是真正的后端传来的数据类型。
+- 必须保证项目代码的规范性，如果你有任何疑问，绝对不能擅自决定，必须ask用户，得到明确回复再写代码
