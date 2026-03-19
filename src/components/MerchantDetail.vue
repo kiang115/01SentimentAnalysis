@@ -7,7 +7,6 @@ import { modelApi } from '@/api/model-api'
 import type { MerchantDetailRec } from '@/Dto/ReceiveDto/MerchantDetailRec'
 import type { ProductAddSend } from '@/Dto/SendDto/ProductAddSend'
 import type { ProductEditSend } from '@/Dto/SendDto/ProductEditSend'
-import type { FormInstance, FormRules } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
@@ -18,12 +17,12 @@ const addDialogVisible = ref(false)
 const addSubmitting = ref(false)
 const imageUploading = ref(false)
 const imageFileInputRef = ref<HTMLInputElement>()
-const addFormRef = ref<FormInstance>()
+const addFormRef = ref()
 const editDialogVisible = ref(false)
 const editSubmitting = ref(false)
 const editImageUploading = ref(false)
 const editImageFileInputRef = ref<HTMLInputElement>()
-const editFormRef = ref<FormInstance>()
+const editFormRef = ref()
 const addForm = reactive<ProductAddSend>({
   productName: '',
   productDetail: '',
@@ -39,7 +38,7 @@ const editForm = reactive<ProductEditSend>({
   price: undefined as unknown as number,
 })
 
-const addFormRules: FormRules<ProductAddSend> = {
+const addFormRules = {
   productName: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   productDetail: [{ required: true, message: '请输入商品详细信息', trigger: 'blur' }],
   imageUrl: [{ required: true, message: '请上传商品图片', trigger: 'change' }],
@@ -47,7 +46,7 @@ const addFormRules: FormRules<ProductAddSend> = {
     { required: true, message: '请输入商品价格', trigger: 'blur' },
     {
       trigger: 'blur',
-      validator: (_rule, value, callback) => {
+      validator: (_rule: unknown, value: unknown, callback: (error?: Error) => void) => {
         const priceText = String(value ?? '').trim()
         const priceNum = Number(priceText)
         if (!Number.isFinite(priceNum) || priceNum <= 0) {
@@ -63,7 +62,7 @@ const addFormRules: FormRules<ProductAddSend> = {
     },
   ],
 }
-const editFormRules: FormRules<ProductEditSend> = {
+const editFormRules = {
   productName: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   productDetail: [{ required: true, message: '请输入商品详细信息', trigger: 'blur' }],
   imageUrl: [{ required: true, message: '请上传商品图片', trigger: 'change' }],
@@ -71,7 +70,7 @@ const editFormRules: FormRules<ProductEditSend> = {
     { required: true, message: '请输入商品价格', trigger: 'blur' },
     {
       trigger: 'blur',
-      validator: (_rule, value, callback) => {
+      validator: (_rule: unknown, value: unknown, callback: (error?: Error) => void) => {
         const priceText = String(value ?? '').trim()
         const priceNum = Number(priceText)
         if (!Number.isFinite(priceNum) || priceNum <= 0) {
