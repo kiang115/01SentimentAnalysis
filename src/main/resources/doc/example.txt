@@ -1,11 +1,13 @@
 1. 本项目是一个面向商户的评论情感分析系统，一共有三端，springboot后台端，fastapi模型服务端，vue前端
 2. 本端即为springboot后台端
 3. 本端采用mybatis-plus操作数据库，数据库建表文档在E:\01SentimentAnalysis\springboot\src\main\resources\doc\sql.txt中
-4. 采用mybatis-plus-generator生成器自动生成了表的实体类，位于model文件夹下，里面有各个表实体的类型和注解。service层已经继承了IService，可以使用autowired注入service从而使用相应的数据库操作函数。
-5. 开发规范 控制器在controller层中实现，每个接口都要注释含义，使用@Valid 对接收数据进行校验。
-接收数据必须定义一个对应的类在\dto\requestDto中定义
-发送数据必须定义\dto\responseDto 定义好，然后使用统一的response结构体返回 详见\response\Response.java
+4. 项目已经采用mybatis-plus-generator生成器自动生成了表的实体类，位于model文件夹下，里面有各个表实体的类型和注解。service层已经继承了IService，可以使用autowired注入service从而使用相应的数据库操作函数。
+5. 开发规范 控制器在controller层中实现，每个接口都要注释含义，使用@Valid 对接收数据进行校验(如果接受的body需要的话)。
+接收数据必须定义一个对应的类在\dto\requestDto中定义，命名规范为 XXRec.java
+发送数据必须定义\dto\responseDto 定义好，明明规范为XXSend.java  然后使用统一的response结构体返回 详见\response\Response.java
 业务流程，contoller层中拿到传入的数据，service层中先写好接口，然后在impl中实现接口。service层中应该完成 校验接收数据，提取对应的表实体，完成业务逻辑，进行异常处理(直接使用自定义的异常类抛出即可，详见exception\CustomBusinessException.java)
 如果需要返回Dto类型数据，需要在assembler中处理定义工具类，主要完成将多个表实体按照业务规则连接得到Dto类型数据。该层仅仅作为工具类，不能在这里抛出异常，需在service层校验数据
 6. 业务中应该使用stream流，条件构造器（Wrapper）,Service Interface注入，作为业务处理的中心。
 7. 业务代码，每段都需要有清晰的注释，说明数据流向，数据来源，数据处理逻辑。如果有什么异常判断，一律抛出自定义异常，让他自己中断任务。永远不要试图使用try catch捕获异常，把脏数据写入数据库了
+8. 避免使用魔法字符，需要的话，请在enums文件下定义好枚举文件，命名为xxEnum.java
+9. 如果需要分页的话，本项目已经集成了pagehelp使用 PageHelper.startPage(pageNum, pageSize);即可。

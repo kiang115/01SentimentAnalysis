@@ -95,4 +95,7 @@ public class Products implements Serializable {
      */
     @TableField("update_time")
     private LocalDateTime updateTime;
+//   好评率
+    @TableField("positive_rate")
+    private BigDecimal positiveRate;
 }

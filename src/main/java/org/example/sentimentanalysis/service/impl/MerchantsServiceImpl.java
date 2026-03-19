@@ -5,14 +5,19 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import org.example.sentimentanalysis.dto.commonDto.DomainsInfo;
 import org.example.sentimentanalysis.dto.requestDto.MerchantsQueryRec;
+import org.example.sentimentanalysis.dto.responseDto.MerchantDetailSend;
 import org.example.sentimentanalysis.dto.responseDto.MerchantsSend;
 import org.example.sentimentanalysis.enums.MerchantsOrderTypeEnum;
+import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Merchants;
 import org.example.sentimentanalysis.mapper.MerchantsMapper;
+import org.example.sentimentanalysis.model.Products;
 import org.example.sentimentanalysis.service.DomainsService;
 import org.example.sentimentanalysis.service.MerchantsService;
+import org.example.sentimentanalysis.service.ProductsService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,6 +36,9 @@ public class MerchantsServiceImpl extends ServiceImpl<MerchantsMapper, Merchants
 
     @Autowired
     private DomainsService domainsService;
+    @Lazy
+    @Autowired
+    private ProductsService productsService;
 
     @Override
     public MerchantsSend listMerchants(MerchantsQueryRec queryRec) {
@@ -100,6 +108,47 @@ public class MerchantsServiceImpl extends ServiceImpl<MerchantsMapper, Merchants
         return MerchantsSend.builder()
                 .pageInfo(merchantInfoPageInfo)
                 .domains(domainsInfos)
+                .build();
+    }
+
+    @Override
+    public MerchantDetailSend getMerchantDetail(Long merchantId) {
+        if (merchantId == null || merchantId <= 0) {
+            throw new CustomBusinessException("商铺ID不合法");
+        }
+
+        Merchants merchant = this.getById(merchantId);
+        if (merchant == null) {
+            throw new CustomBusinessException("商铺不存在, merchantId=" + merchantId);
+        }
+
+        List<Products> products = productsService.list(
+                new LambdaQueryWrapper<Products>().eq(Products::getMerchantId, merchantId)
+        );
+
+        List<MerchantDetailSend.ProductBriefSend> productSends = products.stream()
+                .map(product -> MerchantDetailSend.ProductBriefSend.builder()
+                        .productId(product.getProductsId())
+                        .name(product.getName())
+                        .details(product.getDetails())
+                        .rating(product.getRating())
+                        .commentCount(product.getCommentCount())
+                        .price(product.getPrice())
+                        .imageUrl(product.getImageUrl())
+                        .build())
+                .collect(Collectors.toList());
+
+        return MerchantDetailSend.builder()
+                .merchantId(merchant.getMerchantsId())
+                .name(merchant.getName())
+                .domainId(merchant.getDomainId())
+                .domainName(merchant.getDomainName())
+                .description(merchant.getDescription())
+                .rating(merchant.getRating())
+                .commentCount(merchant.getCommentCount())
+                .positiveRate(merchant.getPositiveRate())
+                .avatarUrl(merchant.getAvatarUrl())
+                .products(productSends)
                 .build();
     }
 

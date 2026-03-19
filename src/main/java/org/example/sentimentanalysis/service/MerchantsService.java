@@ -2,6 +2,7 @@ package org.example.sentimentanalysis.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.example.sentimentanalysis.dto.requestDto.MerchantsQueryRec;
+import org.example.sentimentanalysis.dto.responseDto.MerchantDetailSend;
 import org.example.sentimentanalysis.dto.responseDto.MerchantsSend;
 import org.example.sentimentanalysis.model.Merchants;
 
@@ -22,4 +23,6 @@ public interface MerchantsService extends IService<Merchants> {
      * @return 商家列表分页数据及领域信息
      */
     MerchantsSend listMerchants(MerchantsQueryRec queryRec);
+
+    MerchantDetailSend getMerchantDetail(Long merchantId);
 }

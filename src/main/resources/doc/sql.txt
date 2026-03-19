@@ -28,6 +28,7 @@ CREATE TABLE `products` (
   `merchant_id` BIGINT NOT NULL COMMENT '所属商家id',
   `name` VARCHAR(150) NOT NULL COMMENT '商品名称',
   `details` TEXT COMMENT '商品详情',
+  `positive_rate` DECIMAL(5, 4) DEFAULT 0.0000 COMMENT '商品好评率',
   `domain_id` BIGINT NOT NULL COMMENT '所属领域id',
   `rating` DECIMAL(3, 2) DEFAULT 0.00 COMMENT '综合得分(小数两位)',
   `comment_count` BIGINT DEFAULT 0 COMMENT '评论数',
