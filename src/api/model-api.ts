@@ -27,6 +27,7 @@ import type { MerchantDataListRec } from "@/Dto/ReceiveDto/MerchantDataListRec";
 import type { ProductDetailRec } from "@/Dto/ReceiveDto/ProductDetailRec";
 import type { MerchantDetailRec } from "@/Dto/ReceiveDto/MerchantDetailRec";
 import type { ProductAddSend } from "@/Dto/SendDto/ProductAddSend";
+import type { ProductEditSend } from "@/Dto/SendDto/ProductEditSend";
 // 定义标准返回类型
 // todo 把vue接收到的非标准的api返回值统一处理为ApiResponse<T>类型 特别是train.vue中的ListTrainTasksRes类型需要被替代
 export interface ApiResponse<T = any> {
@@ -156,6 +157,16 @@ export const modelApi = {
   },
   postProductAddData: (para: ProductAddSend) => {
     return post("/addProduct",para) as Promise<
+      ApiResponse<String>
+    >;
+  },
+  postProductEditData: (para: ProductEditSend) => {
+    return post("/editProduct",para) as Promise<
+      ApiResponse<String>
+    >;
+  },
+  postProductDeleteData: (productId: number) => {
+    return post(`/Productdelete/${productId}`, {}) as Promise<
       ApiResponse<String>
     >;
   },

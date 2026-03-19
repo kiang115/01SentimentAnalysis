@@ -1,11 +1,12 @@
 ﻿<script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { modelApi } from '@/api/model-api'
 import type { MerchantDetailRec } from '@/Dto/ReceiveDto/MerchantDetailRec'
 import type { ProductAddSend } from '@/Dto/SendDto/ProductAddSend'
+import type { ProductEditSend } from '@/Dto/SendDto/ProductEditSend'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const route = useRoute()
@@ -18,6 +19,11 @@ const addSubmitting = ref(false)
 const imageUploading = ref(false)
 const imageFileInputRef = ref<HTMLInputElement>()
 const addFormRef = ref<FormInstance>()
+const editDialogVisible = ref(false)
+const editSubmitting = ref(false)
+const editImageUploading = ref(false)
+const editImageFileInputRef = ref<HTMLInputElement>()
+const editFormRef = ref<FormInstance>()
 const addForm = reactive<ProductAddSend>({
   productName: '',
   productDetail: '',
@@ -25,8 +31,39 @@ const addForm = reactive<ProductAddSend>({
   price: undefined as unknown as number,
   merchantId: 0,
 })
+const editForm = reactive<ProductEditSend>({
+  productId: 0,
+  productName: '',
+  productDetail: '',
+  imageUrl: '',
+  price: undefined as unknown as number,
+})
 
 const addFormRules: FormRules<ProductAddSend> = {
+  productName: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
+  productDetail: [{ required: true, message: '请输入商品详细信息', trigger: 'blur' }],
+  imageUrl: [{ required: true, message: '请上传商品图片', trigger: 'change' }],
+  price: [
+    { required: true, message: '请输入商品价格', trigger: 'blur' },
+    {
+      trigger: 'blur',
+      validator: (_rule, value, callback) => {
+        const priceText = String(value ?? '').trim()
+        const priceNum = Number(priceText)
+        if (!Number.isFinite(priceNum) || priceNum <= 0) {
+          callback(new Error('价格必须大于0'))
+          return
+        }
+        if (!/^\d+(\.\d{1,2})?$/.test(priceText)) {
+          callback(new Error('价格最多保留两位小数'))
+          return
+        }
+        callback()
+      },
+    },
+  ],
+}
+const editFormRules: FormRules<ProductEditSend> = {
   productName: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   productDetail: [{ required: true, message: '请输入商品详细信息', trigger: 'blur' }],
   imageUrl: [{ required: true, message: '请上传商品图片', trigger: 'change' }],
@@ -146,6 +183,73 @@ async function submitAddForm() {
   }
 }
 
+function resetEditForm() {
+  editForm.productId = 0
+  editForm.productName = ''
+  editForm.productDetail = ''
+  editForm.imageUrl = ''
+  editForm.price = undefined as unknown as number
+  editImageUploading.value = false
+  editFormRef.value?.resetFields()
+}
+
+function openEditDialog(item: MerchantDetailRec['products'][number]) {
+  editForm.productId = item.productId
+  editForm.productName = item.name
+  editForm.productDetail = item.details
+  editForm.imageUrl = item.imageUrl ?? ''
+  editForm.price = item.price
+  editDialogVisible.value = true
+}
+
+function openEditImagePicker() {
+  editImageFileInputRef.value?.click()
+}
+
+async function handleEditImageChange(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  const formData = new FormData()
+  formData.append('file', file)
+  editImageUploading.value = true
+  try {
+    const res = await modelApi.uploadFileToOss(formData)
+    editForm.imageUrl = res.data
+    editFormRef.value?.validateField('imageUrl')
+  } finally {
+    editImageUploading.value = false
+    ;(event.target as HTMLInputElement).value = ''
+  }
+}
+
+async function submitEditForm() {
+  const valid = await editFormRef.value?.validate()
+  if (!valid) return
+  editSubmitting.value = true
+  try {
+    await modelApi.postProductEditData(editForm)
+    editDialogVisible.value = false
+    resetEditForm()
+    await fetchMerchantDetail()
+  } finally {
+    editSubmitting.value = false
+  }
+}
+
+async function handleDeleteProduct(productId: number) {
+  try {
+    await ElMessageBox.confirm('确认删除该商品吗？', '删除确认', {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+  await modelApi.postProductDeleteData(productId)
+  await fetchMerchantDetail()
+}
+
 onMounted(() => {
   fetchMerchantDetail()
 })
@@ -216,10 +320,10 @@ onMounted(() => {
               <div class="product-foot">
                 <p v-if="item.price !== undefined" class="product-price">{{ formatPrice(item.price) }}</p>
                 <div class="card-actions">
-                  <button class="action-icon-btn action-edit-btn" type="button" @click.stop>
+                  <button class="action-icon-btn action-edit-btn" type="button" @click.stop="openEditDialog(item)">
                     <el-icon><Edit /></el-icon>
                   </button>
-                  <button class="action-icon-btn action-delete-btn" type="button" @click.stop>
+                  <button class="action-icon-btn action-delete-btn" type="button" @click.stop="handleDeleteProduct(item.productId)">
                     <el-icon><Delete /></el-icon>
                   </button>
                 </div>
@@ -262,6 +366,43 @@ onMounted(() => {
           <div class="dialog-footer">
             <el-button @click="addDialogVisible = false">取消</el-button>
             <el-button type="primary" :loading="addSubmitting" @click="submitAddForm">提交</el-button>
+          </div>
+        </template>
+      </el-dialog>
+
+      <el-dialog v-model="editDialogVisible" title="编辑商品" width="560px" destroy-on-close @closed="resetEditForm">
+        <el-form ref="editFormRef" :model="editForm" :rules="editFormRules" label-width="100px">
+          <el-form-item label="商品图片" prop="imageUrl">
+            <div class="upload-box" :class="{ filled: !!editForm.imageUrl }" @click="openEditImagePicker">
+              <img v-if="editForm.imageUrl" :src="editForm.imageUrl" alt="商品图片" class="upload-preview" />
+              <div v-else class="upload-placeholder">
+                <el-icon><Plus /></el-icon>
+                <span>点击上传图片</span>
+              </div>
+              <div v-if="editImageUploading" class="upload-mask">上传中...</div>
+            </div>
+            <input
+              ref="editImageFileInputRef"
+              class="hidden-file-input"
+              type="file"
+              accept="image/*"
+              @change="handleEditImageChange"
+            />
+          </el-form-item>
+          <el-form-item label="商品名称" prop="productName">
+            <el-input v-model="editForm.productName" placeholder="请输入商品名称" />
+          </el-form-item>
+          <el-form-item label="商品详情" prop="productDetail">
+            <el-input v-model="editForm.productDetail" type="textarea" :rows="3" placeholder="请输入商品详细信息" />
+          </el-form-item>
+          <el-form-item label="商品价格" prop="price">
+            <el-input v-model.number="editForm.price" placeholder="请输入价格（最多两位小数）" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <div class="dialog-footer">
+            <el-button @click="editDialogVisible = false">取消</el-button>
+            <el-button type="primary" :loading="editSubmitting" @click="submitEditForm">提交</el-button>
           </div>
         </template>
       </el-dialog>
