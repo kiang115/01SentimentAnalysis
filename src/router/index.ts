@@ -17,6 +17,21 @@ const router = createRouter({
       component: () => import("../components/MerchantsList.vue"),
     },
     {
+      path: "/merchant/:merchantId",
+      name: "merchantDetail",
+      component: () => import("../components/MerchantDetail.vue"),
+    },
+    {
+      path: "/product/:productId",
+      name: "productDetail",
+      component: () => import("../components/ProductDetail.vue"),
+    },
+    {
+      path: "/testVue",
+      name: "testVue",
+      component: () => import("../components/TestVue.vue"),
+    },
+    {
       path: "/model",
       component: () => import("../views/Model.vue"),
       redirect: { name: "trainData" },

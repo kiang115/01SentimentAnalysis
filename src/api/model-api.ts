@@ -24,6 +24,9 @@ import type { ModelTreeChartRec } from "@/Dto/ReceiveDto/ModelTreeChartRec";
 import type { InferTaskRec } from "@/Dto/ReceiveDto/InferTaskRec";
 import type { MerchantsQuerySend } from "@/Dto/SendDto/MerchantsQuerySend";
 import type { MerchantDataListRec } from "@/Dto/ReceiveDto/MerchantDataListRec";
+import type { ProductDetailRec } from "@/Dto/ReceiveDto/ProductDetailRec";
+import type { MerchantDetailRec } from "@/Dto/ReceiveDto/MerchantDetailRec";
+import type { ProductAddSend } from "@/Dto/SendDto/ProductAddSend";
 // 定义标准返回类型
 // todo 把vue接收到的非标准的api返回值统一处理为ApiResponse<T>类型 特别是train.vue中的ListTrainTasksRes类型需要被替代
 export interface ApiResponse<T = any> {
@@ -107,12 +110,12 @@ export const modelApi = {
 
   // 下载模型文件 只需要执行这个api即可，无需其他后续对返回内容的解析。
   downLoadModel: (modelId: number) => {
-    window.location.href = Constants.BASE_URL + '/download-model/' + modelId;
+    window.location.href = Constants.BASE_URL + "/download-model/" + modelId;
   },
 
   // 上传模型文件
   uploadModel: (formData: FormData) => {
-    return post('/upload-model', formData) as Promise<ApiResponse<void>>;
+    return post("/upload-model", formData) as Promise<ApiResponse<void>>;
   },
   // 得到模型准确率折线图
   listModelLineChart: () => {
@@ -124,10 +127,36 @@ export const modelApi = {
   },
   // 模型树状图（按领域）
   listModelTreeChart: () => {
-    return get("/ModelTreeChart", {}) as Promise<ApiResponse<ModelTreeChartRec>>;
+    return get("/ModelTreeChart", {}) as Promise<
+      ApiResponse<ModelTreeChartRec>
+    >;
   },
-    // 商铺 列表
+  // 商铺 列表
   listMerchantData: (formData: MerchantsQuerySend) => {
-    return post("/ListMerchants", formData) as Promise<ApiResponse<MerchantDataListRec>>;
+    return post("/ListMerchants", formData) as Promise<
+      ApiResponse<MerchantDataListRec>
+    >;
+  },
+  // 商铺详情
+  getMerchantDetailData: (merchantId: number) => {
+    return get(`/MerchantDetail/${merchantId}`) as Promise<
+      ApiResponse<MerchantDetailRec>
+    >;
+  },
+  // 商品详情
+  getProductDetailData: (productId: number) => {
+    return get(`/ProductDetail/${productId}`) as Promise<
+      ApiResponse<ProductDetailRec>
+    >;
+  },
+  uploadFileToOss: (formData: FormData) => {
+    return post<string>("/file/upload", formData) as Promise<
+      ApiResponse<string>
+    >;
+  },
+  postProductAddData: (para: ProductAddSend) => {
+    return post("/addProduct",para) as Promise<
+      ApiResponse<String>
+    >;
   },
 };

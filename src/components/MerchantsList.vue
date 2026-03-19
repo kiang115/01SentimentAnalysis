@@ -2,11 +2,13 @@
 import { onMounted, reactive, ref } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 import { modelApi } from '@/api/model-api'
 import type { MerchantsQuerySend } from '@/Dto/SendDto/MerchantsQuerySend'
 import type { DomainItem, MerchantItem } from '@/Dto/ReceiveDto/MerchantDataListRec'
 import type { PageInfo } from '@/Dto/ReceiveDto/PageInfo'
 
+const router = useRouter()
 const loading = ref(false)
 const merchantList = ref<MerchantItem[]>([])
 const pageInfo = ref<PageInfo<MerchantItem> | null>(null)
@@ -72,6 +74,10 @@ function formatPositiveRate(rate: number) {
 function formatCommentCount(count: number) {
   if (count >= 1000) return `${(count / 1000).toFixed(1)}k+`
   return `${count}+`
+}
+
+function goMerchantDetail(merchantId: number) {
+  router.push({ name: 'merchantDetail', params: { merchantId } })
 }
 
 onMounted(() => {
@@ -143,6 +149,7 @@ onMounted(() => {
           v-for="m in merchantList"
           :key="m.merchantId"
           class="merchant-card"
+          @click="goMerchantDetail(m.merchantId)"
         >
           <div class="card-image-wrap">
             <img
@@ -266,10 +273,17 @@ onMounted(() => {
 }
 
 .merchant-card {
+  cursor: pointer;
   border-radius: 12px;
   overflow: hidden;
   background: #fff;
   box-shadow: 0 2px 12px rgba(15, 23, 42, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  }
 }
 
 .card-image-wrap {
