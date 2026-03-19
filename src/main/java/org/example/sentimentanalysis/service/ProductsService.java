@@ -2,6 +2,7 @@ package org.example.sentimentanalysis.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.example.sentimentanalysis.dto.requestDto.ProductAddRec;
+import org.example.sentimentanalysis.dto.requestDto.ProductEditRec;
 import org.example.sentimentanalysis.dto.responseDto.ProductDetailSend;
 import org.example.sentimentanalysis.model.Products;
 
@@ -18,4 +19,8 @@ public interface ProductsService extends IService<Products> {
     ProductDetailSend getProductDetail(Long productId);
 
     void addProduct(ProductAddRec productAddRec);
+
+    void editProduct(ProductEditRec productEditRec);
+
+    void deleteProduct(Long productId);
 }

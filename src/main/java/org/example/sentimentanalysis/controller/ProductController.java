@@ -3,6 +3,7 @@ package org.example.sentimentanalysis.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.example.sentimentanalysis.dto.requestDto.ProductAddRec;
+import org.example.sentimentanalysis.dto.requestDto.ProductEditRec;
 import org.example.sentimentanalysis.dto.responseDto.ProductDetailSend;
 import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.ProductsService;
@@ -29,6 +30,20 @@ public class ProductController {
     @PostMapping("/addProduct")
     public Response<Void> addProduct(@RequestBody @Valid ProductAddRec productAddRec) {
         productsService.addProduct(productAddRec);
-        return Response.success();  
+        return Response.success();
+    }
+
+    @Operation(summary = "编辑商品信息")
+    @PostMapping("/editProduct")
+    public Response<Void> editProduct(@RequestBody @Valid ProductEditRec productEditRec) {
+        productsService.editProduct(productEditRec);
+        return Response.success();
+    }
+
+    @Operation(summary = "删除商品")
+    @PostMapping("/Productdelete/{productId}")
+    public Response<Void> deleteProduct(@PathVariable Long productId) {
+        productsService.deleteProduct(productId);
+        return Response.success();
     }
 }

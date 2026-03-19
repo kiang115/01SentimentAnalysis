@@ -2,6 +2,7 @@ package org.example.sentimentanalysis.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.sentimentanalysis.dto.requestDto.ProductAddRec;
+import org.example.sentimentanalysis.dto.requestDto.ProductEditRec;
 import org.example.sentimentanalysis.dto.responseDto.ProductDetailSend;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.mapper.ProductsMapper;
@@ -78,5 +79,44 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
                 .setDomainId(merchant.getDomainId());
 
         this.save(product);
+    }
+
+    @Override
+    public void editProduct(ProductEditRec productEditRec) {
+        if (productEditRec.getProductId() <= 0) {
+            throw new CustomBusinessException("商品ID不合法");
+        }
+
+        Products product = this.getById(productEditRec.getProductId());
+        if (product == null) {
+            throw new CustomBusinessException("商品不存在 productId=" + productEditRec.getProductId());
+        }
+
+        product.setName(productEditRec.getProductName())
+                .setDetails(productEditRec.getProductDetail())
+                .setImageUrl(productEditRec.getImageUrl())
+                .setPrice(productEditRec.getPrice());
+
+        boolean success = this.updateById(product);
+        if (!success) {
+            throw new CustomBusinessException("编辑商品失败, productId=" + productEditRec.getProductId());
+        }
+    }
+
+    @Override
+    public void deleteProduct(Long productId) {
+        if (productId == null || productId <= 0) {
+            throw new CustomBusinessException("商品ID不合法");
+        }
+
+        Products product = this.getById(productId);
+        if (product == null) {
+            throw new CustomBusinessException("商品不存在 productId=" + productId);
+        }
+
+        boolean success = this.removeById(productId);
+        if (!success) {
+            throw new CustomBusinessException("删除商品失败, productId=" + productId);
+        }
     }
 }
