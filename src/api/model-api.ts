@@ -28,6 +28,9 @@ import type { ProductDetailRec } from "@/Dto/ReceiveDto/ProductDetailRec";
 import type { MerchantDetailRec } from "@/Dto/ReceiveDto/MerchantDetailRec";
 import type { ProductAddSend } from "@/Dto/SendDto/ProductAddSend";
 import type { ProductEditSend } from "@/Dto/SendDto/ProductEditSend";
+import type { CommentsQuerySend } from "@/Dto/SendDto/CommentsQuerySend";
+import type { CommentAddSend } from "@/Dto/SendDto/CommentAddSend";
+import type { CommentDataListRec } from "@/Dto/ReceiveDto/CommentDataListRec";
 // 定义标准返回类型
 // todo 把vue接收到的非标准的api返回值统一处理为ApiResponse<T>类型 特别是train.vue中的ListTrainTasksRes类型需要被替代
 export interface ApiResponse<T = any> {
@@ -150,24 +153,40 @@ export const modelApi = {
       ApiResponse<ProductDetailRec>
     >;
   },
+  // 文件上传
   uploadFileToOss: (formData: FormData) => {
     return post<string>("/file/upload", formData) as Promise<
       ApiResponse<string>
     >;
   },
+  // 增加商品信息
   postProductAddData: (para: ProductAddSend) => {
     return post("/addProduct",para) as Promise<
       ApiResponse<String>
     >;
   },
+  // 编辑商品信息
   postProductEditData: (para: ProductEditSend) => {
     return post("/editProduct",para) as Promise<
       ApiResponse<String>
     >;
   },
+  // 删除商品信息
   postProductDeleteData: (productId: number) => {
     return post(`/Productdelete/${productId}`, {}) as Promise<
       ApiResponse<String>
+    >;
+  }, 
+// 增加评论信息
+  addCommmentData: (comment: CommentAddSend) => {
+    return post("/addComment", {comment}) as Promise<
+      ApiResponse<String>
+    >;
+  },
+  // 拉取评论列表
+  listCommentDataList: (para:CommentsQuerySend) => {
+    return post("ProductComments", {para}) as Promise<
+      ApiResponse<CommentDataListRec>
     >;
   },
 };
