@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { modelApi } from '@/api/model-api'
 import type { ProductDetailRec } from '@/Dto/ReceiveDto/ProductDetailRec'
+import ProductCommentsSection from '@/components/ProductCommentsSection.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -120,6 +121,12 @@ onMounted(() => {
           </section>
         </div>
       </section>
+
+      <ProductCommentsSection
+        :product-id="detail.productId"
+        :merchant-id="detail.merchantId"
+        :domain-id="detail.domainId"
+      />
     </template>
 
     <el-empty v-else-if="!loading" description="暂无商品详情数据" />

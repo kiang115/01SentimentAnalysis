@@ -179,13 +179,13 @@ export const modelApi = {
   }, 
 // 增加评论信息
   addCommmentData: (comment: CommentAddSend) => {
-    return post("/addComment", {comment}) as Promise<
+    return post("/addComment", comment) as Promise<
       ApiResponse<String>
     >;
   },
   // 拉取评论列表
   listCommentDataList: (para:CommentsQuerySend) => {
-    return post("ProductComments", {para}) as Promise<
+    return post("/ProductComments", para) as Promise<
       ApiResponse<CommentDataListRec>
     >;
   },
