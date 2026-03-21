@@ -22,4 +22,5 @@ public class ProductDetailSend {
     private Long merchantId;//商铺id
     private String merchantName;//商铺名字
     private BigDecimal positiveRate;//好评率
+    private Long domainId;//领域id
 }

@@ -1,0 +1,18 @@
+### 新增商家
+POST http://localhost:8888/addMerchant
+Content-Type: application/json
+
+{
+  "name": "示例商家",
+  "domainId": 1,
+  "description": "主营家居用品"
+}
+
+### 查询商家详情（示例路径）
+GET http://localhost:8888/MerchantDetail/1
+
+### 查询推理面板
+GET http://localhost:8888/InferencePanel
+
+### 查询训练面板
+GET http://localhost:8888/TrainPanel
