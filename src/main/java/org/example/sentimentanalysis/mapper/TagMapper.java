@@ -1,16 +1,16 @@
 package org.example.sentimentanalysis.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.example.sentimentanalysis.model.Users;
+import org.example.sentimentanalysis.model.Tag;
 
 /**
  * <p>
- * 用户信息表 Mapper 接口
+ * 全局标签表 Mapper 接口
  * </p>
  *
  * @author kiang
  * @since 2026-03-23
  */
-public interface UsersMapper extends BaseMapper<Users> {
+public interface TagMapper extends BaseMapper<Tag> {
 
 }

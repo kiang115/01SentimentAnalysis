@@ -8,6 +8,24 @@ CREATE TABLE `users` (
   INDEX `idx_username` (`user_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户信息表';
 
+CREATE TABLE `tag` (
+  `tag_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `tag_name` VARCHAR(64) NOT NULL COMMENT '标签原始名称',
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`tag_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='全局标签表';
+
+CREATE TABLE `inspect` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `product_id` BIGINT NOT NULL COMMENT '产品ID',
+  `tag_id` BIGINT NOT NULL COMMENT '标签ID',
+  `positive_count` INT NOT NULL DEFAULT 0 COMMENT '正向（好评）计数',
+  `negative_count` INT NOT NULL DEFAULT 0 COMMENT '负向（差评）计数',
+  `total_count` INT NOT NULL DEFAULT 0 COMMENT '总计数',
+  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
+  PRIMARY KEY (`id`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='产品-标签统计表';
+
 CREATE TABLE `merchants` (
   `merchants_id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '商家唯一标识',
   `name` VARCHAR(100) NOT NULL COMMENT '商家名称',
@@ -47,12 +65,13 @@ CREATE TABLE `comments` (
   `customer_id` BIGINT NOT NULL COMMENT '关联顾客表',
   `content` TEXT NOT NULL COMMENT '评论内容',
   `domain_id` BIGINT NOT NULL COMMENT '评论所属领域：0=外卖(waimai)，1=电商(shop)，2=酒店(hotel)',
-  `publish_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '评论发布时间',
+  `publish_time`  NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '评论发布时间',
   `product_id` BIGINT NOT NULL COMMENT '关联商品表',
   `merchant_id` BIGINT NOT NULL COMMENT '关联商家表',
   `status` INTEGER NOT NULL DEFAULT 0 COMMENT '评论当前状态：0=待推理(pending)，1=推理中(inferring)，2=已推理(inferred)，3=审核中(reviewing)，4=已修正(corrected)，5=已拒绝(rejected)',
   `final_sentiment` INTEGER COMMENT '最终情感结果：1=好评(positive)，0=差评(negative)',
   `is_retrained` BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否被重训过',
+  `is_inspected` BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否被ai推理过了',
   PRIMARY KEY (`comment_id`),
   INDEX `idx_customer_id` (`customer_id`),
   INDEX `idx_domain_id` (`domain_id`),

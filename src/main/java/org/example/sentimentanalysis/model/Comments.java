@@ -83,6 +83,10 @@ public class Comments implements Serializable {
     @TableField("final_sentiment")
     private Integer finalSentiment;
 
+//     是否被ai分析过
+    @TableField("is_inspected")
+    private Boolean isInspected;
+
     /**
      * 是否被重训过
      */
