@@ -57,8 +57,6 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
     private InferenceRecordsService inferenceRecordsService;
     @Autowired
     private ProductCommentAssembler productCommentAssembler;
-    @Autowired
-    private ProductsService productsService;
 
     @Override
     public ProductDetailSend getProductDetail(Long productId) {
@@ -241,19 +239,21 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
         this.updateMerchantBatch(results, commentMap);
     }
 
- /**
+    /**
      * 函数 A: 批量增量更新商品评分及好评率
      */
     private void updateProductBatch(List<InferResultRec.CommentResultList> results, Map<Long, Comments> commentMap) {
         // 1. 在内存中按 ProductId 分组聚合
         Map<Long, List<InferResultRec.CommentResultList>> productGroup = results.stream()
                 .filter(res -> commentMap.containsKey(res.getCommentId()))
+                .filter(res -> commentMap.get(res.getCommentId()).getProductId() != null)
+                .filter(res -> res.getPositiveProb() != null)
                 .collect(Collectors.groupingBy(res -> commentMap.get(res.getCommentId()).getProductId()));
 
         if (productGroup.isEmpty()) return;
 
         // 2. 批量查询所有涉及到的商品当前信息
-        List<Products> productsToUpdate = productsService.listByIds(productGroup.keySet());
+        List<Products> productsToUpdate = this.listByIds(productGroup.keySet());
 
         // 3. 内存计算增量分值与好评数
         for (Products product : productsToUpdate) {
@@ -300,16 +300,18 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
         }
 
         // 4. 批量写回数据库
-        productsService.updateBatchById(productsToUpdate);
+        this.updateBatchById(productsToUpdate);
     }
 
-/**
+    /**
      * 函数 B: 批量增量更新商家评分及好评率
      */
     private void updateMerchantBatch(List<InferResultRec.CommentResultList> results, Map<Long, Comments> commentMap) {
         // 1. 在内存中按 MerchantId 分组聚合
         Map<Long, List<InferResultRec.CommentResultList>> merchantGroup = results.stream()
                 .filter(res -> commentMap.containsKey(res.getCommentId()))
+                .filter(res -> commentMap.get(res.getCommentId()).getMerchantId() != null)
+                .filter(res -> res.getPositiveProb() != null)
                 .collect(Collectors.groupingBy(res -> commentMap.get(res.getCommentId()).getMerchantId()));
 
         if (merchantGroup.isEmpty()) return;
