@@ -72,6 +72,9 @@ public class Products implements Serializable {
     @TableField("comment_count")
     private Long commentCount;
 
+    @TableField("inferred_count")
+    private Long inferredCount;
+
     /**
      * 价格
      */
@@ -95,7 +98,7 @@ public class Products implements Serializable {
      */
     @TableField("update_time")
     private LocalDateTime updateTime;
-//   好评率
+    //   好评率
     @TableField("positive_rate")
     private BigDecimal positiveRate;
 }

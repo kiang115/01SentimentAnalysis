@@ -1,12 +1,15 @@
 package org.example.sentimentanalysis.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.requestDto.ProductAddRec;
 import org.example.sentimentanalysis.dto.requestDto.ProductCommentQueryRec;
 import org.example.sentimentanalysis.dto.requestDto.ProductEditRec;
 import org.example.sentimentanalysis.dto.responseDto.CommentListSend;
 import org.example.sentimentanalysis.dto.responseDto.ProductDetailSend;
 import org.example.sentimentanalysis.model.Products;
+
+import java.util.List;
 
 /**
  * <p>
@@ -26,5 +29,7 @@ public interface ProductsService extends IService<Products> {
     void editProduct(ProductEditRec productEditRec);
 
     void deleteProduct(Long productId);
+
+    void processInferenceResults(List<InferResultRec.CommentResultList> results);
 }
 

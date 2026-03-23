@@ -16,22 +16,24 @@ CREATE TABLE `merchants` (
   `description` TEXT COMMENT '商家描述',
   `rating` DECIMAL(3, 2) DEFAULT 0.00 COMMENT '综合得分',
   `comment_count` BIGINT DEFAULT 0 COMMENT '总评论数',
+  `inferred_count` BIGINT DEFAULT 0 COMMENT '已推理评论数',
   `positive_rate` DECIMAL(5, 4) DEFAULT 0.0000 COMMENT '好评率',
   `avatar_url` VARCHAR(255) DEFAULT NULL COMMENT '商家头像url',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   INDEX `idx_domain_id` (`domain_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商家信息表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商家信息表'
 
 CREATE TABLE `products` (
   `products_id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '商品唯一标识',
   `merchant_id` BIGINT NOT NULL COMMENT '所属商家id',
   `name` VARCHAR(150) NOT NULL COMMENT '商品名称',
   `details` TEXT COMMENT '商品详情',
-  `positive_rate` DECIMAL(5, 4) DEFAULT 0.0000 COMMENT '商品好评率',
+  `positive_rate` DECIMAL(5, 4) DEFAULT 0.0000 COMMENT '好评率',
   `domain_id` BIGINT NOT NULL COMMENT '所属领域id',
   `rating` DECIMAL(3, 2) DEFAULT 0.00 COMMENT '综合得分(小数两位)',
   `comment_count` BIGINT DEFAULT 0 COMMENT '评论数',
+  `inferred_count` BIGINT DEFAULT 0 COMMENT '已推理评论数',
   `price` DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '价格',
   `image_url` VARCHAR(255) DEFAULT NULL COMMENT '商品头像url',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -40,7 +42,7 @@ CREATE TABLE `products` (
   INDEX `idx_domain_id` (`domain_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品信息表';
 
-CREATE TABLE IF NOT EXISTS `comments`(
+CREATE TABLE `comments` (
   `comment_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '评论唯一标识',
   `customer_id` BIGINT NOT NULL COMMENT '关联顾客表',
   `content` TEXT NOT NULL COMMENT '评论内容',

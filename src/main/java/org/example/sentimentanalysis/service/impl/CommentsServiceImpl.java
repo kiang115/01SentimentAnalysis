@@ -10,10 +10,15 @@ import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.mapper.CommentsMapper;
+import org.example.sentimentanalysis.model.Merchants;
+import org.example.sentimentanalysis.model.Products;
 import org.example.sentimentanalysis.service.CommentsService;
 import org.example.sentimentanalysis.service.DomainsService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.example.sentimentanalysis.service.MerchantsService;
+import org.example.sentimentanalysis.service.ProductsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -32,6 +37,13 @@ import java.util.stream.Collectors;
  */
 @Service
 public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> implements CommentsService {
+    @Autowired
+    @Lazy
+    private ProductsService productsService;
+    @Autowired
+    @Lazy
+    private MerchantsService merchantsService;
+
 
     @Override
     public void addComment(CommentAddRec rec) {
@@ -64,7 +76,15 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
                 .setProductId(rec.getProductId())
                 .setMerchantId(rec.getMerchantId())
                 .setStatus(CommentStatusEnum.PENDING.getCode());
-
+//        将商品count和商铺count+1
+        productsService.lambdaUpdate()
+                .eq(Products::getProductsId, rec.getProductId())
+                .setSql("comment_count = comment_count + 1") // 注意：这里写的是数据库字段名
+                .update();
+        merchantsService.lambdaUpdate()
+                .eq(Merchants::getMerchantsId, rec.getMerchantId())
+                .setSql("comment_count = comment_count + 1") // 注意：这里写的是数据库字段名
+                .update();
         boolean success = this.save(comment);
         if (!success) {
             throw new CustomBusinessException("发布评论失败");

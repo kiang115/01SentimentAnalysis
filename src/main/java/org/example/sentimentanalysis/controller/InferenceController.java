@@ -12,10 +12,7 @@ import org.example.sentimentanalysis.enums.TaskStatusEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.InferenceTasks;
 import org.example.sentimentanalysis.response.Response;
-import org.example.sentimentanalysis.service.CommentsService;
-import org.example.sentimentanalysis.service.DomainsService;
-import org.example.sentimentanalysis.service.InferenceTasksService;
-import org.example.sentimentanalysis.service.ModelsService;
+import org.example.sentimentanalysis.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +33,8 @@ public class InferenceController {
     private CommentsService commentsService;
     @Autowired
     private ModelsService modelsService;
+    @Autowired
+    private ProductsService productsService;
 
     @Operation(summary = "列出推理任务列表")
     @GetMapping("/InferenceTasksList")
@@ -101,6 +100,8 @@ public class InferenceController {
         inferenceTasksService.setInferenceTaskSuccess(inferResultRec);
 //        更新模型已推理评论数量
         modelsService.updateInferredNum(inferResultRec);
+//        更新商家和商品的好评率和综合得分
+        productsService.processInferenceResults(inferResultRec.getResults());
         return Response.success();
     }
 

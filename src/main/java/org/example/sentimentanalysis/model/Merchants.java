@@ -72,6 +72,9 @@ public class Merchants implements Serializable {
     @TableField("comment_count")
     private Long commentCount;
 
+
+    @TableField("inferred_count")
+    private Long inferredCount;
     /**
      * 好评率
      */
