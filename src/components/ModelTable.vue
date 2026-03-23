@@ -16,12 +16,12 @@ const domains = ref<DomainItem[]>([])
 const selectedRows = ref<ModelInfoItem[]>([])
 const modelIdInput = ref('')
 
-const queryParams = reactive({
+const queryParams = reactive<ModelsQuerySend>({
   pageNum: 1,
-  pageSize: null as number | null,
+  pageSize: null,
   modelId: '',
-  domainId: null as number | null,
-  source: null as string | null,
+  domainId: null,
+  source: null,
 })
 
 const domainFilters = computed(() =>
@@ -38,7 +38,7 @@ const serverFilter = () => true
 async function fetchData() {
   loading.value = true
   try {
-    const res = await modelApi.listModels(queryParams as ModelsQuerySend)
+    const res = await modelApi.listModels(queryParams)
     pageInfo.value = res.data.pageInfo
     tableData.value = res.data.pageInfo.list
     domains.value = res.data.domains

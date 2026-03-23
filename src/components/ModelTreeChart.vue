@@ -38,6 +38,18 @@ const selectedDomain = ref('')
 const chartRef = ref<HTMLElement | null>(null)
 let chartInstance: echarts.ECharts | null = null
 let resizeHandler: (() => void) | null = null
+type ChartTreeNode = {
+  name: string
+  active: boolean
+  value?: number
+  children?: ChartTreeNode[]
+  itemStyle?: {
+    color: string
+    borderColor?: string
+    borderWidth?: number
+    opacity?: number
+  }
+}
 
 const selectedIndex = computed(() => {
   const list = treeChartData.value?.domainNameList
@@ -54,8 +66,18 @@ const currentTree = computed((): ModelTreeNodeRec | null => {
   return data.modelTreeNodeList[idx] ?? null
 })
 
+function normalizeTreeNode(node: ModelTreeNodeRec): ChartTreeNode {
+  const children = node.children?.map((child) => normalizeTreeNode(child)) ?? undefined
+  return {
+    name: node.name,
+    active: node.active,
+    value: node.value ?? undefined,
+    children,
+  }
+}
+
 /** 递归为树节点挂载 itemStyle（根据 active），不修改 name/value/children */
-function applyStyle(node: ModelTreeNodeRec & { itemStyle?: object }) {
+function applyStyle(node: ChartTreeNode) {
   if (node.active) {
     node.itemStyle = {
       color: '#5470c6',
@@ -69,15 +91,15 @@ function applyStyle(node: ModelTreeNodeRec & { itemStyle?: object }) {
     }
   }
   if (node.children && node.children.length > 0) {
-    node.children.forEach((child) => applyStyle(child as ModelTreeNodeRec & { itemStyle?: object }))
+    node.children.forEach((child) => applyStyle(child))
   }
 }
 
 /** 深拷贝当前树并应用样式，供 ECharts 使用 */
-function getTreeDataForChart(): (ModelTreeNodeRec & { itemStyle?: object }) | null {
+function getTreeDataForChart(): ChartTreeNode | null {
   const tree = currentTree.value
   if (!tree) return null
-  const copy = JSON.parse(JSON.stringify(tree)) as ModelTreeNodeRec & { itemStyle?: object }
+  const copy = normalizeTreeNode(tree)
   applyStyle(copy)
   return copy
 }
@@ -100,7 +122,7 @@ function buildTreeOption(): EChartsOption {
     series: [
       {
         type: 'tree',
-        data: [treeData as unknown as Record<string, unknown>],
+        data: [treeData],
         top: '5%',
         left: '15%',
         bottom: '5%',

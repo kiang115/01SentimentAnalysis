@@ -16,11 +16,11 @@ const domains = ref<DomainItem[]>([])
 const selectedRows = ref<TrainParaItem[]>([])
 const paraIdInput = ref('')
 
-const queryParams = reactive({
+const queryParams = reactive<TrainParaQuerySend>({
   pageNum: 1,
-  pageSize: null as number | null,
+  pageSize: null,
   paraId: '',
-  domainId: null as number | null,
+  domainId: null,
 })
 
 const domainFilters = computed(() =>
@@ -33,7 +33,7 @@ const serverFilter = () => true
 async function fetchData() {
   loading.value = true
   try {
-    const res = await modelApi.listTrainParam(queryParams as TrainParaQuerySend)
+    const res = await modelApi.listTrainParam(queryParams)
     pageInfo.value = res.data.pageInfo
     tableData.value = res.data.pageInfo.list
     domains.value = res.data.domains
@@ -89,8 +89,12 @@ const addFormRef = ref<InstanceType<typeof ElForm>>()
 
 const loraModuleOptions = ['query', 'key', 'value', 'dense']
 
-const addForm = reactive<AddTrainParaSend>({
-  domainId: null as unknown as number,
+type AddTrainParaForm = Omit<AddTrainParaSend, 'domainId'> & {
+  domainId: number | null
+}
+
+const addForm = reactive<AddTrainParaForm>({
+  domainId: null,
   loraR: 8,
   loraAlpha: 16,
   epochs: 5,
@@ -125,8 +129,13 @@ function openAddDialog() {
 async function handleAdd() {
   const valid = await addFormRef.value?.validate().catch(() => false)
   if (!valid) return
+  if (addForm.domainId == null) return
+  const payload: AddTrainParaSend = {
+    ...addForm,
+    domainId: addForm.domainId,
+  }
   try {
-    await modelApi.addTrainParam({ ...addForm })
+    await modelApi.addTrainParam(payload)
     ElMessage.success('添加成功')
     addDialogVisible.value = false
     addFormRef.value?.resetFields()

@@ -171,7 +171,7 @@ async function handleConfirm() {
   try {
     const para: InferPanelSend = { inferenceDomainPara, sort: sort.value }
     const res = await modelApi.checkInferData(para)
-    ElMessage.success((res as { message?: string }).message ?? '操作成功')
+    ElMessage.success(res.message || '操作成功')
     close()
     emit('confirm')
   } catch {

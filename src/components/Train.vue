@@ -136,8 +136,6 @@ watch(detailVisible, (v) => {
 const eventSourceRef = ref<EventSource | null>(null)
 const snapshotMap = ref<Map<number, TrainTaskSnapshot>>(new Map())
 
-type ListTrainTasksRes = { code: number; data: TrainTasksRec; message: string }
-
 // ==================== 展示用计算 ====================
 
 function getSnapshot(task: TrainTasksItem): TrainTaskSnapshot | undefined {
@@ -337,7 +335,7 @@ function closeSSE() {
 async function loadTaskList() {
   loading.value = true
   try {
-    const res = (await modelApi.listTrainTasks()) as unknown as ListTrainTasksRes
+    const res = await modelApi.listTrainTasks()
     const data = res?.data
     taskList.value = data?.trainTasksList ?? []
     if (data?.ifAllFinished === 1) {

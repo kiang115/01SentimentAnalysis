@@ -176,7 +176,7 @@ type TrainForm = {
   batchSize: string
   learningRate: string
   randomSeed: string
-  loraModules: string[]
+  loraModules: TrainPanelSend['loraModules']
   trainSplitRatio: string
 }
 
@@ -459,7 +459,7 @@ async function handleConfirm() {
     batchSize: Number(formData.value.batchSize),
     learningRate: Number(formData.value.learningRate),
     randomSeed: Number(formData.value.randomSeed),
-    loraModules: formData.value.loraModules as TrainPanelSend['loraModules'],
+    loraModules: formData.value.loraModules,
     trainSplitRatio: Number(formData.value.trainSplitRatio),
     isOverTrain: overwriteTrain.value,
     baseModelId: overwriteTrain.value ? null : (selectedBaseModelId.value ?? null),

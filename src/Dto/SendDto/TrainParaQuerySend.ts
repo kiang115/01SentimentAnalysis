@@ -1,10 +1,9 @@
 
 export interface TrainParaQuerySend {
-    // 下面的皆可为null 后端已经设置默认值
-    pageNum: number;//当前页码 后端默认为1
-    pageSize: number;// 默认为空即可 表格行数 后端默认为8
-    paraId: string; // 按照参数id筛选 为空不筛选
-    domainId: number;// 按照领域id筛选 为空不筛选
+    pageNum: number; // 当前页码 后端默认为1
+    pageSize: number | null; // 表格行数，允许为空让后端走默认值
+    paraId: string; // 按照参数id筛选，空字符串表示不筛选
+    domainId: number | null; // 按照领域id筛选，不筛选时为 null
 }
 // 第一次查询可以直接设置为全null即可，后面查询需要根据前端筛选条件进行查询
 // 前端格式要求

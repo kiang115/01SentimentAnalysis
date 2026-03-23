@@ -1,10 +1,9 @@
 export interface ModelsQuerySend {
-    // 下面的皆可为null 后端已经设置默认值
-    pageNum: number;//当前页码 后端默认为1
-    pageSize: number;// 默认为空即可 表格行数 后端默认为8
-    modelId: string; // 按照模型id筛选 为空不筛选
-    domainId: number;// 按照领域id筛选 为空不筛选
-    source: string;// 领域来源 默认只有两种来源 训练模型->train  手动上传->upload 不筛选为空
+    pageNum: number; // 当前页码 后端默认为1
+    pageSize: number | null; // 表格行数，允许为空让后端走默认值
+    modelId: string; // 按照模型id筛选，空字符串表示不筛选
+    domainId: number | null; // 按照领域id筛选，不筛选时为 null
+    source: 'train' | 'upload' | null; // 模型来源，不筛选时为 null
 }
 // 第一次查询可以直接设置为全null即可，后面查询需要根据前端筛选条件进行查询
 // 前端格式要求

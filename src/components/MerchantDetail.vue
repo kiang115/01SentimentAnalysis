@@ -23,19 +23,22 @@ const editSubmitting = ref(false)
 const editImageUploading = ref(false)
 const editImageFileInputRef = ref<HTMLInputElement>()
 const editFormRef = ref()
-const addForm = reactive<ProductAddSend>({
+type ProductAddForm = Omit<ProductAddSend, 'price'> & { price: number | null }
+type ProductEditForm = Omit<ProductEditSend, 'price'> & { price: number | null }
+
+const addForm = reactive<ProductAddForm>({
   productName: '',
   productDetail: '',
   imageUrl: '',
-  price: undefined as unknown as number,
+  price: null,
   merchantId: 0,
 })
-const editForm = reactive<ProductEditSend>({
+const editForm = reactive<ProductEditForm>({
   productId: 0,
   productName: '',
   productDetail: '',
   imageUrl: '',
-  price: undefined as unknown as number,
+  price: null,
 })
 
 const addFormRules = {
@@ -137,7 +140,7 @@ function resetAddForm() {
   addForm.productName = ''
   addForm.productDetail = ''
   addForm.imageUrl = ''
-  addForm.price = undefined as unknown as number
+  addForm.price = null
   addForm.merchantId = detail.value?.merchantId ?? 0
   imageUploading.value = false
   addFormRef.value?.resetFields()
@@ -171,9 +174,14 @@ async function handleImageChange(event: Event) {
 async function submitAddForm() {
   const valid = await addFormRef.value?.validate().catch(() => false)
   if (!valid) return
+  if (addForm.price == null) return
+  const payload: ProductAddSend = {
+    ...addForm,
+    price: addForm.price,
+  }
   addSubmitting.value = true
   try {
-    await modelApi.postProductAddData(addForm)
+    await modelApi.postProductAddData(payload)
     addDialogVisible.value = false
     resetAddForm()
     await fetchMerchantDetail()
@@ -187,7 +195,7 @@ function resetEditForm() {
   editForm.productName = ''
   editForm.productDetail = ''
   editForm.imageUrl = ''
-  editForm.price = undefined as unknown as number
+  editForm.price = null
   editImageUploading.value = false
   editFormRef.value?.resetFields()
 }
@@ -224,9 +232,14 @@ async function handleEditImageChange(event: Event) {
 async function submitEditForm() {
   const valid = await editFormRef.value?.validate()
   if (!valid) return
+  if (editForm.price == null) return
+  const payload: ProductEditSend = {
+    ...editForm,
+    price: editForm.price,
+  }
   editSubmitting.value = true
   try {
-    await modelApi.postProductEditData(editForm)
+    await modelApi.postProductEditData(payload)
     editDialogVisible.value = false
     resetEditForm()
     await fetchMerchantDetail()

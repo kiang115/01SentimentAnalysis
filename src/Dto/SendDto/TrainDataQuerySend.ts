@@ -1,14 +1,13 @@
 
 export interface TrainDataQuerySend {
-    // 下面的皆可为null 后端已经设置默认值
-    pageNum: number;//当前页码 后端默认为1
-    pageSize: number;// 默认为空即可 表格行数 后端默认为8
+    pageNum: number; // 当前页码 后端默认为1
+    pageSize: number | null; // 表格行数，允许为空让后端走默认值
     content: string; // 筛选内容
-    label: number;// 筛选标签 只能为0|1
-    source: string; // 筛选来源 只能为 original|upload|corrected
-    domainId: number;// 筛选领域
-    orderName: string;// 排序字段 只能为 time 创建时间 count 训练次数 可以为null
-    order: string;// 排序方式 只能为 升序 asc 降序 desc
+    label: number | null; // 筛选标签 0|1，不筛选时为 null
+    source: '' | 'original' | 'upload' | 'corrected'; // 筛选来源，不筛选时为空字符串
+    domainId: number | null; // 筛选领域，不筛选时为 null
+    orderName: '' | 'time' | 'count'; // 排序字段，不排序时为空字符串
+    order: '' | 'asc' | 'desc'; // 排序方式，不排序时为空字符串
 }
 // 前端格式要求
 // 输入框 用于输入content

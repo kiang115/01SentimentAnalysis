@@ -16,7 +16,6 @@ import type { TrainParaQuerySend } from "@/Dto/SendDto/TrainParaQuerySend";
 import type { AddTrainParaSend } from "@/Dto/SendDto/AddTrainParaSend";
 import type { ModelsQuerySend } from "@/Dto/SendDto/ModelsQuerySend";
 import type { ModelsListRec } from "@/Dto/ReceiveDto/ModelsListRec";
-import type { ModelFilesSend } from "@/Dto/SendDto/ModelFilesSend";
 import Constants from "@/utils/constants";
 import type { ModelLineChart } from "@/Dto/ReceiveDto/ModelLineChart";
 import type { ModelPieChart } from "@/Dto/ReceiveDto/ModelPieChart";
@@ -33,7 +32,7 @@ import type { CommentAddSend } from "@/Dto/SendDto/CommentAddSend";
 import type { CommentDataListRec } from "@/Dto/ReceiveDto/CommentDataListRec";
 // 定义标准返回类型
 // todo 把vue接收到的非标准的api返回值统一处理为ApiResponse<T>类型 特别是train.vue中的ListTrainTasksRes类型需要被替代
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   code: number;
   message: string;
   data: T;
@@ -47,7 +46,7 @@ export const modelApi = {
     return get("/InferencePanel", {}) as Promise<ApiResponse<InferPanelRec>>;
   },
   checkInferData: (para: InferPanelSend) => {
-    return post("/InferenceDataCheck", para);
+    return post("/InferenceDataCheck", para) as Promise<ApiResponse<void>>;
   },
   // 训练任务
   listTrainTasks: () => {
@@ -57,7 +56,7 @@ export const modelApi = {
     return get("/TrainPanel", {}) as Promise<ApiResponse<TrainPanelRec>>;
   },
   checkTrainData: (para: TrainPanelSend) => {
-    return post("/TrainDataCheck", para);
+    return post("/TrainDataCheck", para) as Promise<ApiResponse<void>>;
   },
   // 训练折线图
   listTrainLineChart: () => {
@@ -162,25 +161,25 @@ export const modelApi = {
   // 增加商品信息
   postProductAddData: (para: ProductAddSend) => {
     return post("/addProduct",para) as Promise<
-      ApiResponse<String>
+      ApiResponse<string>
     >;
   },
   // 编辑商品信息
   postProductEditData: (para: ProductEditSend) => {
     return post("/editProduct",para) as Promise<
-      ApiResponse<String>
+      ApiResponse<string>
     >;
   },
   // 删除商品信息
   postProductDeleteData: (productId: number) => {
     return post(`/Productdelete/${productId}`, {}) as Promise<
-      ApiResponse<String>
+      ApiResponse<string>
     >;
   }, 
 // 增加评论信息
   addCommmentData: (comment: CommentAddSend) => {
     return post("/addComment", comment) as Promise<
-      ApiResponse<String>
+      ApiResponse<string>
     >;
   },
   // 拉取评论列表

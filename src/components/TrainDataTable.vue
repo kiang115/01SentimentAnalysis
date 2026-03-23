@@ -19,13 +19,13 @@ const pageInfo = ref<PageInfo<DataItem>>()
 const domains = ref<DomainItem[]>([])
 const searchContent = ref('')
 
-const queryParams = reactive({
+const queryParams = reactive<TrainDataQuerySend>({
   pageNum: 1,
-  pageSize: null as number | null,
+  pageSize: null,
   content: '',
-  label: null as number | null,
+  label: null,
   source: '',
-  domainId: null as number | null,
+  domainId: null,
   orderName: '',
   order: '',
 })
@@ -56,7 +56,7 @@ const serverFilter = () => true
 async function fetchData() {
   loading.value = true
   try {
-    const res = await modelApi.listTrainData(queryParams as TrainDataQuerySend)
+    const res = await modelApi.listTrainData(queryParams)
     pageInfo.value = res.data.pageInfo
     tableData.value = res.data.pageInfo.list
     domains.value = res.data.domains
@@ -128,10 +128,15 @@ function handleCurrentChange(newPage: number) {
 
 const addDialogVisible = ref(false)
 const addFormRef = ref<InstanceType<typeof ElForm>>()
-const addForm = reactive<TrainDataAddSend>({
+type TrainDataAddForm = {
+  content: string
+  label: number | null
+  domainId: number | null
+}
+const addForm = reactive<TrainDataAddForm>({
   content: '',
-  label: null as unknown as number,
-  domainId: null as unknown as number,
+  label: null,
+  domainId: null,
 })
 const addFormRules = reactive({
   content: [{ required: true, message: '请输入数据内容', trigger: 'blur' }],
@@ -142,7 +147,13 @@ const addFormRules = reactive({
 async function handleAdd() {
   const valid = await addFormRef.value?.validate().catch(() => false)
   if (!valid) return
-  await modelApi.addTrainData(addForm)
+  if (addForm.label == null || addForm.domainId == null) return
+  const payload: TrainDataAddSend = {
+    content: addForm.content,
+    label: addForm.label,
+    domainId: addForm.domainId,
+  }
+  await modelApi.addTrainData(payload)
   ElMessage.success('添加成功')
   addDialogVisible.value = false
   addFormRef.value?.resetFields()
