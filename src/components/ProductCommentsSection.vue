@@ -117,10 +117,10 @@ onMounted(() => {
 
           <div class="comment-tags">
             <el-tag type="info" effect="plain">状态：{{ item.statusName }}</el-tag>
-            <el-tag type="warning" effect="plain">情感：{{ item.finalSentimentName }}</el-tag>
-            <el-tag effect="light">置信度：{{ formatPercent(item.confidence) }}</el-tag>
-            <el-tag type="success" effect="light">正向概率：{{ formatPercent(item.positiveProb) }}</el-tag>
-            <el-tag type="danger" effect="light">负向概率：{{ formatPercent(item.negativeProb) }}</el-tag>
+            <el-tag v-if="item.finalSentimentName != null" type="warning" effect="plain">情感：{{ item.finalSentimentName }}</el-tag>
+            <el-tag v-if="item.confidence != null" effect="light">置信度：{{ formatPercent(item.confidence) }}</el-tag>
+            <el-tag v-if="item.positiveProb != null" type="success" effect="light">正向概率：{{ formatPercent(item.positiveProb) }}</el-tag>
+            <el-tag v-if="item.negativeProb != null" type="danger" effect="light">负向概率：{{ formatPercent(item.negativeProb) }}</el-tag>
           </div>
         </article>
       </div>
