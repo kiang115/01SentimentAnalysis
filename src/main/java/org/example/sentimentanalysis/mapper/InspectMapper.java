@@ -9,7 +9,7 @@ import org.example.sentimentanalysis.model.Inspect;
  * </p>
  *
  * @author kiang
- * @since 2026-03-23
+ * @since 2026-03-24
  */
 public interface InspectMapper extends BaseMapper<Inspect> {
 

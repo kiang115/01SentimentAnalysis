@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author kiang
- * @since 2026-02-26
+ * @since 2026-03-24
  */
 @Getter
 @Setter
@@ -48,7 +48,7 @@ public class TrainData implements Serializable {
     private String content;
 
     /**
-     * 训练数据标签
+     * 训练数据标签 0差1好
      */
     @TableField("label")
     private Integer label;

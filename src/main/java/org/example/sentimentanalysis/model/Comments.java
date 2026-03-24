@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author kiang
- * @since 2026-02-26
+ * @since 2026-03-24
  */
 @Getter
 @Setter
@@ -83,13 +83,15 @@ public class Comments implements Serializable {
     @TableField("final_sentiment")
     private Integer finalSentiment;
 
-//     是否被ai分析过
-    @TableField("is_inspected")
-    private Boolean isInspected;
-
     /**
      * 是否被重训过
      */
     @TableField("is_retrained")
     private Boolean isRetrained;
+
+    /**
+     * 是否被ai推理过了
+     */
+    @TableField("is_inspected")
+    private Boolean isInspected;
 }

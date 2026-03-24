@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author kiang
- * @since 2026-02-26
+ * @since 2026-03-24
  */
 @Getter
 @Setter
@@ -36,7 +36,7 @@ public class Domains implements Serializable {
     private Long domainId;
 
     /**
-     * 领域名字
+     * 领域中文名字
      */
     @TableField("domain_name")
     private String domainName;

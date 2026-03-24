@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author kiang
- * @since 2026-03-17
+ * @since 2026-03-24
  */
 @Getter
 @Setter
@@ -55,6 +55,12 @@ public class Products implements Serializable {
     private String details;
 
     /**
+     * 好评率
+     */
+    @TableField("positive_rate")
+    private BigDecimal positiveRate;
+
+    /**
      * 所属领域id
      */
     @TableField("domain_id")
@@ -72,6 +78,9 @@ public class Products implements Serializable {
     @TableField("comment_count")
     private Long commentCount;
 
+    /**
+     * 已推理评论数
+     */
     @TableField("inferred_count")
     private Long inferredCount;
 
@@ -98,7 +107,4 @@ public class Products implements Serializable {
      */
     @TableField("update_time")
     private LocalDateTime updateTime;
-    //   好评率
-    @TableField("positive_rate")
-    private BigDecimal positiveRate;
 }

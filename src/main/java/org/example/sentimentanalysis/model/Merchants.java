@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author kiang
- * @since 2026-03-17
+ * @since 2026-03-24
  */
 @Getter
 @Setter
@@ -72,9 +72,12 @@ public class Merchants implements Serializable {
     @TableField("comment_count")
     private Long commentCount;
 
-
+    /**
+     * 已推理评论数
+     */
     @TableField("inferred_count")
     private Long inferredCount;
+
     /**
      * 好评率
      */
