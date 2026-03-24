@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { modelApi } from '@/api/model-api'
 import type { ProductDetailRec } from '@/Dto/ReceiveDto/ProductDetailRec'
+import ProductTagAnalysisSection from '@/components/ProductTagAnalysisSection.vue'
 import ProductCommentsSection from '@/components/ProductCommentsSection.vue'
 
 const route = useRoute()
@@ -121,6 +122,8 @@ onMounted(() => {
           </section>
         </div>
       </section>
+
+      <ProductTagAnalysisSection :product-id="detail.productId" />
 
       <ProductCommentsSection
         :product-id="detail.productId"

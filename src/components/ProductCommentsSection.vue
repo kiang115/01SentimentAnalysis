@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { modelApi } from '@/api/model-api'
@@ -26,7 +26,7 @@ const queryParams = reactive<CommentsQuerySend>({
 
 function formatPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`
-}这个结果在结构体当中
+}
 
 async function fetchComments() {
   listLoading.value = true
@@ -243,4 +243,3 @@ onMounted(() => {
   }
 }
 </style>
-
