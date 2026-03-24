@@ -6,7 +6,9 @@ import org.example.sentimentanalysis.dto.requestDto.ProductAddRec;
 import org.example.sentimentanalysis.dto.requestDto.ProductCommentQueryRec;
 import org.example.sentimentanalysis.dto.requestDto.ProductEditRec;
 import org.example.sentimentanalysis.dto.responseDto.CommentListSend;
+import org.example.sentimentanalysis.dto.responseDto.ProductTagAnalyzeSend;
 import org.example.sentimentanalysis.dto.responseDto.ProductDetailSend;
+import org.example.sentimentanalysis.dto.responseDto.ProductTagStatsListSend;
 import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.ProductsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 public class ProductController {
@@ -47,5 +51,19 @@ public class ProductController {
     public Response<Void> deleteProduct(@PathVariable Long productId) {
         productsService.deleteProduct(productId);
         return Response.success();
+    }
+
+    @Operation(summary = "按商品触发标签情感分析")
+    @PostMapping("/ProductAnalyzeTags/{productId}")
+    public Response<ProductTagAnalyzeSend> analyzeProductTags(@PathVariable Long productId) {
+        return Response.data(productsService.analyzeProductTags(productId));
+    }
+
+    @Operation(summary = "查询商品标签统计")
+    @PostMapping("/ProductTagStats/{productId}")
+    public Response<ProductTagStatsListSend> listProductTagStats(@PathVariable Long productId) {
+        ProductTagStatsListSend productTagStatsListSend = new ProductTagStatsListSend();
+        productTagStatsListSend.setProductTagStatsList(productsService.listProductTagStats(productId));
+        return Response.data(productTagStatsListSend);
     }
 }

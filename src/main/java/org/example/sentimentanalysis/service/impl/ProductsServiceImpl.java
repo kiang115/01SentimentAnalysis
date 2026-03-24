@@ -1,5 +1,8 @@
 package org.example.sentimentanalysis.service.impl;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
@@ -11,24 +14,41 @@ import org.example.sentimentanalysis.dto.requestDto.ProductCommentQueryRec;
 import org.example.sentimentanalysis.dto.requestDto.ProductEditRec;
 import org.example.sentimentanalysis.dto.responseDto.CommentListSend;
 import org.example.sentimentanalysis.dto.responseDto.ProductDetailSend;
+import org.example.sentimentanalysis.dto.responseDto.ProductTagAnalyzeSend;
+import org.example.sentimentanalysis.dto.responseDto.ProductTagStatsListSend;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.mapper.ProductsMapper;
 import org.example.sentimentanalysis.model.Comments;
+import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.model.InferenceRecords;
+import org.example.sentimentanalysis.model.Inspect;
 import org.example.sentimentanalysis.model.Merchants;
 import org.example.sentimentanalysis.model.Products;
+import org.example.sentimentanalysis.model.Tag;
 import org.example.sentimentanalysis.model.Users;
 import org.example.sentimentanalysis.service.CommentsService;
+import org.example.sentimentanalysis.service.DomainsService;
 import org.example.sentimentanalysis.service.InferenceRecordsService;
+import org.example.sentimentanalysis.service.InspectService;
 import org.example.sentimentanalysis.service.MerchantsService;
 import org.example.sentimentanalysis.service.ProductsService;
+import org.example.sentimentanalysis.service.TagService;
 import org.example.sentimentanalysis.service.UsersService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +77,21 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
     private InferenceRecordsService inferenceRecordsService;
     @Autowired
     private ProductCommentAssembler productCommentAssembler;
+    @Autowired
+    private DomainsService domainsService;
+    @Autowired
+    private TagService tagService;
+    @Autowired
+    private InspectService inspectService;
+
+    @Value("${llm.deepseek.api-url:https://api.deepseek.com/chat/completions}")
+    private String deepSeekApiUrl;
+    @Value("${llm.deepseek.api-key:}")
+    private String deepSeekApiKey;
+    @Value("${llm.deepseek.model:deepseek-chat}")
+    private String deepSeekModel;
+
+    private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @Override
     public ProductDetailSend getProductDetail(Long productId) {
@@ -217,6 +252,354 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
         if (!success) {
             throw new CustomBusinessException("删除商品失败, productId=" + productId);
         }
+    }
+
+    @Override
+    @Transactional
+    public ProductTagAnalyzeSend analyzeProductTags(Long productId) {
+        if (productId == null || productId <= 0) {
+            throw new CustomBusinessException("商品ID不合法");
+        }
+        Products product = this.getById(productId);
+        if (product == null) {
+            throw new CustomBusinessException("商品不存在 productId=" + productId);
+        }
+        if (product.getDomainId() == null) {
+            throw new CustomBusinessException("商品领域不存在 productId=" + productId);
+        }
+        Domains domain = domainsService.getById(product.getDomainId());
+        if (domain == null || domain.getDomainName() == null || domain.getDomainName().isBlank()) {
+            throw new CustomBusinessException("领域不存在 domainId=" + product.getDomainId());
+        }
+        String productName = product.getName() == null ? "" : product.getName().trim();
+        String domainName = domain.getDomainName().trim();
+
+        // 1. 仅筛选当前商品未做标签推理的评论
+        List<Comments> pendingComments = commentsService.list(new LambdaQueryWrapper<Comments>()
+                .eq(Comments::getProductId, productId)
+                .eq(Comments::getIsInspected, Boolean.FALSE)
+                .orderByDesc(Comments::getPublishTime));
+        if (pendingComments.isEmpty()) {
+            return buildAnalyzeResult(productId, 0, 0, 0);
+        }
+
+        // 2. 查询该商品已有标签列表，供AI优先复用
+        List<Inspect> productInspectList = inspectService.list(new LambdaQueryWrapper<Inspect>()
+                .eq(Inspect::getProductId, productId));
+
+        Set<Long> existingTagIds = productInspectList.stream()
+                .map(Inspect::getTagId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Map<Long, Tag> existingTagMapById = existingTagIds.isEmpty()
+                ? Collections.emptyMap()
+                : tagService.listByIds(existingTagIds).stream().collect(Collectors.toMap(Tag::getTagId, t -> t, (a, b) -> a));
+
+        List<String> existingTags = productInspectList.stream()
+                .map(Inspect::getTagId)
+                .map(existingTagMapById::get)
+                .filter(Objects::nonNull)
+                .map(Tag::getTagName)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .toList();
+
+        // 3. 直接调用DeepSeek获取结构化标签分析结果
+        String llmContent = callDeepSeekForTags(productId, productName, domainName, existingTags, pendingComments);
+        JSONObject inferData = parseTagResultJson(llmContent);
+        JSONArray resultArray = inferData.getJSONArray("result");
+        if (resultArray == null) {
+            throw new CustomBusinessException("标签分析失败: 缺少result字段");
+        }
+
+        // 4. 聚合模型返回标签结果，避免同一标签重复写入
+        Map<String, int[]> mergedCountByTagName = new LinkedHashMap<>();
+        for (int i = 0; i < resultArray.size(); i++) {
+            JSONObject tagResult = resultArray.getJSONObject(i);
+            if (tagResult == null || tagResult.getString("tagName") == null || tagResult.getString("tagName").trim().isEmpty()) {
+                throw new CustomBusinessException("标签分析失败: 返回tagName为空");
+            }
+            Integer positiveCount = tagResult.getInteger("positiveCount");
+            Integer negativeCount = tagResult.getInteger("negativeCount");
+            Integer totalCount = tagResult.getInteger("totalCount");
+            int positive = positiveCount == null ? 0 : positiveCount;
+            int negative = negativeCount == null ? 0 : negativeCount;
+            int total = totalCount == null ? positive + negative : totalCount;
+            if (positive < 0 || negative < 0 || total < 0) {
+                throw new CustomBusinessException("标签分析失败: 返回计数存在负数");
+            }
+            if (positive + negative != total) {
+                throw new CustomBusinessException("标签分析失败: totalCount与正负计数不一致");
+            }
+            String tagName = tagResult.getString("tagName").trim();
+            int[] merged = mergedCountByTagName.computeIfAbsent(tagName, key -> new int[]{0, 0, 0});
+            merged[0] += positive;
+            merged[1] += negative;
+            merged[2] += total;
+        }
+        if (mergedCountByTagName.isEmpty()) {
+            markCommentsAsInspected(pendingComments);
+            return buildAnalyzeResult(productId, pendingComments.size(), 0, 0);
+        }
+
+        // 5. 先按标签名查全局tag，不存在则新增
+        List<String> resultTagNames = new ArrayList<>(mergedCountByTagName.keySet());
+        Map<String, Tag> existingGlobalTagMap = tagService.list(new LambdaQueryWrapper<Tag>()
+                .in(Tag::getTagName, resultTagNames))
+                .stream()
+                .collect(Collectors.toMap(Tag::getTagName, t -> t, (a, b) -> a));
+
+        List<Tag> newTags = resultTagNames.stream()
+                .filter(tagName -> !existingGlobalTagMap.containsKey(tagName))
+                .map(tagName -> new Tag().setTagName(tagName))
+                .toList();
+        if (!newTags.isEmpty()) {
+            tagService.saveBatch(newTags);
+        }
+
+        // 6. 回查所有结果标签ID，并更新当前商品的inspect统计
+        Map<String, Tag> allResultTagMap = tagService.list(new LambdaQueryWrapper<Tag>()
+                        .in(Tag::getTagName, resultTagNames))
+                .stream()
+                .collect(Collectors.toMap(Tag::getTagName, t -> t, (a, b) -> a));
+        Set<Long> resultTagIds = allResultTagMap.values().stream().map(Tag::getTagId).collect(Collectors.toSet());
+        Map<Long, Inspect> inspectMapByTagId = resultTagIds.isEmpty()
+                ? Collections.emptyMap()
+                : inspectService.list(new LambdaQueryWrapper<Inspect>()
+                        .eq(Inspect::getProductId, productId)
+                        .in(Inspect::getTagId, resultTagIds)).stream()
+                .collect(Collectors.toMap(Inspect::getTagId, i -> i, (a, b) -> a));
+
+        List<Inspect> insertInspectList = new ArrayList<>();
+        List<Inspect> updateInspectList = new ArrayList<>();
+        for (Map.Entry<String, int[]> entry : mergedCountByTagName.entrySet()) {
+            String tagName = entry.getKey();
+            int[] count = entry.getValue();
+            Tag targetTag = allResultTagMap.get(tagName);
+            if (targetTag == null || targetTag.getTagId() == null) {
+                throw new CustomBusinessException("标签分析失败: 标签ID不存在 tagName=" + tagName);
+            }
+            Inspect inspect = inspectMapByTagId.get(targetTag.getTagId());
+            if (inspect == null) {
+                insertInspectList.add(new Inspect()
+                        .setProductId(productId)
+                        .setTagId(targetTag.getTagId())
+                        .setPositiveCount(count[0])
+                        .setNegativeCount(count[1])
+                        .setTotalCount(count[2]));
+            } else {
+                inspect.setPositiveCount((inspect.getPositiveCount() == null ? 0 : inspect.getPositiveCount()) + count[0]);
+                inspect.setNegativeCount((inspect.getNegativeCount() == null ? 0 : inspect.getNegativeCount()) + count[1]);
+                inspect.setTotalCount((inspect.getTotalCount() == null ? 0 : inspect.getTotalCount()) + count[2]);
+                updateInspectList.add(inspect);
+            }
+        }
+        if (!insertInspectList.isEmpty()) {
+            inspectService.saveBatch(insertInspectList);
+        }
+        if (!updateInspectList.isEmpty()) {
+            inspectService.updateBatchById(updateInspectList);
+        }
+
+        // 7. 将本次参与分析评论标记为已标签推理
+        markCommentsAsInspected(pendingComments);
+
+        return buildAnalyzeResult(productId, pendingComments.size(), mergedCountByTagName.size(), newTags.size());
+    }
+
+    private ProductTagAnalyzeSend buildAnalyzeResult(Long productId, int processedCommentCount, int touchedTagCount, int newTagCount) {
+        return ProductTagAnalyzeSend.builder()
+                .productId(productId)
+                .processedCommentCount(processedCommentCount)
+                .touchedTagCount(touchedTagCount)
+                .newTagCount(newTagCount)
+                .build();
+    }
+
+    private void markCommentsAsInspected(List<Comments> pendingComments) {
+        if (pendingComments == null || pendingComments.isEmpty()) {
+            return;
+        }
+
+        List<Comments> commentsToUpdate = pendingComments.stream()
+                .map(comment -> new Comments().setCommentId(comment.getCommentId()).setIsInspected(Boolean.TRUE))
+                .toList();
+        boolean updated = commentsService.updateBatchById(commentsToUpdate);
+        if (!updated) {
+            throw new CustomBusinessException("标签分析完成后更新评论状态失败");
+        }
+    }
+
+    @Override
+    public List<ProductTagStatsListSend.ProductTagStats> listProductTagStats(Long productId) {
+        if (productId == null || productId <= 0) {
+            throw new CustomBusinessException("商品ID不合法");
+        }
+        Products product = this.getById(productId);
+        if (product == null) {
+            throw new CustomBusinessException("商品不存在 productId=" + productId);
+        }
+
+        List<Inspect> inspectList = inspectService.list(new LambdaQueryWrapper<Inspect>()
+                .eq(Inspect::getProductId, productId)
+                .orderByDesc(Inspect::getUpdateTime));
+        if (inspectList.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<Long> tagIds = inspectList.stream().map(Inspect::getTagId).collect(Collectors.toSet());
+        Map<Long, Tag> tagMapById = tagService.listByIds(tagIds).stream()
+                .collect(Collectors.toMap(Tag::getTagId, t -> t, (a, b) -> a));
+
+        return inspectList.stream().map(inspect -> {
+            Tag tag = tagMapById.get(inspect.getTagId());
+            if (tag == null) {
+                throw new CustomBusinessException("标签数据不存在 tagId=" + inspect.getTagId());
+            }
+            return ProductTagStatsListSend.ProductTagStats.builder()
+                    .tagId(tag.getTagId())
+                    .tagName(tag.getTagName())
+                    .positiveCount(inspect.getPositiveCount())
+                    .negativeCount(inspect.getNegativeCount())
+                    .totalCount(inspect.getTotalCount())
+                    .updateTime(inspect.getUpdateTime())
+                    .build();
+        }).toList();
+    }
+
+    /**
+     * 调用 DeepSeek 标签分析，返回模型 message.content。
+     */
+    private String callDeepSeekForTags(Long productId,
+                                       String productName,
+                                       String domainName,
+                                       List<String> existingTags,
+                                       List<Comments> pendingComments) {
+        if (deepSeekApiKey == null || deepSeekApiKey.isBlank()) {
+            throw new CustomBusinessException("DeepSeek API Key 未配置");
+        }
+
+        JSONObject payload = new JSONObject();
+        payload.put("model", deepSeekModel);
+
+        JSONArray messages = new JSONArray();
+        JSONObject systemMsg = new JSONObject();
+        systemMsg.put("role", "system");
+        systemMsg.put("content", buildSystemPrompt());
+        messages.add(systemMsg);
+
+        JSONObject userMsg = new JSONObject();
+        userMsg.put("role", "user");
+        userMsg.put("content", buildUserPrompt(productId, productName, domainName, existingTags, pendingComments));
+        messages.add(userMsg);
+
+        payload.put("messages", messages);
+        payload.put("temperature", 0);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(deepSeekApiUrl))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + deepSeekApiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(payload.toJSONString()))
+                .build();
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new CustomBusinessException("DeepSeek调用失败, status=" + response.statusCode());
+            }
+            JSONObject respJson = JSON.parseObject(response.body());
+            JSONArray choices = respJson.getJSONArray("choices");
+            if (choices == null || choices.isEmpty()) {
+                throw new CustomBusinessException("DeepSeek调用失败: choices为空");
+            }
+            JSONObject message = choices.getJSONObject(0).getJSONObject("message");
+            if (message == null || message.getString("content") == null || message.getString("content").isBlank()) {
+                throw new CustomBusinessException("DeepSeek调用失败: content为空");
+            }
+            return message.getString("content");
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new CustomBusinessException("DeepSeek调用异常: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 解析模型返回的 JSON 内容，支持 ```json 包裹。
+     */
+    private JSONObject parseTagResultJson(String content) {
+        String cleaned = content == null ? "" : content.trim();
+        if (cleaned.startsWith("```")) {
+            int firstNewline = cleaned.indexOf('\n');
+            int lastFence = cleaned.lastIndexOf("```");
+            if (firstNewline > -1 && lastFence > firstNewline) {
+                cleaned = cleaned.substring(firstNewline + 1, lastFence).trim();
+            }
+            if (cleaned.startsWith("json")) {
+                cleaned = cleaned.substring(4).trim();
+            }
+        }
+        try {
+            return JSON.parseObject(cleaned);
+        } catch (Exception e) {
+            throw new CustomBusinessException("标签分析失败: 返回不是合法JSON");
+        }
+    }
+
+    /**
+     * 系统提示词：强约束输出格式与归并策略。
+     */
+    private String buildSystemPrompt() {
+        return """
+                你是评论标签情感分析器。你必须严格输出 JSON，不得输出任何解释文字。
+                规则：
+                1. 输入里会给 productName、domainName、existingTags 和 comments。
+                2. 你必须结合商品名和所属领域理解评论里提到的商品属性，再进行标签归并。
+                3. 只有确实无法归并时，才允许创建新标签。新标签为中文，0-4字之间，以2字为最佳。
+                4. 统计每个标签的 positiveCount、negativeCount、totalCount，且 totalCount=positiveCount+negativeCount。
+                5. 情感只有两类：正向=positive，负向=negative。
+                6. 输出必须是一个JSON对象，格式如下：
+                {
+                  "result": [
+                    {
+                      "tagName": "配送速度",
+                      "positiveCount": 0,
+                      "negativeCount": 2,
+                      "totalCount": 2
+                    }
+                  ]
+                }
+                """;
+    }
+
+    /**
+     * 用户提示词：传入产品、已有标签、待分析评论。
+     */
+    private String buildUserPrompt(Long productId,
+                                   String productName,
+                                   String domainName,
+                                   List<String> existingTags,
+                                   List<Comments> pendingComments) {
+        JSONArray comments = new JSONArray();
+        for (Comments item : pendingComments) {
+            JSONObject comment = new JSONObject();
+            comment.put("commentId", item.getCommentId());
+            comment.put("content", item.getContent());
+            comments.add(comment);
+        }
+
+        JSONObject input = new JSONObject();
+        input.put("productId", productId);
+        input.put("productName", productName);
+        input.put("domainName", domainName);
+        input.put("existingTags", existingTags);
+        input.put("comments", comments);
+
+        return "请基于以下输入完成标签情感聚合分析并仅返回JSON：\n" + input.toJSONString();
     }
 
     @Override
