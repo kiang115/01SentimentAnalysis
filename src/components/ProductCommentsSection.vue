@@ -26,7 +26,7 @@ const queryParams = reactive<CommentsQuerySend>({
 
 function formatPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`
-}
+}这个结果在结构体当中
 
 async function fetchComments() {
   listLoading.value = true

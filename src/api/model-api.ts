@@ -30,6 +30,8 @@ import type { ProductEditSend } from "@/Dto/SendDto/ProductEditSend";
 import type { CommentsQuerySend } from "@/Dto/SendDto/CommentsQuerySend";
 import type { CommentAddSend } from "@/Dto/SendDto/CommentAddSend";
 import type { CommentDataListRec } from "@/Dto/ReceiveDto/CommentDataListRec";
+import type {ProductTagAnalyzeRec} from "@/Dto/ReceiveDto/ProductTagAnalyzeRec.ts";
+import type {ProductTagStatsListRec} from "@/Dto/ReceiveDto/ProductTagStatsListRec.ts";
 // 定义标准返回类型
 // todo 把vue接收到的非标准的api返回值统一处理为ApiResponse<T>类型 特别是train.vue中的ListTrainTasksRes类型需要被替代
 export interface ApiResponse<T = unknown> {
@@ -186,6 +188,18 @@ export const modelApi = {
   listCommentDataList: (para:CommentsQuerySend) => {
     return post("/ProductComments", para) as Promise<
       ApiResponse<CommentDataListRec>
+    >;
+  },
+  //  使用llm分析评论属性分布情况
+  analyzeProductTags: (productId:number) => {
+    return post(`/ProductAnalyzeTags/${productId}`,{}) as Promise<
+      ApiResponse<ProductTagAnalyzeRec>
+    >;
+  },
+  //  查看分析标签情况
+  listProductTagStats: (productId:number) => {
+    return post(`/ProductTagStats/${productId}`,{}) as Promise<
+      ApiResponse<ProductTagStatsListRec>
     >;
   },
 };
