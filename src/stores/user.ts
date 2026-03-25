@@ -32,6 +32,10 @@ function getStoredUserInfo(): UserInfo {
 export const userStore = defineStore('user', () => {
     const userInfo = reactive<UserInfo>(getStoredUserInfo())
 
+    function persistUserInfo() {
+        saveLocalStorage(LocalStorageKeyConst.USER_INFO, JSON.stringify(userInfo));
+    }
+
     const getToken = computed(() => {
         if (userInfo.token) {
             return userInfo.token;
@@ -47,7 +51,12 @@ export const userStore = defineStore('user', () => {
             saveLocalStorage(LocalStorageKeyConst.USER_TOKEN, data.token);
         }
 
-        saveLocalStorage(LocalStorageKeyConst.USER_INFO, JSON.stringify(userInfo));
+        persistUserInfo();
+    }
+
+    function updateMerchantId(merchantId: number) {
+        userInfo.merchantId = merchantId;
+        persistUserInfo();
     }
 
     function loginOut() {
@@ -57,5 +66,5 @@ export const userStore = defineStore('user', () => {
         clearLocalStorage();
     }
 
-    return { userInfo, getToken, setLoginInfo, loginOut }
+    return { userInfo, getToken, setLoginInfo, updateMerchantId, loginOut }
 })

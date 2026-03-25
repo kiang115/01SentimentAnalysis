@@ -109,6 +109,10 @@ npm run preview
 
 - 业务接口主要集中在 `src/api/model-api.ts`
 - 登录等公共接口在 `src/api/common-api.ts`
+- 顶部栏中的“创建商铺”也统一复用 `model-api.ts`：
+  - `queryDomainsInfo`：拉取领域下拉列表
+  - `uploadFileToOss`：上传商铺头像
+  - `addMerchant`：提交商铺创建
 - 标准响应类型：
 
 ```ts
@@ -215,6 +219,20 @@ interface ApiResponse<T> {
 - 用户信息结构统一使用 `src/Dto/CommonDto/UserInfo.ts`。
 - 如果页面依赖的用户字段不存在，必须先补全 `UserInfo` 与后端返回数据，再写页面逻辑；不允许在业务组件里自行伪造默认业务字段。
 - 退出登录统一通过 `commonApi.logout` + `userStore().loginOut()` 完成，禁止页面各自实现一套清理逻辑。
+- 商家用户在顶部栏点击“创建商铺”后，创建成功需要把后端返回的 `merchantId` 同步写回 `userStore().userInfo.merchantId`，保证顶部栏立即切换为“我的商铺”。
+
+### 10. 顶部栏创建商铺规范
+
+- 仅 `merchant` 用户且 `merchantId === null` 时显示“创建商铺”。
+- 点击“创建商铺”后先调用 `modelApi.queryDomainsInfo` 获取领域列表，再弹出表单。
+- 表单字段固定为：
+  - 商铺头像
+  - 商铺名字
+  - 商品描述
+  - 商铺领域
+- 创建表单必须严格复用 `src/Dto/SendDto/MerchantCreateSend.ts` 中的 DTO。
+- 图片上传统一复用 `modelApi.uploadFileToOss`，上传成功后写入 DTO 的 `avatarUrl`。
+- `addMerchant` 不再视为 `void` 返回；前端依赖其返回的新 `merchantId` 同步更新当前用户信息。
 
 
 ---
