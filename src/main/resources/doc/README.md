@@ -133,4 +133,45 @@
 - `src/main/resources/doc/examples/error-handling-template.md`：统一异常和返回结构示例。
 - `src/main/resources/doc/examples/api-debug.http`：本地联调 HTTP 请求示例。
 
+## 11. DeepSeek 密钥配置
+
+当前项目中的 DeepSeek 密钥已改为从环境变量读取，不再允许把真实密钥直接写入 `src/main/resources/application.properties`。
+
+配置方式：
+
+- `src/main/resources/application.properties` 中使用 `llm.deepseek.api-key=${DEEPSEEK_API_KEY:}`。
+- 启动 Spring Boot 进程时，系统会从环境变量 `DEEPSEEK_API_KEY` 注入密钥。
+- 如果未配置该环境变量，涉及 DeepSeek 调用的业务会抛出“DeepSeek API Key 未配置”异常。
+
+Windows 配置方法：
+
+1. 临时生效（仅当前 PowerShell 窗口）：
+
+```powershell
+$env:DEEPSEEK_API_KEY="你的deepseek密钥"
+```
+
+2. 临时生效（仅当前 CMD 窗口）：
+
+```cmd
+set DEEPSEEK_API_KEY=你的deepseek密钥
+```
+
+3. 持久生效（写入当前用户环境变量，重新打开终端后生效）：
+
+```powershell
+[System.Environment]::SetEnvironmentVariable("DEEPSEEK_API_KEY", "你的deepseek密钥", "User")
+```
+
+4. 验证是否配置成功：
+
+```powershell
+echo $env:DEEPSEEK_API_KEY
+```
+
+说明：
+
+- 使用第 3 种方式后，需要关闭并重新打开 PowerShell、CMD 或 IDE，再启动项目。
+- 不要把真实密钥提交到 Git 仓库。
+
 ---
