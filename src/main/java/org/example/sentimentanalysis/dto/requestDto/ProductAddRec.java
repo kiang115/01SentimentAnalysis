@@ -1,13 +1,10 @@
 package org.example.sentimentanalysis.dto.requestDto;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.validation.annotation.Validated;
-
 import java.math.BigDecimal;
 
 @Data
@@ -23,6 +20,4 @@ public class ProductAddRec {
     private String imageUrl;
     @NotNull(message = "价格不能为null")
     private BigDecimal price;
-    @NotNull(message = "商铺id不能为null")
-    private Long merchantId;
 }

@@ -34,6 +34,6 @@ public class CommentListSend {
         private BigDecimal positiveProb;
         private BigDecimal negativeProb;
         private BigDecimal confidence;
+        private Boolean isInspected;
     }
 }
-

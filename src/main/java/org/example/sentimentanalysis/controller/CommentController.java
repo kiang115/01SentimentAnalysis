@@ -1,5 +1,7 @@
 package org.example.sentimentanalysis.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.annotation.SaMode;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.example.sentimentanalysis.dto.requestDto.CommentAddRec;
@@ -30,6 +32,7 @@ public class CommentController {
     }
 
     @Operation(summary = "发布评论")
+    @SaCheckRole(value = {"consumer", "admin"}, mode = SaMode.OR)
     @PostMapping("/addComment")
     public Response<Void> addComment(@RequestBody @Valid CommentAddRec rec) {
         commentsService.addComment(rec);

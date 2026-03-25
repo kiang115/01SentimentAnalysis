@@ -32,7 +32,7 @@ public class ProductController {
     }
 
     @Operation(summary = "新增商品")
-    @SaCheckRole(value = {"merchant", "admin"}, mode = SaMode.OR)
+    @SaCheckRole(value = {"merchant"}, mode = SaMode.OR)
     @PostMapping("/addProduct")
     public Response<Void> addProduct(@RequestBody @Valid ProductAddRec productAddRec) {
         productsService.addProduct(productAddRec);
@@ -40,7 +40,7 @@ public class ProductController {
     }
 
     @Operation(summary = "编辑商品信息")
-    @SaCheckRole(value = {"merchant", "admin"}, mode = SaMode.OR)
+    @SaCheckRole(value = {"merchant"}, mode = SaMode.OR)
     @PostMapping("/editProduct")
     public Response<Void> editProduct(@RequestBody @Valid ProductEditRec productEditRec) {
         productsService.editProduct(productEditRec);
@@ -48,7 +48,7 @@ public class ProductController {
     }
 
     @Operation(summary = "删除商品")
-    @SaCheckRole(value = {"merchant", "admin"}, mode = SaMode.OR)
+    @SaCheckRole(value = {"merchant"}, mode = SaMode.OR)
     @PostMapping("/Productdelete/{productId}")
     public Response<Void> deleteProduct(@PathVariable Long productId) {
         productsService.deleteProduct(productId);

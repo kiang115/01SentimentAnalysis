@@ -12,10 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommentAddRec {
-
-    @NotNull(message = "发评论人id不能为空")
-    private Long customerId;
-
     @NotBlank(message = "评论内容不能为空")
     private String content;
 
@@ -24,7 +20,4 @@ public class CommentAddRec {
 
     @NotNull(message = "商品ID不能为空")
     private Long productId;
-
-    @NotNull(message = "商铺ID不能为空")
-    private Long merchantId;
 }

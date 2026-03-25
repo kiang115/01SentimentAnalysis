@@ -30,6 +30,7 @@ import org.example.sentimentanalysis.service.CommentsService;
 import org.example.sentimentanalysis.service.DomainsService;
 import org.example.sentimentanalysis.service.InferenceRecordsService;
 import org.example.sentimentanalysis.service.InspectService;
+import org.example.sentimentanalysis.service.MerchantAuthService;
 import org.example.sentimentanalysis.service.MerchantsService;
 import org.example.sentimentanalysis.service.ProductsService;
 import org.example.sentimentanalysis.service.TagService;
@@ -71,6 +72,8 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
     private MerchantsService merchantsService;
     @Autowired
     private CommentsService commentsService;
+    @Autowired
+    private MerchantAuthService merchantAuthService;
     @Autowired
     private UsersService usersService;
     @Autowired
@@ -195,17 +198,10 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
 
     @Override
     public void addProduct(ProductAddRec productAddRec) {
-        if (productAddRec.getMerchantId() <= 0) {
-            throw new CustomBusinessException("商铺ID不合法");
-        }
-
-        Merchants merchant = merchantsService.getById(productAddRec.getMerchantId());
-        if (merchant == null) {
-            throw new CustomBusinessException("商铺不存在 merchantId=" + productAddRec.getMerchantId());
-        }
+        Merchants merchant = merchantAuthService.getCurrentMerchantOrThrow();
 
         Products product = new Products()
-                .setMerchantId(productAddRec.getMerchantId())
+                .setMerchantId(merchant.getMerchantsId())
                 .setName(productAddRec.getProductName())
                 .setDetails(productAddRec.getProductDetail())
                 .setImageUrl(productAddRec.getImageUrl())
@@ -217,14 +213,7 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
 
     @Override
     public void editProduct(ProductEditRec productEditRec) {
-        if (productEditRec.getProductId() <= 0) {
-            throw new CustomBusinessException("商品ID不合法");
-        }
-
-        Products product = this.getById(productEditRec.getProductId());
-        if (product == null) {
-            throw new CustomBusinessException("商品不存在 productId=" + productEditRec.getProductId());
-        }
+        Products product = merchantAuthService.getOwnedProductOrThrow(productEditRec.getProductId());
 
         product.setName(productEditRec.getProductName())
                 .setDetails(productEditRec.getProductDetail())
@@ -239,16 +228,9 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
 
     @Override
     public void deleteProduct(Long productId) {
-        if (productId == null || productId <= 0) {
-            throw new CustomBusinessException("商品ID不合法");
-        }
+        Products product = merchantAuthService.getOwnedProductOrThrow(productId);
 
-        Products product = this.getById(productId);
-        if (product == null) {
-            throw new CustomBusinessException("商品不存在 productId=" + productId);
-        }
-
-        boolean success = this.removeById(productId);
+        boolean success = this.removeById(product.getProductsId());
         if (!success) {
             throw new CustomBusinessException("删除商品失败, productId=" + productId);
         }
@@ -257,13 +239,7 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
     @Override
     @Transactional
     public ProductTagAnalyzeSend analyzeProductTags(Long productId) {
-        if (productId == null || productId <= 0) {
-            throw new CustomBusinessException("商品ID不合法");
-        }
-        Products product = this.getById(productId);
-        if (product == null) {
-            throw new CustomBusinessException("商品不存在 productId=" + productId);
-        }
+        Products product = merchantAuthService.getTagAnalyzableProductOrThrow(productId);
         if (product.getDomainId() == null) {
             throw new CustomBusinessException("商品领域不存在 productId=" + productId);
         }

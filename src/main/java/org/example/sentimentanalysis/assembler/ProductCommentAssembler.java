@@ -44,9 +44,9 @@ public class ProductCommentAssembler {
                             .positiveProb(record == null ? null : record.getPositiveProb())
                             .negativeProb(record == null ? null : record.getNegativeProb())
                             .confidence(record == null ? null : record.getConfidence())
+                            .isInspected(comment.getIsInspected())
                             .build();
                 })
                 .toList();
     }
 }
-

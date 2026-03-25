@@ -1,5 +1,6 @@
 package org.example.sentimentanalysis.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.example.sentimentanalysis.dto.requestDto.CommentAddRec;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
@@ -56,17 +57,23 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         if (rec.getProductId() == null || rec.getProductId() <= 0) {
             throw new CustomBusinessException("商品ID不合法");
         }
-        if (rec.getMerchantId() == null || rec.getMerchantId() <= 0) {
-            throw new CustomBusinessException("商铺ID不合法");
-        }
         String content = rec.getContent() == null ? null : rec.getContent().trim();
         if (content == null || content.isEmpty()) {
             throw new CustomBusinessException("评论内容不能为空");
         }
 
-        Long customerId = rec.getCustomerId();
-        if (customerId==null || customerId <= 0) {
-            throw new CustomBusinessException("顾客ID不合法");
+        Long customerId = StpUtil.getLoginIdAsLong();
+        if (customerId == null || customerId <= 0) {
+            throw new CustomBusinessException("当前登录用户ID不合法");
+        }
+
+        Products product = productsService.getById(rec.getProductId());
+        if (product == null) {
+            throw new CustomBusinessException("商品不存在 productId=" + rec.getProductId());
+        }
+        Long merchantId = product.getMerchantId();
+        if (merchantId == null || merchantId <= 0) {
+            throw new CustomBusinessException("商品未绑定商铺 productId=" + rec.getProductId());
         }
 
         Comments comment = new Comments()
@@ -74,7 +81,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
                 .setContent(content)
                 .setDomainId(rec.getDomainId())
                 .setProductId(rec.getProductId())
-                .setMerchantId(rec.getMerchantId())
+                .setMerchantId(merchantId)
                 .setStatus(CommentStatusEnum.PENDING.getCode());
 //        将商品count和商铺count+1
         productsService.lambdaUpdate()
@@ -82,7 +89,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
                 .setSql("comment_count = comment_count + 1") // 注意：这里写的是数据库字段名
                 .update();
         merchantsService.lambdaUpdate()
-                .eq(Merchants::getMerchantsId, rec.getMerchantId())
+                .eq(Merchants::getMerchantsId, merchantId)
                 .setSql("comment_count = comment_count + 1") // 注意：这里写的是数据库字段名
                 .update();
         boolean success = this.save(comment);
