@@ -8,24 +8,23 @@
  */
 
 import {post, get} from '@/utils/request';
+import type {UserLoginSend} from "@/Dto/SendDto/UserLoginSend.ts";
+import type {ApiResponse} from "@/api/model-api.ts";
+import type {UserLoginRec} from "@/Dto/ReceiveDto/UserLoginRec.ts";
+import type {UserRegisterSend} from "@/Dto/SendDto/UserRegisterSend.ts";
+import type {UserLogoutSend} from "@/Dto/SendDto/UserLogoutSend.ts";
 
 export const commonApi = {
-    // // 上传文件
-    // uploadFile: (param: any) => {
-    //     return post('/common/uploadFile', param);
-    // },
-    // // 下载文件
-    // downFile: (param: any) => {
-    //     window.location.href = import.meta.env.VITE_APP_API_URL + '/common/downFile?filePath=' + param;
-    // },
-    //
-    //
-    // //获取验证码
-    // getCaptcha: () => {
-    //     return get('/common/getCaptcha', {});
-    // },
-    login: () => {
-        console.log("请求/login中")
-        return get('/login', {});
+    // 登录api
+    login: (para: UserLoginSend) => {
+        return post('/login', para) as Promise<ApiResponse<UserLoginRec>>;
     },
+//     注册api
+    register: (para: UserRegisterSend) => {
+        return post('/register', para) as Promise<ApiResponse<void>>;
+    },
+//     退出登录api
+    logout: (para: UserLogoutSend) => {
+        return post('/logout', para) as Promise<ApiResponse<void>>;
+    }
 };

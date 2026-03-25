@@ -3,10 +3,10 @@ import { onMounted, reactive, ref } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { modelApi } from '@/api/model-api'
-import type { MerchantsQuerySend } from '@/Dto/SendDto/MerchantsQuerySend'
-import type { DomainItem, MerchantItem } from '@/Dto/ReceiveDto/MerchantDataListRec'
-import type { PageInfo } from '@/Dto/ReceiveDto/PageInfo'
+import { modelApi } from '@/api/model-api.ts'
+import type { MerchantsQuerySend } from '@/Dto/SendDto/MerchantsQuerySend.ts'
+import type { DomainItem, MerchantItem } from '@/Dto/ReceiveDto/MerchantDataListRec.ts'
+import type { PageInfo } from '@/Dto/ReceiveDto/PageInfo.ts'
 
 const router = useRouter()
 const loading = ref(false)

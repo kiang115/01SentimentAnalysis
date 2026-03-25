@@ -3,10 +3,10 @@ import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
-import { modelApi } from '@/api/model-api'
-import type { MerchantDetailRec } from '@/Dto/ReceiveDto/MerchantDetailRec'
-import type { ProductAddSend } from '@/Dto/SendDto/ProductAddSend'
-import type { ProductEditSend } from '@/Dto/SendDto/ProductEditSend'
+import { modelApi } from '@/api/model-api.ts'
+import type { MerchantDetailRec } from '@/Dto/ReceiveDto/MerchantDetailRec.ts'
+import type { ProductAddSend } from '@/Dto/SendDto/ProductAddSend.ts'
+import type { ProductEditSend } from '@/Dto/SendDto/ProductEditSend.ts'
 
 const route = useRoute()
 const router = useRouter()

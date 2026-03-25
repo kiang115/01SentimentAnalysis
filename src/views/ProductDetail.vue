@@ -2,8 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
-import { modelApi } from '@/api/model-api'
-import type { ProductDetailRec } from '@/Dto/ReceiveDto/ProductDetailRec'
+import { modelApi } from '@/api/model-api.ts'
+import type { ProductDetailRec } from '@/Dto/ReceiveDto/ProductDetailRec.ts'
 import ProductTagAnalysisSection from '@/components/ProductTagAnalysisSection.vue'
 import ProductCommentsSection from '@/components/ProductCommentsSection.vue'
 

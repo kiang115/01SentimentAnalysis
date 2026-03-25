@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Constants from "@/utils/constants";
-import { getLocalStorage, clearLocalStorage } from "@/utils/utils";
+import { clearLocalStorage } from "@/utils/utils";
 import { userStore } from "@/stores/user";
 
 const router = createRouter({
@@ -12,44 +12,51 @@ const router = createRouter({
       component: () => import("../views/Login.vue"),
     },
     {
-      path: "/merchants",
-      name: "merchants",
-      component: () => import("../components/MerchantsList.vue"),
-    },
-    {
-      path: "/merchant/:merchantId",
-      name: "merchantDetail",
-      component: () => import("../components/MerchantDetail.vue"),
-    },
-    {
-      path: "/product/:productId",
-      name: "productDetail",
-      component: () => import("../components/ProductDetail.vue"),
-    },
-    {
-      path: "/testVue",
-      name: "testVue",
-      component: () => import("../components/TestVue.vue"),
-    },
-    {
-      path: "/model",
-      component: () => import("../views/Model.vue"),
-      redirect: { name: "trainData" },
+      path: "/",
+      component: () => import("../views/AppLayout.vue"),
+      redirect: { name: "merchants" },
       children: [
         {
-          path: "trainData",
-          name: "trainData",
-          component: () => import("../views/TrainData.vue"),
+          path: "merchants",
+          name: "merchants",
+          component: () => import("../views/MerchantList.vue"),
         },
         {
-          path: "modelData",
-          name: "modelData",
-          component: () => import("../views/ModelData.vue"),
+          path: "merchant/:merchantId",
+          name: "merchantDetail",
+          component: () => import("../views/MerchantDetail.vue"),
         },
         {
-          path: "Task",
-          name: "Task",
-          component: () => import("../views/Task.vue"),
+          path: "product/:productId",
+          name: "productDetail",
+          component: () => import("../views/ProductDetail.vue"),
+        },
+        {
+          path: "testVue",
+          name: "testVue",
+          component: () => import("../components/TestVue.vue"),
+        },
+        {
+          path: "model",
+          component: () => import("../views/Model.vue"),
+          redirect: { name: "trainData" },
+          children: [
+            {
+              path: "trainData",
+              name: "trainData",
+              component: () => import("../components/TrainData.vue"),
+            },
+            {
+              path: "modelData",
+              name: "modelData",
+              component: () => import("../components/ModelData.vue"),
+            },
+            {
+              path: "Task",
+              name: "Task",
+              component: () => import("../components/Task.vue"),
+            },
+          ],
         },
       ],
     },

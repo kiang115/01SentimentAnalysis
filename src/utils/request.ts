@@ -33,7 +33,6 @@ function logout() {
 request.interceptors.request.use(
     (config) => {
         // 在发送请求之前消息头加入本地存储的token 后端可以使用saToken鉴权
-        // const token = getLocalStorage(Constants.USER_TOKEN);
         const token = userStore().getToken
         if (token) {
             config.headers[TOKEN_NAME] = token;

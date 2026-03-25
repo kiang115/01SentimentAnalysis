@@ -19,38 +19,3 @@ export const getLocalStorage = (key: string) => {
 export const clearLocalStorage = () => {
     localStorage.clear();
 };
-
-export const getFileUrl = (url: string) => {
-    return Constants.BASE_URL + '/' + url;
-};
-
-
-export const urls2Filelist = (url: any) => {
-    const tlist: any = [];
-    if (url) {
-        url.split(',').map((item: string) => {
-            let url = getFileUrl(item);
-            const file = {
-                name: item,
-                url: url
-            }
-            tlist.push(file);
-        });
-    }
-    return tlist;
-};
-
-export const fileUrls2Filelist = (url: any) => {
-    const tlist: any = [];
-    if (url) {
-        url.split(',').map((item: string) => {
-            let url = getFileUrl(item);
-            const file = {
-                name: item.substring(item.lastIndexOf('upload') + "upload".length + 1),
-                url: url
-            }
-            tlist.push(file);
-        });
-    }
-    return tlist;
-};

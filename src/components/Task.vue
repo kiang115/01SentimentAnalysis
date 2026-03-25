@@ -26,7 +26,7 @@ import TaskInfoTables from '@/components/TaskInfoTables.vue'
   flex-direction: column;
   gap: 24px;
   width: 100%;
-  height: 100vh;
+  height: 100%;
   min-height: 0;
   overflow: auto;
   padding: 20px;

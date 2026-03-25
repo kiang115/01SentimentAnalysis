@@ -69,18 +69,31 @@ npm run preview
 路由统一维护在 `src/router/index.ts`：
 
 - `/login`：登录页
-- `/merchants`：商铺列表
-- `/merchant/:merchantId`：商铺详情
-- `/product/:productId`：商品详情
-- `/testVue`：测试页面
-- `/model`：模型管理父路由，默认重定向到 `/model/trainData`
-  - `/model/trainData`：训练数据管理
-  - `/model/modelData`：模型数据管理
-  - `/model/Task`：训练与推理任务管理
+- `/`：业务布局页（`AppLayout`），负责统一顶部栏与业务内容容器
+  - `/merchants`：商铺列表
+  - `/merchant/:merchantId`：商铺详情
+  - `/product/:productId`：商品详情
+  - `/testVue`：测试页面
+  - `/model`：模型管理父路由，默认重定向到 `/model/trainData`
+    - `/model/trainData`：训练数据管理
+    - `/model/modelData`：模型数据管理
+    - `/model/Task`：训练与推理任务管理
 - 兼容重定向：
   - `/Task -> /model/Task`
   - `/trainData -> /model/trainData`
   - `/modelData -> /model/modelData`
+
+页面分层约定：
+
+- `views/` 下存放页面级视图，当前业务大页面包括：
+  - `Login.vue`
+  - `MerchantList.vue`
+  - `MerchantDetail.vue`
+  - `ProductDetail.vue`
+  - `Model.vue`
+- `AppLayout.vue` 是业务布局页，不属于具体业务页面；它负责包裹除登录页外的所有业务页面。
+- `Model.vue` 是模型管理模块的父页面，内部再通过子路由切换训练数据、模型数据、训练与推理管理三个子页面。
+- `components/` 下存放可复用组件，以及模型管理模块下的内容子页组件（`TrainData.vue`、`ModelData.vue`、`Task.vue`）。
 
 ---
 
@@ -120,7 +133,12 @@ interface ApiResponse<T> {
 
 - 路由守卫：除 `/login` 外均校验 token。
 - token 读取优先级：Pinia 内存态 -> localStorage。
-- 本地存储 key：`Constants.USER_TOKEN`（当前为 `token_value`）。
+- 用户信息统一来源：`src/stores/user.ts -> userStore().userInfo`。
+- token 读取入口：`src/stores/user.ts -> userStore().getToken`。
+- 本地存储 key 定义在 `src/utils/constants.ts`：
+  - `Constants.USER_TOKEN`：token 对应的 localStorage key（当前为 `token_value`）
+  - `Constants.USER_INFO`：用户信息快照对应的 localStorage key（当前为 `user_info`）
+- `src/utils/constants.ts` 只负责维护 key 和基础常量，不是用户信息的数据来源。
 - 无 token 时：清理本地信息并跳转 `/login`。
 
 ### 5) 实时任务（SSE）
@@ -184,6 +202,21 @@ interface ApiResponse<T> {
 - 不绕过类型系统，不滥用 `any`（历史代码除外，新增代码必须收敛类型）。
 - 业务数据、API 返回、组件状态尽量显式类型化。
 
+### 9. 用户身份与个人信息规范
+
+- 用户类型固定为三类：`admin`（管理员）、`merchant`（商户）、`consumer`（消费者）。
+- 业务代码获取用户个人信息时，统一从 `src/stores/user.ts` 的 `userStore()` 读取：
+  - `userStore().userInfo`：当前用户完整信息
+  - `userStore().getToken`：当前登录 token
+- `userStore` 负责两层状态：
+  - Pinia 内存态：运行中的响应式用户状态
+  - localStorage 持久化：页面刷新后的恢复来源
+- `src/utils/constants.ts` 只定义本地存储 key 和基础常量，不承载用户数据。
+- 用户信息结构统一使用 `src/Dto/CommonDto/UserInfo.ts`。
+- 如果页面依赖的用户字段不存在，必须先补全 `UserInfo` 与后端返回数据，再写页面逻辑；不允许在业务组件里自行伪造默认业务字段。
+- 退出登录统一通过 `commonApi.logout` + `userStore().loginOut()` 完成，禁止页面各自实现一套清理逻辑。
+
+
 ---
 
 ## 环境配置
@@ -193,7 +226,7 @@ interface ApiResponse<T> {
 ```env
 NODE_ENV=development
 VITE_APP_TITLE='情感分析系统'
-VITE_APP_API_URL='http://127.0.0.1:8888'
+VITE_APP_API_URL='http://VITE_APP_API_URL:8888'
 ```
 
 - 后端基础地址通过 `VITE_APP_API_URL` 注入，实际使用点：`src/utils/constants.ts -> BASE_URL`。
@@ -208,11 +241,11 @@ VITE_APP_API_URL='http://127.0.0.1:8888'
   - 关键页面自测（训练任务、推理任务、模型列表、登录跳转）
 - 涉及接口变更时，优先检查 DTO、API 封装、页面调用三者是否同步。
 - 业务语义不明确时先确认需求，不要自行猜测字段含义。
+- 业务更改后，需要将更改的不一致的地方，同步到readme中
 
 ---
 
 ## 现状说明（避免误解）
 
-- `src/api/admin-api.ts` 目前是历史注释代码，不属于当前主流程。
 - `src/styles/style.less` 与 `src/styles/login.less` 存在，但 `main.ts` 当前仅显式引入了 Element Plus 样式；如需启用对应全局样式，请在入口统一引入并评估影响。
 - 当前子路由中存在大小写路径 `Task`，新增重定向或导航时请保持兼容性。
