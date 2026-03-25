@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { modelApi } from '@/api/model-api'
-import { userStore } from '@/stores/user'
-import type { CommentsQuerySend } from '@/Dto/SendDto/CommentsQuerySend'
-import type { CommentAddSend } from '@/Dto/SendDto/CommentAddSend'
-import type { CommentInfo } from '@/Dto/ReceiveDto/CommentDataListRec'
-import type { PageInfo } from '@/Dto/ReceiveDto/PageInfo'
+import {onMounted, reactive, ref, watch} from 'vue'
+import {ElMessage} from 'element-plus'
+import {modelApi} from '@/api/model-api'
+import type {CommentsQuerySend} from '@/Dto/SendDto/CommentsQuerySend'
+import type {CommentAddSend} from '@/Dto/SendDto/CommentAddSend'
+import type {CommentInfo} from '@/Dto/ReceiveDto/CommentDataListRec'
+import type {PageInfo} from '@/Dto/ReceiveDto/PageInfo'
 
 const props = defineProps<{
   productId: number
-  merchantId: number
   domainId: number
   canSendComment: boolean
   canViewInferenceTags: boolean
@@ -20,7 +18,6 @@ const commentContent = ref('')
 const listLoading = ref(false)
 const submitLoading = ref(false)
 const pageInfo = ref<PageInfo<CommentInfo> | null>(null)
-const store = userStore()
 
 const queryParams = reactive<CommentsQuerySend>({
   productId: props.productId,
@@ -57,13 +54,10 @@ async function submitComment() {
     return
   }
 
-  const customerId = store.userInfo.userId as number
   const payload: CommentAddSend = {
-    customerId,
     content,
     domainId: props.domainId,
     productId: props.productId,
-    merchantId: props.merchantId,
   }
 
   submitLoading.value = true
@@ -78,12 +72,12 @@ async function submitComment() {
 }
 
 watch(
-  () => props.productId,
-  async (productId) => {
-    queryParams.productId = productId
-    queryParams.pageNum = 1
-    await fetchComments()
-  },
+    () => props.productId,
+    async (productId) => {
+      queryParams.productId = productId
+      queryParams.pageNum = 1
+      await fetchComments()
+    },
 )
 
 onMounted(() => {
@@ -99,11 +93,11 @@ onMounted(() => {
 
     <section v-if="props.canSendComment" class="comment-send-card">
       <el-input
-        v-model="commentContent"
-        type="textarea"
-        :rows="4"
-        resize="none"
-        placeholder="请输入评论内容"
+          v-model="commentContent"
+          type="textarea"
+          :rows="4"
+          resize="none"
+          placeholder="请输入评论内容"
       />
       <div class="send-action-row">
         <el-button type="primary" :loading="submitLoading" @click="submitComment">发送评论</el-button>
@@ -111,36 +105,51 @@ onMounted(() => {
     </section>
 
     <section class="comment-list-card" v-loading="listLoading">
-      <el-empty v-if="!listLoading && (!pageInfo || pageInfo.list.length === 0)" description="暂无评论" />
+      <el-empty v-if="!listLoading && (!pageInfo || pageInfo.list.length === 0)" description="暂无评论"/>
 
       <div v-else class="comment-list">
         <article v-for="item in pageInfo?.list" :key="item.commentId" class="comment-item">
           <div class="comment-main">
             <div class="comment-meta-row">
-              <span class="comment-user">{{ item.userName }}</span>
-              <span class="comment-time">{{ item.publishTime }}</span>
+              <el-avatar :size="40" :src="item.userAvatarUrl" class="comment-avatar">
+                {{ item.userName?.slice(0, 1) }}
+              </el-avatar>
+              <div class="comment-meta-text">
+                <span class="comment-user">{{ item.userName }}</span>
+                <span class="comment-time">{{ item.publishTime }}</span>
+              </div>
             </div>
             <p class="comment-content">{{ item.content }}</p>
           </div>
 
           <div v-if="props.canViewInferenceTags" class="comment-tags">
             <el-tag type="info" effect="plain">状态：{{ item.statusName }}</el-tag>
-            <el-tag v-if="item.finalSentimentName != null" type="warning" effect="plain">情感：{{ item.finalSentimentName }}</el-tag>
+            <el-tag :type="item.isInspected ? '' : 'warning'" effect="plain">
+              标签分析：{{ item.isInspected ? '已分析' : '待分析' }}
+            </el-tag>
+            <el-tag v-if="item.finalSentimentName != null" type="warning" effect="plain">情感：{{
+                item.finalSentimentName
+              }}
+            </el-tag>
             <el-tag v-if="item.confidence != null" effect="light">置信度：{{ formatPercent(item.confidence) }}</el-tag>
-            <el-tag v-if="item.positiveProb != null" type="success" effect="light">正向概率：{{ formatPercent(item.positiveProb) }}</el-tag>
-            <el-tag v-if="item.negativeProb != null" type="danger" effect="light">负向概率：{{ formatPercent(item.negativeProb) }}</el-tag>
+            <el-tag v-if="item.positiveProb != null" type="success" effect="light">
+              正向概率：{{ formatPercent(item.positiveProb) }}
+            </el-tag>
+            <el-tag v-if="item.negativeProb != null" type="danger" effect="light">
+              负向概率：{{ formatPercent(item.negativeProb) }}
+            </el-tag>
           </div>
         </article>
       </div>
 
       <div v-if="pageInfo && pageInfo.total > 0" class="pagination-wrapper">
         <el-pagination
-          :current-page="pageInfo.pageNum"
-          :page-size="pageInfo.pageSize"
-          :total="pageInfo.total"
-          layout="total, prev, pager, next"
-          background
-          @current-change="handlePageChange"
+            :current-page="pageInfo.pageNum"
+            :page-size="pageInfo.pageSize"
+            :total="pageInfo.total"
+            layout="total, prev, pager, next"
+            background
+            @current-change="handlePageChange"
         />
       </div>
     </section>
@@ -204,6 +213,17 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   margin-bottom: 8px;
+}
+
+.comment-avatar {
+  flex-shrink: 0;
+}
+
+.comment-meta-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .comment-user {

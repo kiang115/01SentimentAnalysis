@@ -22,9 +22,4 @@ export interface ProductAddSend {
      * 价格  大于0的小数，最多二位小数 非null
      */
     price: number;
-
-    /**
-     * 商铺id 
-     */
-    merchantId: number;
 }

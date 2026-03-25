@@ -33,7 +33,6 @@ const addForm = reactive<ProductAddForm>({
   productDetail: '',
   imageUrl: '',
   price: null,
-  merchantId: 0,
 })
 const editForm = reactive<ProductEditForm>({
   productId: 0,
@@ -153,7 +152,6 @@ function resetAddForm() {
   addForm.productDetail = ''
   addForm.imageUrl = ''
   addForm.price = null
-  addForm.merchantId = detail.value?.merchantId ?? 0
   imageUploading.value = false
   addFormRef.value?.resetFields()
 }

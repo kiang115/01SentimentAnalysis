@@ -79,4 +79,9 @@ export interface CommentInfo {
      * 推理置信度
      */
     confidence: number;
+
+    /**
+     * 标签分析状态: true=已分析, false/null=待分析
+     */
+    isInspected: boolean | null;
 }

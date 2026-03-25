@@ -4,11 +4,6 @@
  */
 export interface CommentAddSend {
     /**
-     * 关联顾客表 ID (消费者唯一标识) [3]
-     */
-    customerId: number;
-
-    /**
      * 评论内容 (不能为空) [3]
      */
     content: string;
@@ -22,9 +17,4 @@ export interface CommentAddSend {
      * 关联商品表 ID [3]
      */
     productId: number;
-
-    /**
-     * 关联商家表 ID [3]
-     */
-    merchantId: number;
 }
