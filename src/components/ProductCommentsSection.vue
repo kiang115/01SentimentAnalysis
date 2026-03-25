@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { modelApi } from '@/api/model-api'
+import { userStore } from '@/stores/user'
 import type { CommentsQuerySend } from '@/Dto/SendDto/CommentsQuerySend'
 import type { CommentAddSend } from '@/Dto/SendDto/CommentAddSend'
 import type { CommentInfo } from '@/Dto/ReceiveDto/CommentDataListRec'
@@ -11,12 +12,15 @@ const props = defineProps<{
   productId: number
   merchantId: number
   domainId: number
+  canSendComment: boolean
+  canViewInferenceTags: boolean
 }>()
 
 const commentContent = ref('')
 const listLoading = ref(false)
 const submitLoading = ref(false)
 const pageInfo = ref<PageInfo<CommentInfo> | null>(null)
+const store = userStore()
 
 const queryParams = reactive<CommentsQuerySend>({
   productId: props.productId,
@@ -44,14 +48,18 @@ function handlePageChange(page: number) {
 }
 
 async function submitComment() {
+  if (!props.canSendComment) {
+    return
+  }
   const content = commentContent.value.trim()
   if (!content) {
     ElMessage.warning('请输入评论内容')
     return
   }
 
+  const customerId = store.userInfo.userId as number
   const payload: CommentAddSend = {
-    customerId: null,
+    customerId,
     content,
     domainId: props.domainId,
     productId: props.productId,
@@ -89,7 +97,7 @@ onMounted(() => {
       <h2 class="comments-title">评论区</h2>
     </div>
 
-    <section class="comment-send-card">
+    <section v-if="props.canSendComment" class="comment-send-card">
       <el-input
         v-model="commentContent"
         type="textarea"
@@ -115,7 +123,7 @@ onMounted(() => {
             <p class="comment-content">{{ item.content }}</p>
           </div>
 
-          <div class="comment-tags">
+          <div v-if="props.canViewInferenceTags" class="comment-tags">
             <el-tag type="info" effect="plain">状态：{{ item.statusName }}</el-tag>
             <el-tag v-if="item.finalSentimentName != null" type="warning" effect="plain">情感：{{ item.finalSentimentName }}</el-tag>
             <el-tag v-if="item.confidence != null" effect="light">置信度：{{ formatPercent(item.confidence) }}</el-tag>

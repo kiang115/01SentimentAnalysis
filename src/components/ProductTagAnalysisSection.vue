@@ -8,6 +8,7 @@ import type { ProductTagStats } from '@/Dto/ReceiveDto/ProductTagStatsListRec'
 
 const props = defineProps<{
   productId: number
+  canAnalyzeTags: boolean
 }>()
 
 const statsLoading = ref(false)
@@ -53,6 +54,7 @@ async function refreshTagStatsAfterMessageClose() {
 }
 
 async function analyzeProductTags() {
+  if (!props.canAnalyzeTags) return
   if (analyzeLoading.value) return
 
   analyzeLoading.value = true
@@ -95,7 +97,13 @@ watch(
   <section class="tag-analysis-section">
     <div class="section-header">
       <h2 class="section-title">评论标签分析</h2>
-      <el-button type="primary" :loading="analyzeLoading" :disabled="analyzeLoading" @click="analyzeProductTags">
+      <el-button
+        v-if="props.canAnalyzeTags"
+        type="primary"
+        :loading="analyzeLoading"
+        :disabled="analyzeLoading"
+        @click="analyzeProductTags"
+      >
         分析评论标签属性
       </el-button>
     </div>

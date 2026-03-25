@@ -3,12 +3,14 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { modelApi } from '@/api/model-api.ts'
+import { userStore } from '@/stores/user'
 import type { ProductDetailRec } from '@/Dto/ReceiveDto/ProductDetailRec.ts'
 import ProductTagAnalysisSection from '@/components/ProductTagAnalysisSection.vue'
 import ProductCommentsSection from '@/components/ProductCommentsSection.vue'
 
 const route = useRoute()
 const router = useRouter()
+const store = userStore()
 
 const loading = ref(false)
 const detail = ref<ProductDetailRec | null>(null)
@@ -18,6 +20,21 @@ const scoreStars = computed(() => {
   const count = Math.max(1, Math.min(5, Math.round(detail.value.rating)))
   return '★'.repeat(count) + '☆'.repeat(5 - count)
 })
+
+const isAdmin = computed(() => store.userInfo.userType === 'admin')
+const isConsumer = computed(() => store.userInfo.userType === 'consumer')
+const isMerchantOwner = computed(() => {
+  if (store.userInfo.userType !== 'merchant') {
+    return false
+  }
+  if (detail.value == null) {
+    return false
+  }
+  return store.userInfo.merchantId === detail.value.merchantId
+})
+const canAnalyzeTags = computed(() => isAdmin.value || isMerchantOwner.value)
+const canViewCommentInference = computed(() => isAdmin.value || isMerchantOwner.value)
+const canSendComment = computed(() => isAdmin.value || isConsumer.value)
 
 function parseProductId() {
   const rawId = Array.isArray(route.params.productId)
@@ -91,7 +108,7 @@ onMounted(() => {
             <span v-if="detail.rating !== undefined" class="star-text">{{ scoreStars }}</span>
             <span v-if="detail.rating !== undefined" class="rating-text">{{ detail.rating.toFixed(1) }}</span>
             <span v-if="detail.positiveRate !== undefined" class="meta-text">好评率 {{ formatPositiveRate(detail.positiveRate) }}</span>
-            <span v-if="detail.commentCount !== undefined" class="meta-text">{{ formatCommentCount(detail.commentCount) }}人评价</span>
+<!--            <span v-if="detail.commentCount !== undefined" class="meta-text">{{ formatCommentCount(detail.commentCount) }}人评价</span>-->
           </div>
 
           <div class="metrics-grid">
@@ -106,7 +123,7 @@ onMounted(() => {
             </article>
 
             <article v-if="detail.commentCount !== undefined" class="metric-card">
-              <p class="metric-label">好评人数</p>
+              <p class="metric-label">评论人数</p>
               <p class="metric-value">{{ formatCommentCount(detail.commentCount) }}</p>
             </article>
 
@@ -123,12 +140,14 @@ onMounted(() => {
         </div>
       </section>
 
-      <ProductTagAnalysisSection :product-id="detail.productId" />
+      <ProductTagAnalysisSection :product-id="detail.productId" :can-analyze-tags="canAnalyzeTags" />
 
       <ProductCommentsSection
         :product-id="detail.productId"
         :merchant-id="detail.merchantId"
         :domain-id="detail.domainId"
+        :can-send-comment="canSendComment"
+        :can-view-inference-tags="canViewCommentInference"
       />
     </template>
 

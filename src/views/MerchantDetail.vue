@@ -1,15 +1,17 @@
 ﻿<script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { modelApi } from '@/api/model-api.ts'
+import { userStore } from '@/stores/user'
 import type { MerchantDetailRec } from '@/Dto/ReceiveDto/MerchantDetailRec.ts'
 import type { ProductAddSend } from '@/Dto/SendDto/ProductAddSend.ts'
 import type { ProductEditSend } from '@/Dto/SendDto/ProductEditSend.ts'
 
 const route = useRoute()
 const router = useRouter()
+const store = userStore()
 
 const loading = ref(false)
 const detail = ref<MerchantDetailRec | null>(null)
@@ -90,6 +92,16 @@ const editFormRules = {
   ],
 }
 
+const canManageMerchantProducts = computed(() => {
+  if (store.userInfo.userType !== 'merchant') {
+    return false
+  }
+  if (detail.value == null) {
+    return false
+  }
+  return store.userInfo.merchantId === detail.value.merchantId
+})
+
 function parseMerchantId() {
   const rawId = Array.isArray(route.params.merchantId)
     ? route.params.merchantId[0]
@@ -147,6 +159,9 @@ function resetAddForm() {
 }
 
 function openAddDialog() {
+  if (!canManageMerchantProducts.value) {
+    return
+  }
   resetAddForm()
   addDialogVisible.value = true
 }
@@ -201,6 +216,9 @@ function resetEditForm() {
 }
 
 function openEditDialog(item: MerchantDetailRec['products'][number]) {
+  if (!canManageMerchantProducts.value) {
+    return
+  }
   editForm.productId = item.productId
   editForm.productName = item.name
   editForm.productDetail = item.details
@@ -249,6 +267,9 @@ async function submitEditForm() {
 }
 
 async function handleDeleteProduct(productId: number) {
+  if (!canManageMerchantProducts.value) {
+    return
+  }
   try {
     await ElMessageBox.confirm('确认删除该商品吗？', '删除确认', {
       confirmButtonText: '确认',
@@ -305,7 +326,7 @@ onMounted(() => {
       <section class="product-section">
         <div class="section-head">
           <h2 class="section-title">商品列表</h2>
-          <button class="add-icon-btn" type="button" @click.stop="openAddDialog">
+          <button v-if="canManageMerchantProducts" class="add-icon-btn" type="button" @click.stop="openAddDialog">
             <el-icon><Plus /></el-icon>
           </button>
         </div>
@@ -329,23 +350,23 @@ onMounted(() => {
                 <span v-if="item.commentCount !== undefined" class="meta-comments">({{ formatCommentCount(item.commentCount) }}条评价)</span>
               </div>
               <p v-if="item.details" class="product-desc">{{ item.details }}</p>
-              <div class="product-foot">
-                <p v-if="item.price !== undefined" class="product-price">{{ formatPrice(item.price) }}</p>
-                <div class="card-actions">
-                  <button class="action-icon-btn action-edit-btn" type="button" @click.stop="openEditDialog(item)">
-                    <el-icon><Edit /></el-icon>
-                  </button>
-                  <button class="action-icon-btn action-delete-btn" type="button" @click.stop="handleDeleteProduct(item.productId)">
-                    <el-icon><Delete /></el-icon>
-                  </button>
-                </div>
+                <div class="product-foot">
+                  <p v-if="item.price !== undefined" class="product-price">{{ formatPrice(item.price) }}</p>
+                  <div v-if="canManageMerchantProducts" class="card-actions">
+                    <button class="action-icon-btn action-edit-btn" type="button" @click.stop="openEditDialog(item)">
+                      <el-icon><Edit /></el-icon>
+                    </button>
+                    <button class="action-icon-btn action-delete-btn" type="button" @click.stop="handleDeleteProduct(item.productId)">
+                      <el-icon><Delete /></el-icon>
+                    </button>
+                  </div>
               </div>
             </div>
           </article>
         </div>
       </section>
 
-      <el-dialog v-model="addDialogVisible" title="添加商品" width="560px" destroy-on-close>
+      <el-dialog v-if="canManageMerchantProducts" v-model="addDialogVisible" title="添加商品" width="560px" destroy-on-close>
         <el-form ref="addFormRef" :model="addForm" :rules="addFormRules" label-width="100px">
           <el-form-item label="商品图片" prop="imageUrl">
             <div class="upload-box" :class="{ filled: !!addForm.imageUrl }" @click="openImagePicker">
@@ -382,7 +403,7 @@ onMounted(() => {
         </template>
       </el-dialog>
 
-      <el-dialog v-model="editDialogVisible" title="编辑商品" width="560px" destroy-on-close @closed="resetEditForm">
+      <el-dialog v-if="canManageMerchantProducts" v-model="editDialogVisible" title="编辑商品" width="560px" destroy-on-close @closed="resetEditForm">
         <el-form ref="editFormRef" :model="editForm" :rules="editFormRules" label-width="100px">
           <el-form-item label="商品图片" prop="imageUrl">
             <div class="upload-box" :class="{ filled: !!editForm.imageUrl }" @click="openEditImagePicker">
@@ -733,4 +754,3 @@ onMounted(() => {
   }
 }
 </style>
-

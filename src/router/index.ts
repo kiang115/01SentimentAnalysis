@@ -1,7 +1,24 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, type RouteLocationNormalized } from "vue-router";
+import { ElMessage } from "element-plus";
 import Constants from "@/utils/constants";
 import { clearLocalStorage } from "@/utils/utils";
 import { userStore } from "@/stores/user";
+
+type UserRole = "admin" | "merchant" | "consumer";
+
+function hasRouteRolePermission(to: RouteLocationNormalized, userType: string) {
+  const requiredRoles = to.matched
+    .flatMap((record) => {
+      const metaRoles = record.meta.roles;
+      return Array.isArray(metaRoles) ? metaRoles : [];
+    }) as UserRole[];
+
+  if (requiredRoles.length === 0) {
+    return true;
+  }
+
+  return requiredRoles.includes(userType as UserRole);
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -39,6 +56,7 @@ const router = createRouter({
         {
           path: "model",
           component: () => import("../views/Model.vue"),
+          meta: { roles: ["admin"] },
           redirect: { name: "trainData" },
           children: [
             {
@@ -73,11 +91,18 @@ router.beforeEach(async (to, from) => {
     return true;
   }
   // 非登录界面 需要进行鉴权 即看看本地有无token
-  const token = userStore().getToken;
+  const store = userStore();
+  const token = store.getToken;
   console.log("token已经找到", token);
   if (!token) {
     clearLocalStorage();
     return { path: "/login" };
+  }
+
+  if (!hasRouteRolePermission(to, store.userInfo.userType)) {
+    ElMessage.closeAll();
+    ElMessage.error("无权访问该页面");
+    return { path: "/merchants" };
   }
 });
 

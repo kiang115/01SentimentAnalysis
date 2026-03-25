@@ -6,7 +6,7 @@ export interface CommentAddSend {
     /**
      * 关联顾客表 ID (消费者唯一标识) [3]
      */
-    customerId?: number | null;
+    customerId: number;
 
     /**
      * 评论内容 (不能为空) [3]
