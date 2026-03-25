@@ -3,13 +3,6 @@
 ## Project Structure & Module Organization
 本仓库是情感分析系统的 Spring Boot 后端。核心代码位于 `src/main/java/org/example/sentimentanalysis`，按 `controller`、`service`、`service/impl`、`mapper`、`model`、`dto`、`config` 分层。MyBatis XML 位于 `src/main/resources/mapper`，运行配置在 `src/main/resources/application.properties`，补充文档与 SQL 示例在 `src/main/resources/doc`。测试代码放在 `src/test/java`，包路径应与生产代码保持镜像。
 
-## Build, Test, and Development Commands
-优先使用 Maven Wrapper，避免本地 Maven 版本漂移。
-
-- `mvnw.cmd spring-boot:run`：本地启动后端，默认端口 `8888`
-- `mvnw.cmd test`：运行 JUnit 5 / Spring Boot 测试
-- `mvnw.cmd clean package`：清理并打包可执行 Jar
-
 启动前确认 MySQL、Redis、FastAPI 服务可用，并核对 `application.properties` 中的连接配置。
 
 ## Coding Style & Naming Conventions
