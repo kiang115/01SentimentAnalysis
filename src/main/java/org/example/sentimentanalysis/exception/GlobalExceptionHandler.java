@@ -1,5 +1,7 @@
 package org.example.sentimentanalysis.exception;
 
+import cn.dev33.satoken.exception.SaTokenException;
+import cn.dev33.satoken.util.SaResult;
 import org.example.sentimentanalysis.response.Response;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -10,6 +12,13 @@ import java.io.IOException;
 //统一捕获所有的可能异常
 //出问题吧就返回给前端，让前端来处理
 public class GlobalExceptionHandler {
+    @ExceptionHandler(SaTokenException.class)
+    public Response handlerSaTokenException(SaTokenException e) {
+        // 默认的提示
+        return Response.fail(e.getCode(), e.getMessage());
+    }
+
+
     // 系统异常包装为响应对象返回
     @ExceptionHandler(Exception.class)
     public Response handleException(Exception e) {
@@ -23,7 +32,8 @@ public class GlobalExceptionHandler {
         e.printStackTrace();
         return Response.fail(e.getCode(), e.getMessage());
     }
-//   导入文件处理异常
+
+    //   导入文件处理异常
     @ExceptionHandler(IOException.class)
     public void handleIOException(IOException e) {
         if (e.getMessage().contains("Broken pipe") || e.getMessage().contains("中止")) {
@@ -33,5 +43,4 @@ public class GlobalExceptionHandler {
             System.out.println("IO异常");
         }
     }
-//    #todo  对satoken的异常进行手动捕获处理
 }

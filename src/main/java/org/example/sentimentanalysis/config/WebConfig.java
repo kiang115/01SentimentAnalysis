@@ -8,6 +8,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
     @Value("${remote.vue.url}")
     private String vueUrl;
+    @Value("${sa-token.token-name}")
+    private String saTokenName;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
@@ -15,8 +17,8 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOrigins(vueUrl) // Vue 开发服务器
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(true)
+                .allowedHeaders(saTokenName, "Content-Type", "Authorization", "X-Requested-With")
+                .allowCredentials(false)
                 .maxAge(3600);
     }
 }
