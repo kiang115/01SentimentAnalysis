@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CommentAddRec {
 
+    @NotNull(message = "发评论人id不能为空")
     private Long customerId;
 
     @NotBlank(message = "评论内容不能为空")

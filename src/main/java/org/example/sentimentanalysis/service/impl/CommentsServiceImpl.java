@@ -64,8 +64,8 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
             throw new CustomBusinessException("评论内容不能为空");
         }
 
-        Long customerId = rec.getCustomerId() == null ? 1L : rec.getCustomerId();
-        if (customerId <= 0) {
+        Long customerId = rec.getCustomerId();
+        if (customerId==null || customerId <= 0) {
             throw new CustomBusinessException("顾客ID不合法");
         }
 
