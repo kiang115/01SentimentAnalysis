@@ -1,5 +1,7 @@
 package org.example.sentimentanalysis.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.annotation.SaMode;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.example.sentimentanalysis.config.FastApiClient;
@@ -32,6 +34,7 @@ public class TrainController {
     private StringRedisTemplate redisTemplate;
 
     @Operation(summary = "列出训练任务列表")
+    @SaCheckRole(value = {"admin"}, mode = SaMode.OR)
     @GetMapping("/TrainTaskList")
     public Response<TrainTasksSend> listTrainTask() {
         TrainTasksSend trainTasksSend = trainTasksService.listTrainTask();
@@ -42,6 +45,7 @@ public class TrainController {
      * 列出训练配置面板数据（开始训练前初始化）
      */
     @Operation(summary = "列出训练参数配置面板")
+    @SaCheckRole(value = {"admin"}, mode = SaMode.OR)
     @GetMapping("/TrainPanel")
     public Response<TrainPanelSend> listTrainPanel() {
         TrainPanelSend trainPanelSend = domainsService.listTrainPanel();
@@ -49,6 +53,7 @@ public class TrainController {
     }
 
     @Operation(summary = "使用配置开始训练")
+    @SaCheckRole(value = {"admin"}, mode = SaMode.OR)
     @PostMapping("/TrainDataCheck")
     public Response<TrainDataSend> trainDataCheck(@RequestBody @Valid TrainPanelRec trainPanelRec) {
 //      得到发送给fastapi的数据
@@ -98,6 +103,7 @@ public class TrainController {
     }
 
     @Operation(summary = "训练准确率折线图")
+    @SaCheckRole(value = {"admin"}, mode = SaMode.OR)
     @GetMapping("/TrainLineChart")
     public Response<TrainLineChartSend> InferLineChart() {
         TrainLineChartSend trainLineChartSend = trainTasksService.getTrainLineChart();

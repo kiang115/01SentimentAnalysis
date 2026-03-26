@@ -1,5 +1,7 @@
 package org.example.sentimentanalysis.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.annotation.SaMode;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -37,6 +39,7 @@ public class InferenceController {
     private ProductsService productsService;
 
     @Operation(summary = "列出推理任务列表")
+    @SaCheckRole(value = {"admin"}, mode = SaMode.OR)
     @GetMapping("/InferenceTasksList")
     public Response<InferTasksSend> InferenceTasksList() {
 
@@ -51,12 +54,14 @@ public class InferenceController {
     }
 
     @Operation(summary = "列出推理数据配置面板")
+    @SaCheckRole(value = {"admin"}, mode = SaMode.OR)
     @GetMapping("/InferencePanel")
     public Response<InferPanelSend> InferenceDataConfig() {
         return Response.data(domainsService.ListInferencePanelDto());
     }
 
     @Operation(summary = "使用配置开始推理")
+    @SaCheckRole(value = {"admin"}, mode = SaMode.OR)
     @PostMapping("/InferenceDataCheck")
     public Response InferenceDataCheck(@RequestBody @Valid InferPanelRec inferPanelRec) {
 //        1.根据参数配置找到对应的inferDataSend
@@ -106,6 +111,7 @@ public class InferenceController {
     }
 
     @Operation(summary = "推理数据饼状图")
+    @SaCheckRole(value = {"admin"}, mode = SaMode.OR)
     @GetMapping("/InferPieChart")
     public Response<InferPieChartSend> InferPieChart() {
         InferPieChartSend inferPieChartSend = inferenceTasksService.getInferPieChart();
@@ -114,6 +120,7 @@ public class InferenceController {
 
     //    月度日历热力图
     @Operation(summary = "数据月度日历热力图")
+    @SaCheckRole(value = {"admin"}, mode = SaMode.OR)
     @GetMapping("/TasksHotChart")
     public Response<TasksHotChartSend> TasksHotChart() {
         TasksHotChartSend tasksHotChartSend = inferenceTasksService.getTasksHotChart();

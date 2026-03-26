@@ -1,5 +1,7 @@
 package org.example.sentimentanalysis.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.annotation.SaMode;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.example.sentimentanalysis.dto.requestDto.TrainParaAddRec;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@SaCheckRole(value = {"admin"}, mode = SaMode.OR)
 public class TrainParaController {
     @Autowired
     private TrainParaService trainParaService;

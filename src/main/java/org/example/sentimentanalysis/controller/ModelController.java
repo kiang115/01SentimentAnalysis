@@ -1,5 +1,7 @@
 package org.example.sentimentanalysis.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.annotation.SaMode;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -32,6 +34,7 @@ import java.util.Base64;
 import java.util.List;
 
 @RestController
+@SaCheckRole(value = {"admin"}, mode = SaMode.OR)
 public class ModelController {
     @Autowired
     private ModelsService modelsService;
