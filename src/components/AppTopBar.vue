@@ -293,9 +293,11 @@ async function handleUserCommand(command: string) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
 .brand-button,
@@ -307,7 +309,7 @@ async function handleUserCommand(command: string) {
 }
 
 .brand-button {
-  color: #f8fafc;
+  color: #0f172a;
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -323,15 +325,15 @@ async function handleUserCommand(command: string) {
   height: 40px;
   padding: 0 14px;
   border-radius: 999px;
-  color: #e2e8f0;
+  color: #334155;
   font-size: 14px;
   font-weight: 600;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .nav-action:hover {
-  color: #fff;
-  background: rgba(148, 163, 184, 0.18);
+  color: #0f172a;
+  background: rgba(15, 23, 42, 0.06);
 }
 
 .nav-action.placeholder {
@@ -351,12 +353,12 @@ async function handleUserCommand(command: string) {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: #f8fafc;
+  color: #0f172a;
   transition: background-color 0.2s ease;
 }
 
 .user-entry:hover {
-  background: rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.05);
 }
 
 .user-name {
