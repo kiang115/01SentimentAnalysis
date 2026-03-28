@@ -19,6 +19,12 @@ public interface CommentsService extends IService<Comments> {
 
     void addComment(CommentAddRec rec);
 
+    void reviewComment(Long commentId);
+
+    void rejectComment(Long commentId);
+
+    void correctComment(Long commentId);
+
     void updateCommentStatus(InferDataSend inferDataSend);
 
     void updateCommentStatus(InferResultRec inferResultRec, int code);

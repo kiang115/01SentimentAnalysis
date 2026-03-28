@@ -3,6 +3,7 @@ package org.example.sentimentanalysis.service;
 import org.example.sentimentanalysis.dto.requestDto.TrainDataAddRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainDataQueryRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataListSend;
+import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.model.TrainData;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +26,8 @@ public interface TrainDataService extends IService<TrainData> {
     TrainDataListSend listTrainDataList(TrainDataQueryRec queryRec);
 
     void addBySingleData(TrainDataAddRec trainData);
+
+    void addCorrectedComment(Comments comment);
 
     void importCsv(MultipartFile file, Long domainId,String source) throws IOException;
 

@@ -9,6 +9,7 @@ import org.example.sentimentanalysis.dto.responseDto.CommentListSend;
 import org.example.sentimentanalysis.dto.responseDto.ProductTagAnalyzeSend;
 import org.example.sentimentanalysis.dto.responseDto.ProductDetailSend;
 import org.example.sentimentanalysis.dto.responseDto.ProductTagStatsListSend;
+import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.model.Products;
 
 import java.util.List;
@@ -33,6 +34,8 @@ public interface ProductsService extends IService<Products> {
     void deleteProduct(Long productId);
 
     void processInferenceResults(List<InferResultRec.CommentResultList> results);
+
+    void processCommentCorrection(Comments comment, Integer oldFinalSentiment, Integer newFinalSentiment);
 
     ProductTagAnalyzeSend analyzeProductTags(Long productId);
 

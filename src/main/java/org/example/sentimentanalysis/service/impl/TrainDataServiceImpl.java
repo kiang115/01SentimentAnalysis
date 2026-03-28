@@ -11,8 +11,10 @@ import org.example.sentimentanalysis.dto.requestDto.TrainDataAddRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainDataQueryRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataListSend;
 import org.example.sentimentanalysis.assembler.TrainDataListAssembler;
+import org.example.sentimentanalysis.enums.CommentFinalSentimentEnum;
 import org.example.sentimentanalysis.enums.TrainDataSourceEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
+import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.mapper.DomainsMapper;
 import org.example.sentimentanalysis.model.TrainData;
 import org.example.sentimentanalysis.mapper.TrainDataMapper;
@@ -112,6 +114,33 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
         TrainData trainData = new TrainData();
         trainData.setContent(addDataRec.getContent()).setLabel(addDataRec.getLabel()).setDomainId(addDataRec.getDomainId()).setSource(TrainDataSourceEnum.UPLOAD.getCode());
         this.save(trainData);
+    }
+
+    @Override
+    public void addCorrectedComment(Comments comment) {
+        if (comment == null) {
+            throw new CustomBusinessException("评论不能为空");
+        }
+        if (comment.getDomainId() == null || comment.getDomainId() <= 0) {
+            throw new CustomBusinessException("评论领域ID不合法");
+        }
+        String content = comment.getContent() == null ? null : comment.getContent().trim();
+        if (content == null || content.isEmpty()) {
+            throw new CustomBusinessException("评论内容不能为空");
+        }
+        if (CommentFinalSentimentEnum.getByCode(comment.getFinalSentiment()) == null) {
+            throw new CustomBusinessException("评论最终情感不合法");
+        }
+
+        TrainData trainData = new TrainData()
+                .setDomainId(comment.getDomainId())
+                .setContent(content)
+                .setLabel(comment.getFinalSentiment())
+                .setSource(TrainDataSourceEnum.CORRECTED.getCode())
+                .setTrainCount(0);
+        if (!this.save(trainData)) {
+            throw new CustomBusinessException("写入人工修正训练数据失败");
+        }
     }
 
     @Override

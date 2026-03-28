@@ -4,6 +4,8 @@
 > - `src/main/resources/doc/example.txt`
 > - `src/main/resources/doc/sql.txt`
 
+## 本机无运行环境，因此只能做代码静态编写审查，不能尝试编译
+
 ## 1. 项目定位与系统边界
 
 根据 `src/main/resources/doc/example.txt`：

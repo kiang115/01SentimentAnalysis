@@ -598,6 +598,62 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
         this.updateMerchantBatch(results, commentMap);
     }
 
+    @Override
+    public void processCommentCorrection(Comments comment, Integer oldFinalSentiment, Integer newFinalSentiment) {
+        if (comment == null) {
+            throw new CustomBusinessException("评论不能为空");
+        }
+        if (comment.getProductId() == null || comment.getProductId() <= 0) {
+            throw new CustomBusinessException("评论关联商品ID不合法");
+        }
+        if (comment.getMerchantId() == null || comment.getMerchantId() <= 0) {
+            throw new CustomBusinessException("评论关联商铺ID不合法");
+        }
+        if (oldFinalSentiment == null || newFinalSentiment == null) {
+            throw new CustomBusinessException("评论情感结果不能为空");
+        }
+        if (oldFinalSentiment.equals(newFinalSentiment)) {
+            throw new CustomBusinessException("评论情感结果未发生变化");
+        }
+
+        Products product = this.getById(comment.getProductId());
+        if (product == null) {
+            throw new CustomBusinessException("商品不存在 productId=" + comment.getProductId());
+        }
+        Merchants merchant = merchantsService.getById(comment.getMerchantId());
+        if (merchant == null) {
+            throw new CustomBusinessException("商铺不存在 merchantId=" + comment.getMerchantId());
+        }
+
+        int positiveDelta = calculatePositiveDelta(oldFinalSentiment, newFinalSentiment);
+        BigDecimal productPositiveRate = calculateCorrectedPositiveRate(
+                product.getPositiveRate(),
+                product.getInferredCount(),
+                positiveDelta,
+                "商品",
+                product.getProductsId());
+        BigDecimal merchantPositiveRate = calculateCorrectedPositiveRate(
+                merchant.getPositiveRate(),
+                merchant.getInferredCount(),
+                positiveDelta,
+                "商铺",
+                merchant.getMerchantsId());
+
+        boolean updateProductSuccess = this.updateById(new Products()
+                .setProductsId(product.getProductsId())
+                .setPositiveRate(productPositiveRate));
+        if (!updateProductSuccess) {
+            throw new CustomBusinessException("更新商品好评率失败 productId=" + product.getProductsId());
+        }
+
+        boolean updateMerchantSuccess = merchantsService.updateById(new Merchants()
+                .setMerchantsId(merchant.getMerchantsId())
+                .setPositiveRate(merchantPositiveRate));
+        if (!updateMerchantSuccess) {
+            throw new CustomBusinessException("更新商铺好评率失败 merchantId=" + merchant.getMerchantsId());
+        }
+    }
+
     /**
      * 函数 A: 批量增量更新商品评分及好评率
      */
@@ -720,5 +776,32 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
 
         // 4. 批量写回数据库
         merchantsService.updateBatchById(merchantsToUpdate);
+    }
+
+    private int calculatePositiveDelta(Integer oldFinalSentiment, Integer newFinalSentiment) {
+        if (Objects.equals(oldFinalSentiment, 0) && Objects.equals(newFinalSentiment, 1)) {
+            return 1;
+        }
+        if (Objects.equals(oldFinalSentiment, 1) && Objects.equals(newFinalSentiment, 0)) {
+            return -1;
+        }
+        throw new CustomBusinessException("评论情感翻转结果不合法");
+    }
+
+    private BigDecimal calculateCorrectedPositiveRate(BigDecimal oldPositiveRate,
+                                                      Long inferredCount,
+                                                      int positiveDelta,
+                                                      String targetType,
+                                                      Long targetId) {
+        if (inferredCount == null || inferredCount <= 0) {
+            throw new CustomBusinessException(targetType + "已推理评论数不合法 id=" + targetId);
+        }
+
+        BigDecimal count = BigDecimal.valueOf(inferredCount);
+        BigDecimal currentPositiveRate = oldPositiveRate == null ? BigDecimal.ZERO : oldPositiveRate;
+        BigDecimal currentPositiveCount = currentPositiveRate.multiply(count);
+        return currentPositiveCount
+                .add(BigDecimal.valueOf(positiveDelta))
+                .divide(count, 4, RoundingMode.HALF_UP);
     }
 }
