@@ -289,6 +289,7 @@ onBeforeUnmount(disposeAll)
 .task-info-charts :deep(.el-col) {
   min-width: 0;
 }
+
 .chart-card {
   padding: 10px;
   background: var(--el-fill-color-lighter);

@@ -38,6 +38,7 @@ import TaskInfoTables from '@/components/TaskInfoTables.vue'
   width: 100%;
   min-width: 0;
   overflow: hidden;
+  box-sizing: border-box;
   background: var(--el-bg-color);
   border-radius: var(--el-border-radius-base);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
@@ -49,8 +50,10 @@ import TaskInfoTables from '@/components/TaskInfoTables.vue'
   flex-direction: row;
   gap: 24px;
   flex: 1;
+  width: 100%;
   min-height: 820px;
   align-items: stretch;
+  box-sizing: border-box;
 }
 
 .model-column {
@@ -59,6 +62,7 @@ import TaskInfoTables from '@/components/TaskInfoTables.vue'
   min-height: 0;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   background: var(--el-bg-color);
   border-radius: var(--el-border-radius-base);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
