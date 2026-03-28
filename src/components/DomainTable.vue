@@ -56,22 +56,23 @@ onMounted(() => {
 
     <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
       <el-table-column prop="domainId" label="领域编号" width="110" align="center" />
-      <el-table-column prop="domainName" label="领域名称" width="140" align="center" />
-      <el-table-column prop="domainUrl" label="领域地址" width="140" align="center" />
-
-      <el-table-column prop="domainImageUrl" label="领域图片" width="120" align="center">
+      <el-table-column prop="domainName" label="领域名称" width="160" align="center">
         <template #default="{ row }">
-          <el-image
-            v-if="row.domainImageUrl"
-            :src="row.domainImageUrl"
-            :preview-src-list="[row.domainImageUrl]"
-            preview-teleported
-            fit="cover"
-            class="domain-image"
-          />
-          <span v-else>—</span>
+          <div class="domain-name-cell">
+            <el-image
+              v-if="row.domainImageUrl"
+              :src="row.domainImageUrl"
+              :preview-src-list="[row.domainImageUrl]"
+              preview-teleported
+              fit="cover"
+              class="domain-image"
+            />
+            <span v-else class="domain-image-placeholder">—</span>
+            <span class="domain-name-text">{{ row.domainName || '—' }}</span>
+          </div>
         </template>
       </el-table-column>
+      <el-table-column prop="domainUrl" label="领域地址" width="140" align="center" />
 
       <el-table-column prop="domainDescription" label="领域描述" min-width="220" show-overflow-tooltip />
 
@@ -126,5 +127,28 @@ onMounted(() => {
   height: 56px;
   border-radius: 10px;
   background: #f1f5f9;
+}
+
+.domain-name-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.domain-image-placeholder {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.domain-name-text {
+  line-height: 20px;
+  word-break: break-all;
 }
 </style>
