@@ -70,6 +70,11 @@ const router = createRouter({
               component: () => import("../components/ModelData.vue"),
             },
             {
+              path: "domainData",
+              name: "domainData",
+              component: () => import("../components/DomainData.vue"),
+            },
+            {
               path: "Task",
               name: "Task",
               component: () => import("../components/Task.vue"),
@@ -81,6 +86,7 @@ const router = createRouter({
     { path: "/Task", redirect: "/model/Task" },
     { path: "/trainData", redirect: "/model/trainData" },
     { path: "/modelData", redirect: "/model/modelData" },
+    { path: "/domainData", redirect: "/model/domainData" },
   ],
 });
 

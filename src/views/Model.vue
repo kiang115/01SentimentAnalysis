@@ -10,6 +10,7 @@ const activeTab = computed({
     const name = route.name as string
     if (name === 'trainData') return 'trainData'
     if (name === 'modelData') return 'modelData'
+    if (name === 'domainData') return 'domainData'
     if (name === 'Task') return 'Task'
     return 'trainData'
   },
@@ -24,6 +25,7 @@ const activeTab = computed({
     <el-tabs v-model="activeTab" class="model-tabs">
       <el-tab-pane label="训练数据管理" name="trainData" />
       <el-tab-pane label="模型数据管理" name="modelData" />
+      <el-tab-pane label="领域管理" name="domainData" />
       <el-tab-pane label="训练和推理管理" name="Task" />
     </el-tabs>
     <div class="page-content">
