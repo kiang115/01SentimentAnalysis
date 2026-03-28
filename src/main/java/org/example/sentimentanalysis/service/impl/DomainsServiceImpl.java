@@ -157,6 +157,7 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
                 .map(d -> DomainsInfo.builder()
                         .domainId(d.getDomainId())
                         .domainName(d.getDomainName())
+                        .domainImageUrl(d.getDomainImageUrl())
                         .build())
                 .collect(Collectors.toList());
     }

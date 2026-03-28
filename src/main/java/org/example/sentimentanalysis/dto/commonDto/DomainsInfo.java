@@ -14,4 +14,5 @@ import org.springframework.stereotype.Component;
 public class DomainsInfo {
     private Long domainId;
     private String domainName;
+    private String domainImageUrl;
 }

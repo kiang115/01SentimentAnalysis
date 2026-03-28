@@ -155,12 +155,7 @@ public class MerchantsServiceImpl extends ServiceImpl<MerchantsMapper, Merchants
                         .collect(Collectors.toList())
         );
 
-        List<DomainsInfo> domainsInfos = domainsService.list().stream()
-                .map(domain -> DomainsInfo.builder()
-                        .domainId(domain.getDomainId())
-                        .domainName(domain.getDomainName())
-                        .build())
-                .collect(Collectors.toList());
+        List<DomainsInfo> domainsInfos = domainsService.listAllDomainsInfo();
 
         return MerchantsSend.builder()
                 .pageInfo(merchantInfoPageInfo)
