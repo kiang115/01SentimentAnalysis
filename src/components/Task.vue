@@ -49,7 +49,7 @@ import TaskInfoTables from '@/components/TaskInfoTables.vue'
   flex-direction: row;
   gap: 24px;
   flex: 1;
-  min-height: 0;
+  min-height: 820px;
   align-items: stretch;
 }
 

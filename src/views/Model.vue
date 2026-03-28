@@ -21,10 +21,6 @@ const activeTab = computed({
 
 <template>
   <div class="model-manage-page">
-    <div class="page-header">
-      <h1 class="page-title">模型管理</h1>
-      <p class="page-subtitle">管理训练数据、模型训练和推理、模型版本及效果</p>
-    </div>
     <el-tabs v-model="activeTab" class="model-tabs">
       <el-tab-pane label="训练数据管理" name="trainData" />
       <el-tab-pane label="模型数据管理" name="modelData" />
@@ -45,21 +41,6 @@ const activeTab = computed({
   min-height: 0;
   padding: 20px;
   box-sizing: border-box;
-}
-.page-header {
-  flex-shrink: 0;
-  margin-bottom: 16px;
-}
-.page-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin: 0 0 8px;
-}
-.page-subtitle {
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
-  margin: 0;
 }
 .model-tabs {
   flex-shrink: 0;
