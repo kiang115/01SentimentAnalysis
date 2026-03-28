@@ -15,7 +15,6 @@ import TrainParaTable from '@/components/TrainParaTable.vue';
 <style scoped lang="less">
 .train-data-page {
   width: 100%;
-  min-height: 100%;
   padding: 20px;
   box-sizing: border-box;
 }

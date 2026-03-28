@@ -12,7 +12,7 @@ const activeTab = computed({
     if (name === 'modelData') return 'modelData'
     if (name === 'domainData') return 'domainData'
     if (name === 'Task') return 'Task'
-    return 'trainData'
+    return 'Task'
   },
   set(name: string) {
     router.push(`/model/${name}`)
@@ -23,10 +23,10 @@ const activeTab = computed({
 <template>
   <div class="model-manage-page">
     <el-tabs v-model="activeTab" class="model-tabs">
-      <el-tab-pane label="训练数据管理" name="trainData" />
-      <el-tab-pane label="模型数据管理" name="modelData" />
-      <el-tab-pane label="领域管理" name="domainData" />
-      <el-tab-pane label="训练和推理管理" name="Task" />
+      <el-tab-pane label="训练和推理" name="Task" />
+      <el-tab-pane label="模型数据" name="modelData" />
+      <el-tab-pane label="训练数据" name="trainData" />
+      <el-tab-pane label="领域扩展" name="domainData" />
     </el-tabs>
     <div class="page-content">
       <router-view />
