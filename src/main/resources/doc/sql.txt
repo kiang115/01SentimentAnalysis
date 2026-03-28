@@ -181,6 +181,8 @@ CREATE TABLE `domains` (
     `domain_id` BIGINT AUTO_INCREMENT COMMENT '领域id',
     `domain_name` VARCHAR(100) NOT NULL COMMENT '领域中文名字',
     `domain_url` VARCHAR(100) NOT NULL COMMENT '领域模型路径名字, 如: waimai, hotel, shop',
+    `domain_description` TEXT COMMENT '领域描述',
+    `domain_image_url` VARCHAR(200) COMMENT '领域图片url',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '领域创建时间',
     PRIMARY KEY (`domain_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='领域信息表';

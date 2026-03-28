@@ -1,6 +1,8 @@
 package org.example.sentimentanalysis.service;
 
 import org.example.sentimentanalysis.dto.commonDto.DomainsInfo;
+import org.example.sentimentanalysis.dto.requestDto.DomainAddRec;
+import org.example.sentimentanalysis.dto.responseDto.DomainDataListSend;
 import org.example.sentimentanalysis.dto.responseDto.InferPanelSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
 import org.example.sentimentanalysis.model.Domains;
@@ -22,6 +24,8 @@ public interface DomainsService extends IService<Domains> {
     InferPanelSend ListInferencePanelDto();
     TrainPanelSend listTrainPanel();
     List<DomainsInfo> listAllDomainsInfo();
+    DomainDataListSend listDomainDataList();
+    String addDomain(DomainAddRec domainAddRec);
     Map<Long, String> getDomainIdToName();
 //    增加校验工具函数
     void checkIdExist(Long domainId);

@@ -11,7 +11,7 @@ import org.example.sentimentanalysis.dto.requestDto.TrainDataAddRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainDataQueryRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataListSend;
 import org.example.sentimentanalysis.assembler.TrainDataListAssembler;
-import org.example.sentimentanalysis.enums.TaskDataSourceEnum;
+import org.example.sentimentanalysis.enums.TrainDataSourceEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.mapper.DomainsMapper;
 import org.example.sentimentanalysis.model.TrainData;
@@ -70,7 +70,7 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
             wrapper.eq(TrainData::getLabel, label);
         }
         String source = queryRec.getSource();
-        if (source != null && TaskDataSourceEnum.isCodeExist(source)) {
+        if (source != null && TrainDataSourceEnum.isCodeExist(source)) {
             wrapper.eq(TrainData::getSource, source);
         }
         Long domainId = queryRec.getDomainId();
@@ -110,13 +110,13 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
     @Override
     public void addBySingleData(TrainDataAddRec addDataRec) {
         TrainData trainData = new TrainData();
-        trainData.setContent(addDataRec.getContent()).setLabel(addDataRec.getLabel()).setDomainId(addDataRec.getDomainId()).setSource(TaskDataSourceEnum.UPLOAD.getCode());
+        trainData.setContent(addDataRec.getContent()).setLabel(addDataRec.getLabel()).setDomainId(addDataRec.getDomainId()).setSource(TrainDataSourceEnum.UPLOAD.getCode());
         this.save(trainData);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void importCsv(MultipartFile file, Long domainId) throws IOException {
+    public void importCsv(MultipartFile file, Long domainId,String source) throws IOException {
         // 1. 使用新的 Builder 模式替换已弃用的 with... 方法
         CSVFormat csvFormat = CSVFormat.Builder.create(CSVFormat.DEFAULT)
                 .setHeader()              // 自动处理表头
@@ -150,7 +150,7 @@ public class TrainDataServiceImpl extends ServiceImpl<TrainDataMapper, TrainData
                     data.setDomainId(domainId);
                     data.setContent(content);
                     data.setLabel(label);
-                    data.setSource("upload");
+                    data.setSource(source);
                     data.setTrainCount(0);
 
                     dataList.add(data);

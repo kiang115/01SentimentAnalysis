@@ -26,7 +26,7 @@ public interface TrainDataService extends IService<TrainData> {
 
     void addBySingleData(TrainDataAddRec trainData);
 
-    void importCsv(MultipartFile file, Long domainId) throws IOException;
+    void importCsv(MultipartFile file, Long domainId,String source) throws IOException;
 
     void deleteByIds(Long[] ids);
 }

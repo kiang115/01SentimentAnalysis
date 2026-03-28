@@ -2,7 +2,7 @@ package org.example.sentimentanalysis.assembler;
 
 import org.example.sentimentanalysis.dto.requestDto.TrainPanelRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataSend;
-import org.example.sentimentanalysis.enums.TaskDataSourceEnum;
+import org.example.sentimentanalysis.enums.TrainDataSourceEnum;
 import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.model.TrainData;
 import org.springframework.stereotype.Component;
@@ -39,9 +39,9 @@ public class TrainDataAssembler {
                 .baseModelId(rec.getBaseModelId())
                 // 训练数据
                 .trainDataList(List.of(
-                        toTrainSourceData(TaskDataSourceEnum.CORRECTED.getCode(), corrected),
-                        toTrainSourceData(TaskDataSourceEnum.UPLOAD.getCode(), upload),
-                        toTrainSourceData(TaskDataSourceEnum.ORIGINAL.getCode(), original)
+                        toTrainSourceData(TrainDataSourceEnum.CORRECTED.getCode(), corrected),
+                        toTrainSourceData(TrainDataSourceEnum.UPLOAD.getCode(), upload),
+                        toTrainSourceData(TrainDataSourceEnum.ORIGINAL.getCode(), original)
                 ))
                 .build();
     }

@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.example.sentimentanalysis.dto.requestDto.TrainDataAddRec;
 import org.example.sentimentanalysis.dto.requestDto.TrainDataQueryRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataListSend;
+import org.example.sentimentanalysis.enums.TrainDataSourceEnum;
 import org.example.sentimentanalysis.model.TrainData;
 import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.TrainDataService;
@@ -57,7 +58,7 @@ public class TrainDataController {
         }
 
         try {
-            trainDataService.importCsv(file, domainId);
+            trainDataService.importCsv(file, domainId, TrainDataSourceEnum.UPLOAD.getCode());
         } catch (IOException e) {
             return Response.fail("数据导入失败:" + e.getMessage());
         }

@@ -6,24 +6,32 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.example.sentimentanalysis.assembler.InferencePanelAssembler;
 import org.example.sentimentanalysis.assembler.TrainPanelAssembler;
 import org.example.sentimentanalysis.dto.commonDto.DomainsInfo;
+import org.example.sentimentanalysis.dto.requestDto.DomainAddRec;
+import org.example.sentimentanalysis.dto.responseDto.DomainDataListSend;
 import org.example.sentimentanalysis.dto.responseDto.InferPanelSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainPanelSend;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
+import org.example.sentimentanalysis.enums.TrainDataSourceEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.mapper.DomainsMapper;
+import org.example.sentimentanalysis.model.Merchants;
 import org.example.sentimentanalysis.model.Models;
 import org.example.sentimentanalysis.model.TrainData;
 import org.example.sentimentanalysis.model.TrainPara;
 import org.example.sentimentanalysis.service.CommentsService;
 import org.example.sentimentanalysis.service.DomainsService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.example.sentimentanalysis.service.MerchantsService;
 import org.example.sentimentanalysis.service.ModelsService;
 import org.example.sentimentanalysis.service.TrainDataService;
 import org.example.sentimentanalysis.service.TrainParaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -50,6 +58,9 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
     private TrainDataService trainDataService;
     @Autowired
     private TrainParaService trainParaService;
+    @Autowired
+    @Lazy
+    private MerchantsService merchantsService;
 
     @Override
     public InferPanelSend ListInferencePanelDto() {
@@ -151,6 +162,124 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
     }
 
     @Override
+    public DomainDataListSend listDomainDataList() {
+        List<Domains> domains = this.list(new LambdaQueryWrapper<Domains>().orderByAsc(Domains::getDomainId));
+        List<String> sourceNameList = Arrays.stream(TrainDataSourceEnum.values())
+                .map(TrainDataSourceEnum::getDesc)
+                .collect(Collectors.toList());
+        if (domains == null || domains.isEmpty()) {
+            return DomainDataListSend.builder()
+                    .sourceNameList(sourceNameList)
+                    .domainDataList(Collections.emptyList())
+                    .build();
+        }
+
+        List<Long> domainIds = domains.stream().map(Domains::getDomainId).collect(Collectors.toList());
+
+        QueryWrapper<TrainData> trainDataWrapper = new QueryWrapper<>();
+        trainDataWrapper.select("domain_id", "source", "count(*) as count_num")
+                .in("domain_id", domainIds)
+                .groupBy("domain_id", "source");
+        List<Map<String, Object>> trainDataResultList = trainDataService.listMaps(trainDataWrapper);
+        Map<Long, Map<String, Long>> trainDataCountMap = trainDataResultList.stream()
+                .collect(Collectors.groupingBy(
+                        row -> ((Number) row.get("domain_id")).longValue(),
+                        Collectors.toMap(
+                                row -> Objects.toString(row.get("source"), ""),
+                                row -> ((Number) row.get("count_num")).longValue(),
+                                Long::sum
+                        )
+                ));
+
+        Map<Long, Long> commentCountMap = toCountMap(commentsService.listMaps(
+                new QueryWrapper<Comments>()
+                        .select("domain_id", "count(*) as count_num")
+                        .in("domain_id", domainIds)
+                        .groupBy("domain_id")
+        ));
+
+        Map<Long, Long> modelCountMap = toCountMap(modelsService.listMaps(
+                new QueryWrapper<Models>()
+                        .select("domain_id", "count(*) as count_num")
+                        .eq("deleted", 0)
+                        .in("domain_id", domainIds)
+                        .groupBy("domain_id")
+        ));
+
+        Map<Long, Long> merchantCountMap = toCountMap(merchantsService.listMaps(
+                new QueryWrapper<Merchants>()
+                        .select("domain_id", "count(*) as count_num")
+                        .in("domain_id", domainIds)
+                        .groupBy("domain_id")
+        ));
+
+        List<DomainDataListSend.DomainDataInfo> domainDataList = domains.stream()
+                .map(domain -> {
+                    Long domainId = domain.getDomainId();
+                    Map<String, Long> sourceCount = trainDataCountMap.getOrDefault(domainId, Collections.emptyMap());
+                    List<Long> trainDataCountList = Arrays.stream(TrainDataSourceEnum.values())
+                            .map(source -> sourceCount.getOrDefault(source.getCode(), 0L))
+                            .collect(Collectors.toList());
+                    return DomainDataListSend.DomainDataInfo.builder()
+                            .domainId(domainId)
+                            .domainName(domain.getDomainName())
+                            .domainUrl(domain.getDomainUrl())
+                            .createdAt(domain.getCreatedAt())
+                            .domainImageUrl(domain.getDomainImageUrl())
+                            .domainDescription(domain.getDomainDescription())
+                            .trainDataCountList(trainDataCountList)
+                            .commentTotal(commentCountMap.getOrDefault(domainId, 0L))
+                            .modelTotal(modelCountMap.getOrDefault(domainId, 0L))
+                            .merchantTotal(merchantCountMap.getOrDefault(domainId, 0L))
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return DomainDataListSend.builder()
+                .sourceNameList(sourceNameList)
+                .domainDataList(domainDataList)
+                .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String addDomain(DomainAddRec domainAddRec) {
+        MultipartFile file = domainAddRec.getFile();
+        if (file == null || file.isEmpty()) {
+            throw new CustomBusinessException("原始训练数据csv文件不能为空");
+        }
+
+        boolean domainNameExists = this.exists(
+                new LambdaQueryWrapper<Domains>().eq(Domains::getDomainName, domainAddRec.getDomainName())
+        );
+        if (domainNameExists) {
+            throw new CustomBusinessException("领域名称已存在");
+        }
+
+        boolean domainUrlExists = this.exists(
+                new LambdaQueryWrapper<Domains>().eq(Domains::getDomainUrl, domainAddRec.getDomainUrl())
+        );
+        if (domainUrlExists) {
+            throw new CustomBusinessException("领域地址已存在");
+        }
+
+        Domains domain = new Domains()
+                .setDomainName(domainAddRec.getDomainName())
+                .setDomainUrl(domainAddRec.getDomainUrl())
+                .setDomainImageUrl(domainAddRec.getDomainImageUrl())
+                .setDomainDescription(domainAddRec.getDomainDescription());
+        this.save(domain);
+
+        try {
+            trainDataService.importCsv(file, domain.getDomainId(), TrainDataSourceEnum.ORIGINAL.getCode());
+        } catch (Exception e) {
+            throw new CustomBusinessException("原始训练数据导入失败:" + e.getMessage());
+        }
+
+        return "是否立即为" + domain.getDomainName() + "训练第一个模型？";
+    }
+
+    @Override
     public Map<Long, String> getDomainIdToName() {
         List<Domains> domains = this.list();
         return domains.stream()
@@ -194,5 +323,16 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
         return domain.getDomainUrl();
     }
 
+    private Map<Long, Long> toCountMap(List<Map<String, Object>> resultList) {
+        if (resultList == null || resultList.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return resultList.stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row.get("domain_id")).longValue(),
+                        row -> ((Number) row.get("count_num")).longValue(),
+                        Long::sum
+                ));
+    }
 
 }

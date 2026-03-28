@@ -10,7 +10,7 @@ import org.example.sentimentanalysis.dto.requestDto.TrainResultRec;
 import org.example.sentimentanalysis.dto.responseDto.TrainDataSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainLineChartSend;
 import org.example.sentimentanalysis.dto.responseDto.TrainTasksSend;
-import org.example.sentimentanalysis.enums.TaskDataSourceEnum;
+import org.example.sentimentanalysis.enums.TrainDataSourceEnum;
 import org.example.sentimentanalysis.enums.TaskStatusEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.mapper.TrainTasksMapper;
@@ -111,23 +111,23 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
             throw new CustomBusinessException("训练数据装配失败：训练数据总数量为0");
         }
         List<TrainData> correctedDataList = pickTrainDataBySource(
-                sourceDataMap.getOrDefault(TaskDataSourceEnum.CORRECTED.getCode(), Collections.emptyList()),
+                sourceDataMap.getOrDefault(TrainDataSourceEnum.CORRECTED.getCode(), Collections.emptyList()),
                 trainPanelRec.getCorrectedNum(),
-                TaskDataSourceEnum.CORRECTED.getCode(),
+                TrainDataSourceEnum.CORRECTED.getCode(),
                 domain.getDomainName(),
                 random
         );
         List<TrainData> uploadDataList = pickTrainDataBySource(
-                sourceDataMap.getOrDefault(TaskDataSourceEnum.UPLOAD.getCode(), Collections.emptyList()),
+                sourceDataMap.getOrDefault(TrainDataSourceEnum.UPLOAD.getCode(), Collections.emptyList()),
                 trainPanelRec.getUploadNum(),
-                TaskDataSourceEnum.UPLOAD.getCode(),
+                TrainDataSourceEnum.UPLOAD.getCode(),
                 domain.getDomainName(),
                 random
         );
         List<TrainData> originalDataList = pickTrainDataBySource(
-                sourceDataMap.getOrDefault(TaskDataSourceEnum.ORIGINAL.getCode(), Collections.emptyList()),
+                sourceDataMap.getOrDefault(TrainDataSourceEnum.ORIGINAL.getCode(), Collections.emptyList()),
                 trainPanelRec.getOriginalNum(),
-                TaskDataSourceEnum.ORIGINAL.getCode(),
+                TrainDataSourceEnum.ORIGINAL.getCode(),
                 domain.getDomainName(),
                 random
         );

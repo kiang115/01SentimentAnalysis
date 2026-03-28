@@ -52,4 +52,10 @@ public class Domains implements Serializable {
      */
     @TableField("created_at")
     private LocalDateTime createdAt;
+
+    @TableField("domain_image_url")
+    private String domainImageUrl;
+
+    @TableField("domain_description")
+    private String domainDescription;
 }

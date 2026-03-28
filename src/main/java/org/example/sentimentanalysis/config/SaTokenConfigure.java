@@ -21,27 +21,27 @@ public class SaTokenConfigure implements WebMvcConfigurer {
     // 注册 Sa-Token 拦截器，打开注解式鉴权功能
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new SaInterceptor(handle -> {
-                    if (isPreflightRequest()) {
-                        return;
-                    }
-                    StpUtil.checkLogin();
-                }))
-                .addPathPatterns("/**")
-                .excludePathPatterns(
-                        "/login",
-                        "/register",
-                        "/file/upload",
-                        "/download-model/**",
-                        "/error",
-                        "/doc.html",
-                        "/swagger-ui/**",
-                        "/InferenceResultProcess",
-                        "/TrainResultProcess",
-                        "/webjars/**",
-                        "/v3/api-docs/**",
-                        "/api/sse/**"
-                );
+//        registry.addInterceptor(new SaInterceptor(handle -> {
+//                    if (isPreflightRequest()) {
+//                        return;
+//                    }
+//                    StpUtil.checkLogin();
+//                }))
+//                .addPathPatterns("/**")
+//                .excludePathPatterns(
+//                        "/login",
+//                        "/register",
+//                        "/file/upload",
+//                        "/download-model/**",
+//                        "/error",
+//                        "/doc.html",
+//                        "/swagger-ui/**",
+//                        "/InferenceResultProcess",
+//                        "/TrainResultProcess",
+//                        "/webjars/**",
+//                        "/v3/api-docs/**",
+//                        "/api/sse/**"
+//                );
     }
 
     private boolean isPreflightRequest() {
