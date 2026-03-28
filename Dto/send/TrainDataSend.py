@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 #  推理的结果，需要返回给springboot 全部设上默认值，防止springboot解析出错，导致业务不能正常进行
@@ -20,5 +20,5 @@ class TrainDataSend(BaseModel):
     valLossList: List[float]
     valAccList: List[float]
     epochTotalBatches: int = 0
-    baseModelId: int
+    baseModelId:Optional[int] = None
 
