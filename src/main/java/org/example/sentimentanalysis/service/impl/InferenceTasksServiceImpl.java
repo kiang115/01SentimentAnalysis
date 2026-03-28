@@ -1,5 +1,6 @@
 package org.example.sentimentanalysis.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.example.sentimentanalysis.assembler.InferenceDataAssembler;
@@ -136,6 +137,10 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
     @Override
     @Transactional
     public Long addInferenceTasks(InferDataSend inferDataSend) {
+        Long customerId = StpUtil.getLoginIdAsLong();
+        if (customerId == null || customerId <= 0) {
+            throw new CustomBusinessException("当前登录用户ID不合法");
+        }
 //构造一个要插入的task数据
         InferenceTasks task = new InferenceTasks();
         List<InferDataSend.InferenceDomainData> domainDataList = inferDataSend.getInferenceDomainDataList();
@@ -158,8 +163,8 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
                 .filter(Objects::nonNull)
                 .mapToLong(item -> item.getInferenceCommentNums() == null ? 0L : item.getInferenceCommentNums())
                 .sum();
-//        设置默认的发起人id为1
-        task.setDomainIds(domainIds).setUsedModelIds(modelIds).setProcessedCount(totalComments).setInitiatorId(1L).setStatus(TaskStatusEnum.PROCESSING.getCode()).setStatusMsg(TaskStatusEnum.PROCESSING.getName());
+
+        task.setDomainIds(domainIds).setUsedModelIds(modelIds).setProcessedCount(totalComments).setInitiatorId(customerId).setStatus(TaskStatusEnum.PROCESSING.getCode()).setStatusMsg(TaskStatusEnum.PROCESSING.getName());
         save(task);
         if (task.getTaskId() == null) {
             throw new CustomBusinessException("添加推理任务失败，未生成主键！");

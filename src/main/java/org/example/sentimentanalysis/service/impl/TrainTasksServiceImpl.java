@@ -1,6 +1,7 @@
 package org.example.sentimentanalysis.service.impl;
 
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.sentimentanalysis.assembler.TrainDataAssembler;
@@ -83,7 +84,7 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
                         .like(!isOverTrain, Models::getModelVersion, prefix)
         );
 //      加入redis中正在running的模型版本号
-        addRedisModels(domainModels,prefix,isOverTrain,trainPanelRec);
+        addRedisModels(domainModels, prefix, isOverTrain, trainPanelRec);
 
 //      1. 获取全部的最大版本号
         String latestAllVersionStr = modelsService.getMaxVersion(domainModels);
@@ -174,11 +175,15 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
     @Override
     public Long addTrainTask(TrainPanelRec trainPanelRec) {
 //        将trainPanelRec中对应值插入到trainTasks表中
-//        trainTasks中 creatorId先写死为1，状态使用待处理，其他训练参数保持一致
 
         Domains domain = domainsService.getById(trainPanelRec.getDomainId());
         if (domain == null) {
             throw new CustomBusinessException("未找到ID为[" + trainPanelRec.getDomainId() + "]的Domain数据");
+        }
+
+        Long customerId = StpUtil.getLoginIdAsLong();
+        if (customerId == null || customerId <= 0) {
+            throw new CustomBusinessException("当前登录用户ID不合法");
         }
 
         long totalData = trainPanelRec.getCorrectedNum()
@@ -186,7 +191,7 @@ public class TrainTasksServiceImpl extends ServiceImpl<TrainTasksMapper, TrainTa
                 + trainPanelRec.getOriginalNum();
 
         TrainTasks trainTask = new TrainTasks()
-                .setCreatorId(1L)
+                .setCreatorId(customerId)
                 .setStatus(TaskStatusEnum.PROCESSING.getCode())
                 .setStatusMsg(TaskStatusEnum.PROCESSING.getName())
                 .setDomainId(trainPanelRec.getDomainId())
