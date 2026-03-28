@@ -119,7 +119,13 @@ onMounted(() => {
             :class="{ active: queryParams.domainId === d.domainId }"
             @click="selectDomain(d.domainId)"
           >
-            {{ d.domainName }}
+            <img
+              v-if="d.domainImageUrl"
+              :src="d.domainImageUrl"
+              :alt="d.domainName"
+              class="domain-icon"
+            />
+            <span>{{ d.domainName }}</span>
           </button>
         </div>
       </div>
@@ -236,6 +242,9 @@ onMounted(() => {
 
 .tag-btn,
 .sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: none;
   border-radius: 8px;
   padding: 7px 12px;
@@ -256,10 +265,11 @@ onMounted(() => {
   }
 }
 
-.sort-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.domain-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .merchants-grid {

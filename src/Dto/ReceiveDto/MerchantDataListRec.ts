@@ -1,4 +1,4 @@
-import type { PageInfo } from '@/Dto/ReceiveDto/PageInfo';
+import type {PageInfo} from '@/Dto/ReceiveDto/PageInfo';
 
 /**
  * 商家（Merchant）的具体结构
@@ -20,6 +20,8 @@ export interface MerchantItem {
 export interface DomainItem {
     domainId: number;      // 领域编号
     domainName: string;    // 领域名称
+//     增加一个领域的url
+    domainImageUrl: string
 }
 
 /**
