@@ -103,6 +103,8 @@ function buildChartOption(): echarts.ComposeOption<LineSeriesOption> {
     xAxis: {
       type: 'category',
       name: '小版本',
+      nameLocation: 'middle',
+      nameGap: 28,
       data: domain.allSmallVersions,
       boundaryGap: false,
     },
@@ -250,22 +252,32 @@ onBeforeUnmount(() => {
   color: var(--el-text-color-primary);
 }
 .panel-body {
-  display: flex;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  gap: 24px;
   min-height: 0;
+  align-items: stretch;
 }
 .panel-left {
-  flex: 2;
-  min-width: 0;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  padding: 16px;
+  background: var(--el-fill-color-blank);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 12px;
+  overflow: hidden;
 }
 .panel-right {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  background: var(--el-fill-color-blank);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 12px;
+  overflow: hidden;
 }
 .chart-container {
   width: 100%;
@@ -284,6 +296,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .pie-title {
   font-size: 13px;
@@ -294,6 +307,7 @@ onBeforeUnmount(() => {
 .pie-container {
   flex: 1;
   min-height: 120px;
+  width: 100%;
 }
 .pie-empty {
   flex: 1;
@@ -309,8 +323,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 8px 0;
+  min-height: 36px;
+  padding: 4px 0 0;
 }
 .progress-section-title {
   font-size: 13px;
@@ -322,7 +336,6 @@ onBeforeUnmount(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: 10px;
 }
 .progress-row {
@@ -362,5 +375,11 @@ onBeforeUnmount(() => {
 .progress-empty {
   font-size: 13px;
   color: var(--el-text-color-secondary);
+}
+
+@media (max-width: 1100px) {
+  .panel-body {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

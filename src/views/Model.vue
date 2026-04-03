@@ -11,6 +11,7 @@ const activeTab = computed({
     if (name === 'trainData') return 'trainData'
     if (name === 'modelData') return 'modelData'
     if (name === 'domainData') return 'domainData'
+    if (name === 'auditCenter') return 'auditCenter'
     if (name === 'Task') return 'Task'
     return 'Task'
   },
@@ -24,6 +25,7 @@ const activeTab = computed({
   <div class="model-manage-page">
     <el-tabs v-model="activeTab" class="model-tabs">
       <el-tab-pane label="训练和推理" name="Task" />
+      <el-tab-pane label="审核中心" name="auditCenter" />
       <el-tab-pane label="模型数据" name="modelData" />
       <el-tab-pane label="训练数据" name="trainData" />
       <el-tab-pane label="领域扩展" name="domainData" />

@@ -144,6 +144,7 @@ onMounted(() => {
 
       <ProductCommentsSection
         :product-id="detail.productId"
+        :merchant-id="detail.merchantId"
         :domain-id="detail.domainId"
         :can-send-comment="canSendComment"
         :can-view-inference-tags="canViewCommentInference"

@@ -30,6 +30,8 @@ import type {ProductEditSend} from "@/Dto/SendDto/ProductEditSend";
 import type {CommentsQuerySend} from "@/Dto/SendDto/CommentsQuerySend";
 import type {CommentAddSend} from "@/Dto/SendDto/CommentAddSend";
 import type {CommentDataListRec} from "@/Dto/ReceiveDto/CommentDataListRec";
+import type {AllCommentDataListQuerySend} from "@/Dto/SendDto/AllCommentDataListQuerySend";
+import type {AllCommentDataListRec} from "@/Dto/ReceiveDto/AllCommentDataListRec";
 import type {ProductTagAnalyzeRec} from "@/Dto/ReceiveDto/ProductTagAnalyzeRec.ts";
 import type {ProductTagStatsListRec} from "@/Dto/ReceiveDto/ProductTagStatsListRec.ts";
 import type {MerchantCreateRec} from "@/Dto/SendDto/MerchantCreateSend.ts";
@@ -228,6 +230,30 @@ export const modelApi = {
     addDomain: (formData: FormData) => {
         return post("/addDomain", formData) as Promise<
             ApiResponse<string>
+        >;
+    },
+    // 评论进入审核
+    reviewComment: (commentId: number) => {
+        return post(`/ReviewComment/${commentId}`, {}) as Promise<
+            ApiResponse<void>
+        >;
+    },
+    // 拒绝评论审核
+    rejectComment: (commentId: number) => {
+        return post(`/RejectComment/${commentId}`, {}) as Promise<
+            ApiResponse<void>
+        >;
+    },
+    // 修正评论审核结果
+    correctComment: (commentId: number) => {
+        return post(`/CorrectComment/${commentId}`, {}) as Promise<
+            ApiResponse<void>
+        >;
+    },
+    // 管理员查询全部评论历史列表
+    listAllCommentDataList: (para: AllCommentDataListQuerySend) => {
+        return post("/listAllCommentDataList", para) as Promise<
+            ApiResponse<AllCommentDataListRec>
         >;
     },
 };

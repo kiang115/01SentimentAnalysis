@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
@@ -14,6 +14,10 @@ const merchantList = ref<MerchantItem[]>([])
 const pageInfo = ref<PageInfo<MerchantItem> | null>(null)
 const domains = ref<DomainItem[]>([])
 const searchText = ref('')
+const selectedDomain = computed(() => {
+  if (queryParams.domainId === null) return null
+  return domains.value.find(domain => domain.domainId === queryParams.domainId) ?? null
+})
 
 const queryParams = reactive<MerchantsQuerySend>({
   pageNum: 1,
@@ -88,62 +92,76 @@ onMounted(() => {
 <template>
   <div class="merchants-page">
     <section class="query-panel">
-      <el-input
-        v-model="searchText"
-        placeholder="搜索商家或商品..."
-        clearable
-        class="search-input"
-        @keyup.enter="handleSearch"
-      >
-        <template #append>
-          <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
-        </template>
-      </el-input>
-
-      <div class="filter-row">
-        <span class="filter-label">领域:</span>
-        <div class="filter-actions">
-          <button
-            type="button"
-            class="tag-btn"
-            :class="{ active: queryParams.domainId === null }"
-            @click="selectDomain(null)"
+      <div class="query-toolbar">
+        <div class="toolbar-item domain-select-wrap">
+          <span class="toolbar-label">领域</span>
+          <el-select
+            :model-value="queryParams.domainId"
+            placeholder="选择领域"
+            class="domain-select"
+            @change="selectDomain"
           >
-            全部
-          </button>
-          <button
-            v-for="d in domains"
-            :key="d.domainId"
-            type="button"
-            class="tag-btn"
-            :class="{ active: queryParams.domainId === d.domainId }"
-            @click="selectDomain(d.domainId)"
-          >
-            <img
-              v-if="d.domainImageUrl"
-              :src="d.domainImageUrl"
-              :alt="d.domainName"
-              class="domain-icon"
-            />
-            <span>{{ d.domainName }}</span>
-          </button>
+            <template v-if="selectedDomain" #prefix>
+              <img
+                :src="selectedDomain.domainImageUrl"
+                :alt="selectedDomain.domainName"
+                class="domain-icon"
+              />
+            </template>
+            <el-option label="全部领域" :value="null" />
+            <el-option
+              v-for="d in domains"
+              :key="d.domainId"
+              :label="d.domainName"
+              :value="d.domainId"
+            >
+              <div class="domain-option">
+                <img
+                  v-if="d.domainImageUrl"
+                  :src="d.domainImageUrl"
+                  :alt="d.domainName"
+                  class="domain-icon"
+                />
+                <span>{{ d.domainName }}</span>
+              </div>
+            </el-option>
+          </el-select>
         </div>
-      </div>
 
-      <div class="filter-row">
-        <span class="filter-label">排序:</span>
-        <div class="filter-actions">
-          <button
-            v-for="opt in sortOptions"
-            :key="opt.value"
-            type="button"
-            class="sort-btn"
-            :class="{ active: queryParams.orderName === opt.value }"
-            @click="selectSort(opt.value)"
+        <div class="toolbar-item search-wrap">
+          <el-input
+            v-model="searchText"
+            placeholder="输入关键字查找商家或商品"
+            clearable
+            class="search-input"
+            @keyup.enter="handleSearch"
           >
-            <span class="sort-icon">{{ opt.icon }}</span>
-            <span>{{ opt.label }}</span>
-          </button>
+            <template #append>
+              <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
+            </template>
+          </el-input>
+        </div>
+
+        <div class="toolbar-item sort-select-wrap">
+          <span class="toolbar-label">排序</span>
+          <el-select
+            :model-value="queryParams.orderName"
+            placeholder="选择排序"
+            class="sort-select"
+            @change="selectSort"
+          >
+            <el-option
+              v-for="opt in sortOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            >
+              <div class="sort-option">
+                <span class="sort-icon">{{ opt.icon }}</span>
+                <span>{{ opt.label }}</span>
+              </div>
+            </el-option>
+          </el-select>
         </div>
       </div>
     </section>
@@ -208,68 +226,61 @@ onMounted(() => {
 
 .query-panel {
   margin-bottom: 20px;
-  padding: 14px 16px;
+  padding: 16px;
   border-radius: 12px;
   background: #fff;
 }
 
-.search-input {
-  margin-bottom: 14px;
+.query-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.filter-row {
+.toolbar-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 }
 
-.filter-label {
-  width: 40px;
+.toolbar-label {
+  flex-shrink: 0;
   color: #606266;
   font-size: 14px;
 }
 
-.filter-actions {
-  display: flex;
-  flex-wrap: wrap;
+.domain-select-wrap {
+  width: 240px;
+}
+
+.search-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.sort-select-wrap {
+  width: 220px;
+}
+
+.domain-select,
+.sort-select,
+.search-input {
+  width: 100%;
+}
+
+.domain-option,
+.sort-option {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
 }
 
-.tag-btn,
-.sort-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: none;
-  border-radius: 8px;
-  padding: 7px 12px;
-  font-size: 13px;
-  color: #4b5563;
-  background: #f2f4f7;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    color: #2563eb;
-    background: #eaf1ff;
-  }
-
-  &.active {
-    color: #fff;
-    background: #2563eb;
-  }
-}
-
 .domain-icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 .merchants-grid {
@@ -393,12 +404,38 @@ onMounted(() => {
 }
 
 @media (max-width: 1200px) {
+  .query-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .domain-select-wrap,
+  .sort-select-wrap {
+    width: calc(50% - 8px);
+  }
+
+  .search-wrap {
+    width: 100%;
+    order: 3;
+  }
+
   .cards-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 768px) {
+  .query-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-item,
+  .domain-select-wrap,
+  .sort-select-wrap,
+  .search-wrap {
+    width: 100%;
+  }
+
   .cards-grid {
     grid-template-columns: 1fr;
   }

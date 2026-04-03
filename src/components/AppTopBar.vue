@@ -41,7 +41,7 @@ const createMerchantForm = ref<MerchantCreateForm>({
 const createMerchantRules = {
   avatarUrl: [{ required: true, message: '请上传商铺头像', trigger: 'change' }],
   name: [{ required: true, message: '请输入商铺名字', trigger: 'blur' }],
-  description: [{ required: true, message: '请输入商品描述', trigger: 'blur' }],
+  description: [{ required: true, message: '请输入商铺描述', trigger: 'blur' }],
   domainId: [{ required: true, message: '请选择商铺领域', trigger: 'change' }],
 }
 
@@ -249,12 +249,12 @@ async function handleUserCommand(command: string) {
         <el-input v-model="createMerchantForm.name" placeholder="请输入商铺名字" />
       </el-form-item>
 
-      <el-form-item label="商品描述" prop="description">
+      <el-form-item label="商铺描述" prop="description">
         <el-input
           v-model="createMerchantForm.description"
           type="textarea"
           :rows="3"
-          placeholder="请输入商品描述"
+          placeholder="请输入商铺描述"
         />
       </el-form-item>
 

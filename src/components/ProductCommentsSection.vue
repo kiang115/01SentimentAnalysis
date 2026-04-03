@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref, watch} from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import {ElMessage} from 'element-plus'
 import {modelApi} from '@/api/model-api'
+import { userStore } from '@/stores/user'
 import type {CommentsQuerySend} from '@/Dto/SendDto/CommentsQuerySend'
 import type {CommentAddSend} from '@/Dto/SendDto/CommentAddSend'
 import type {CommentInfo} from '@/Dto/ReceiveDto/CommentDataListRec'
@@ -9,14 +10,17 @@ import type {PageInfo} from '@/Dto/ReceiveDto/PageInfo'
 
 const props = defineProps<{
   productId: number
+  merchantId: number
   domainId: number
   canSendComment: boolean
   canViewInferenceTags: boolean
 }>()
 
+const store = userStore()
 const commentContent = ref('')
 const listLoading = ref(false)
 const submitLoading = ref(false)
+const reviewLoadingCommentId = ref<number | null>(null)
 const pageInfo = ref<PageInfo<CommentInfo> | null>(null)
 
 const queryParams = reactive<CommentsQuerySend>({
@@ -25,8 +29,22 @@ const queryParams = reactive<CommentsQuerySend>({
   pageSize: 8,
 })
 
+const userInfo = computed(() => store.userInfo)
+const isAdminUser = computed(() => userInfo.value.userType === 'admin')
+const isMerchantOwner = computed(() => (
+  userInfo.value.userType === 'merchant' && userInfo.value.merchantId === props.merchantId
+))
+
 function formatPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`
+}
+
+function canReviewComment(item: CommentInfo) {
+  if (item.statusId !== 2) {
+    return false
+  }
+
+  return isAdminUser.value || isMerchantOwner.value
 }
 
 async function fetchComments() {
@@ -68,6 +86,21 @@ async function submitComment() {
     await fetchComments()
   } finally {
     submitLoading.value = false
+  }
+}
+
+async function handleReviewComment(commentId: number) {
+  if (reviewLoadingCommentId.value !== null) {
+    return
+  }
+
+  reviewLoadingCommentId.value = commentId
+  try {
+    await modelApi.reviewComment(commentId)
+    ElMessage.success('申请复核成功')
+    await fetchComments()
+  } finally {
+    reviewLoadingCommentId.value = null
   }
 }
 
@@ -123,21 +156,39 @@ onMounted(() => {
           </div>
 
           <div v-if="props.canViewInferenceTags" class="comment-tags">
-            <el-tag type="info" effect="plain">状态：{{ item.statusName }}</el-tag>
-            <el-tag :type="item.isInspected ? '' : 'warning'" effect="plain">
-              标签分析：{{ item.isInspected ? '已分析' : '待分析' }}
-            </el-tag>
-            <el-tag v-if="item.finalSentimentName != null" type="warning" effect="plain">情感：{{
-                item.finalSentimentName
-              }}
-            </el-tag>
-            <el-tag v-if="item.confidence != null" effect="light">置信度：{{ formatPercent(item.confidence) }}</el-tag>
-            <el-tag v-if="item.positiveProb != null" type="success" effect="light">
-              正向概率：{{ formatPercent(item.positiveProb) }}
-            </el-tag>
-            <el-tag v-if="item.negativeProb != null" type="danger" effect="light">
-              负向概率：{{ formatPercent(item.negativeProb) }}
-            </el-tag>
+            <div class="comment-tag-row">
+              <el-tag type="info" effect="plain">状态：{{ item.statusName }}</el-tag>
+              <el-tag :type="item.isInspected ? '' : 'warning'" effect="plain">
+                标签分析：{{ item.isInspected ? '已分析' : '待分析' }}
+              </el-tag>
+              <el-tag v-if="item.finalSentimentName != null" type="warning" effect="plain">情感：{{
+                  item.finalSentimentName
+                }}
+              </el-tag>
+            </div>
+            <div
+              v-if="item.confidence != null || item.positiveProb != null || item.negativeProb != null"
+              class="comment-tag-row comment-prob-row"
+            >
+              <el-tag v-if="item.confidence != null" effect="light">置信度：{{ formatPercent(item.confidence) }}</el-tag>
+              <el-tag v-if="item.positiveProb != null" type="success" effect="light">
+                正向概率：{{ formatPercent(item.positiveProb) }}
+              </el-tag>
+              <el-tag v-if="item.negativeProb != null" type="danger" effect="light">
+                负向概率：{{ formatPercent(item.negativeProb) }}
+              </el-tag>
+            </div>
+            <div v-if="canReviewComment(item)" class="comment-review-row">
+              <el-button
+                type="primary"
+                plain
+                size="small"
+                :loading="reviewLoadingCommentId === item.commentId"
+                @click="handleReviewComment(item.commentId)"
+              >
+                申请复核
+              </el-button>
+            </div>
           </div>
         </article>
       </div>
@@ -247,11 +298,28 @@ onMounted(() => {
 
 .comment-tags {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 360px;
+}
+
+.comment-tag-row {
+  display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  align-content: flex-start;
   gap: 8px;
-  max-width: 320px;
+  width: 100%;
+}
+
+.comment-prob-row {
+  flex-wrap: nowrap;
+}
+
+.comment-review-row {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .pagination-wrapper {
@@ -266,8 +334,20 @@ onMounted(() => {
   }
 
   .comment-tags {
-    justify-content: flex-start;
+    align-items: flex-start;
     max-width: none;
+  }
+
+  .comment-tag-row {
+    justify-content: flex-start;
+  }
+
+  .comment-review-row {
+    justify-content: flex-start;
+  }
+
+  .comment-prob-row {
+    flex-wrap: wrap;
   }
 }
 </style>

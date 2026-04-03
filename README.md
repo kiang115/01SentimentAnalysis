@@ -77,9 +77,11 @@ npm run preview
   - `/model`：模型管理父路由，默认重定向到 `/model/trainData`
     - `/model/trainData`：训练数据管理
     - `/model/modelData`：模型数据管理
+    - `/model/auditCenter`：审核中心
     - `/model/Task`：训练与推理任务管理
 - 兼容重定向：
   - `/Task -> /model/Task`
+  - `/auditCenter -> /model/auditCenter`
   - `/trainData -> /model/trainData`
   - `/modelData -> /model/modelData`
 
@@ -93,6 +95,7 @@ npm run preview
   - `Model.vue`
 - `AppLayout.vue` 是业务布局页，不属于具体业务页面；它负责包裹除登录页外的所有业务页面。
 - `Model.vue` 是模型管理模块的父页面，内部再通过子路由切换训练数据、模型数据、训练与推理管理三个子页面。
+- `Model.vue` 是模型管理模块的父页面，内部再通过子路由切换训练数据、模型数据、审核中心、训练与推理管理、领域扩展子页面。
 - `components/` 下存放可复用组件，以及模型管理模块下的内容子页组件（`TrainData.vue`、`ModelData.vue`、`Task.vue`）。
 
 ---
@@ -220,6 +223,7 @@ interface ApiResponse<T> {
 - 如果页面依赖的用户字段不存在，必须先补全 `UserInfo` 与后端返回数据，再写页面逻辑；不允许在业务组件里自行伪造默认业务字段。
 - 退出登录统一通过 `commonApi.logout` + `userStore().loginOut()` 完成，禁止页面各自实现一套清理逻辑。
 - 商家用户在顶部栏点击“创建商铺”后，创建成功需要把后端返回的 `merchantId` 同步写回 `userStore().userInfo.merchantId`，保证顶部栏立即切换为“我的商铺”。
+- 商品评论区中的“申请复核”按钮权限同样统一基于 `userStore().userInfo` 判断：仅 `admin` 或当前商品所属商铺主人可见，且仅评论 `statusId === 2`（已推理）时显示；点击后调用 `modelApi.reviewComment`，成功后刷新评论列表。
 
 ### 10. 顶部栏创建商铺规范
 

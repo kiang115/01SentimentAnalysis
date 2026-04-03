@@ -45,14 +45,6 @@ async function fetchTagStats() {
   }
 }
 
-async function refreshTagStatsAfterMessageClose() {
-  try {
-    await fetchTagStats()
-  } catch {
-    // 响应拦截器已统一处理异常提示，这里只保证组件状态稳定
-  }
-}
-
 async function analyzeProductTags() {
   if (!props.canAnalyzeTags) return
   if (analyzeLoading.value) return
@@ -71,7 +63,7 @@ async function analyzeProductTags() {
       message: formatAnalyzeSuccessMessage(res.data),
       duration: 3000,
       onClose: () => {
-        void refreshTagStatsAfterMessageClose()
+        window.location.reload()
       },
     })
   } finally {
