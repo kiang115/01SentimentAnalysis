@@ -59,13 +59,8 @@ async function analyzeProductTags() {
 
   try {
     const res = await modelApi.analyzeProductTags(props.productId)
-    ElMessage.success({
-      message: formatAnalyzeSuccessMessage(res.data),
-      duration: 3000,
-      onClose: () => {
-        window.location.reload()
-      },
-    })
+    ElMessage.success(formatAnalyzeSuccessMessage(res.data))
+    setTimeout(() => window.location.reload(), 1000)
   } finally {
     analyzeLoading.value = false
     loadingInstance.close()
@@ -148,6 +143,14 @@ watch(
   border-radius: 12px;
   background: #fff;
   padding: 16px;
+
+  :deep(.el-empty) {
+    padding: 8px 0;
+
+    .el-empty__image {
+      display: none;
+    }
+  }
 }
 
 .tag-pill-list {

@@ -211,13 +211,9 @@ onMounted(() => {
         prop="content"
         label="评论内容"
         min-width="320"
-      >
-        <template #default="{ row }">
-          <div class="content-cell">
-            <span class="content-text">{{ row.content || '--' }}</span>
-          </div>
-        </template>
-      </el-table-column>
+        show-overflow-tooltip
+        :formatter="(row) => row.content || '--'"
+      />
       <el-table-column
         prop="statusName"
         label="评论状态"
@@ -399,20 +395,6 @@ onMounted(() => {
     display: flex;
     justify-content: center;
     gap: 8px;
-  }
-
-  .content-cell {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .content-text {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .name-cell {

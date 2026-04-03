@@ -4,4 +4,5 @@ export interface DomainAddSend {
   domainImageUrl: string
   domainDescription: string
   file: File | null
+  goldTestFile: File | null
 }

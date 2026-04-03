@@ -28,6 +28,10 @@ const submitting = ref(false)
 const csvErrorMessage = ref('')
 const previewList = ref<PreviewItem[]>([])
 const currentCsvFile = ref<File | null>(null)
+const goldTestInputRef = ref<HTMLInputElement>()
+const goldTestErrorMessage = ref('')
+const goldTestPreviewList = ref<PreviewItem[]>([])
+const currentGoldTestFile = ref<File | null>(null)
 
 const form = reactive<DomainAddSend>({
   domainName: '',
@@ -35,6 +39,7 @@ const form = reactive<DomainAddSend>({
   domainImageUrl: '',
   domainDescription: '',
   file: null,
+  goldTestFile: null,
 })
 
 const formRules = reactive({
@@ -60,6 +65,7 @@ const formRules = reactive({
 })
 
 const hasInvalidPreviewRows = computed(() => previewList.value.some(item => !item.isValid))
+const hasInvalidGoldTestRows = computed(() => goldTestPreviewList.value.some(item => !item.isValid))
 
 function resetCsvState() {
   csvErrorMessage.value = ''
@@ -71,11 +77,22 @@ function resetCsvState() {
   }
 }
 
+function resetGoldTestState() {
+  goldTestErrorMessage.value = ''
+  goldTestPreviewList.value = []
+  currentGoldTestFile.value = null
+  form.goldTestFile = null
+  if (goldTestInputRef.value) {
+    goldTestInputRef.value.value = ''
+  }
+}
+
 function resetForm() {
   formRef.value?.resetFields()
   form.domainImageUrl = ''
   form.domainDescription = ''
   resetCsvState()
+  resetGoldTestState()
   if (imageInputRef.value) {
     imageInputRef.value.value = ''
   }
@@ -165,6 +182,22 @@ function parseCsvPreview(file: File) {
       } else if (rows.some(row => !row.isValid)) {
         csvErrorMessage.value = '预览中存在不合法数据，请修正后再上传'
       }
+
+      // 全量解析，过滤冗余列，只保留 content 和 label
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: fullResults => {
+          const filtered = (fullResults.data as Record<string, string>[]).map(row => ({
+            content: row.content || '',
+            label: row.label || '',
+          }))
+          const csvStr = Papa.unparse(filtered)
+          const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' })
+          form.file = new File([blob], file.name, { type: 'text/csv' })
+          currentCsvFile.value = form.file
+        },
+      })
     },
     error: () => {
       csvErrorMessage.value = 'CSV 文件解析失败'
@@ -173,6 +206,86 @@ function parseCsvPreview(file: File) {
       form.file = null
     },
   })
+}
+
+function handleGoldTestFileChange(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  goldTestErrorMessage.value = ''
+  goldTestPreviewList.value = []
+
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    goldTestErrorMessage.value = '文件格式错误: 只能上传 csv 文件'
+    resetGoldTestState()
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = e => {
+    const result = e.target?.result as string
+    const detected = jschardet.detect(result)
+    const encoding = detected.encoding?.toUpperCase() || ''
+    if (encoding && encoding !== 'UTF-8' && encoding !== 'ASCII') {
+      goldTestErrorMessage.value = `编码错误: 检测到 ${detected.encoding}，请使用 UTF-8 编码。`
+      resetGoldTestState()
+      return
+    }
+
+    currentGoldTestFile.value = file
+    form.goldTestFile = file
+    Papa.parse(file, {
+      header: true,
+      preview: 10,
+      skipEmptyLines: true,
+      complete: results => {
+        const headers = results.meta.fields || []
+        if (!headers.includes('content') || !headers.includes('label')) {
+          goldTestErrorMessage.value = '格式错误: 必须包含 content 和 label 列'
+          goldTestPreviewList.value = []
+          currentGoldTestFile.value = null
+          form.goldTestFile = null
+          return
+        }
+        const rows = (results.data as Record<string, string>[]).map(row => ({
+          content: row.content || '',
+          label: row.label || '',
+          isValid: !!row.content?.trim() && (row.label === '0' || row.label === '1'),
+        }))
+        goldTestPreviewList.value = rows
+        if (rows.length === 0) {
+          goldTestErrorMessage.value = 'CSV 文件为空或没有可解析的数据'
+          currentGoldTestFile.value = null
+          form.goldTestFile = null
+        } else if (rows.some(row => !row.isValid)) {
+          goldTestErrorMessage.value = '预览中存在不合法数据，请修正后再上传'
+        }
+
+        // 全量解析，过滤冗余列，只保留 content 和 label
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: fullResults => {
+            const filtered = (fullResults.data as Record<string, string>[]).map(row => ({
+              content: row.content || '',
+              label: row.label || '',
+            }))
+            const csvStr = Papa.unparse(filtered)
+            const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' })
+            form.goldTestFile = new File([blob], file.name, { type: 'text/csv' })
+            currentGoldTestFile.value = form.goldTestFile
+          },
+        })
+      },
+      error: () => {
+        goldTestErrorMessage.value = 'CSV 文件解析失败'
+        goldTestPreviewList.value = []
+        currentGoldTestFile.value = null
+        form.goldTestFile = null
+      },
+    })
+  }
+  reader.readAsBinaryString(file.slice(0, 10240))
 }
 
 async function handleSubmit() {
@@ -184,7 +297,16 @@ async function handleSubmit() {
     return
   }
   if (csvErrorMessage.value || previewList.value.length === 0 || hasInvalidPreviewRows.value) {
-    ElMessage.warning('请先修正 csv 文件后再提交')
+    ElMessage.warning('请先修正初始 csv 文件后再提交')
+    return
+  }
+
+  if (!currentGoldTestFile.value || !form.goldTestFile) {
+    ElMessage.warning('请上传固定测试集 csv 文件')
+    return
+  }
+  if (goldTestErrorMessage.value || goldTestPreviewList.value.length === 0 || hasInvalidGoldTestRows.value) {
+    ElMessage.warning('请先修正固定测试集 csv 文件后再提交')
     return
   }
 
@@ -194,6 +316,7 @@ async function handleSubmit() {
   formData.append('domainImageUrl', form.domainImageUrl)
   formData.append('domainDescription', form.domainDescription || '')
   formData.append('file', form.file)
+  formData.append('goldTestFile', form.goldTestFile)
 
   submitting.value = true
   try {
@@ -283,6 +406,49 @@ async function handleSubmit() {
           <div v-if="previewList.length > 0" class="preview-section">
             <div class="preview-title">CSV 预览（前 10 行）</div>
             <el-table :data="previewList" border stripe size="small" max-height="280">
+              <el-table-column prop="content" label="content" min-width="240" show-overflow-tooltip>
+                <template #default="{ row }">
+                  <span :style="{ color: !row.content?.trim() ? '#f56c6c' : '' }">
+                    {{ row.content || '(空)' }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="label" label="label" width="100" align="center">
+                <template #default="{ row }">
+                  <span :style="{ color: row.label !== '0' && row.label !== '1' ? '#f56c6c' : '' }">
+                    {{ row.label || '(空)' }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column label="校验状态" width="110" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="row.isValid ? 'success' : 'danger'" size="small">
+                    {{ row.isValid ? '合法' : '不合法' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </div>
+      </el-form-item>
+
+      <el-form-item label="固定测试集CSV">
+        <div class="csv-section">
+          <input ref="goldTestInputRef" type="file" accept=".csv" @change="handleGoldTestFileChange" />
+          <div class="csv-tip">必须包含 content 和 label 两列，label 只能为 0 或 1（用于模型训练后评估准确率）</div>
+
+          <el-alert
+            v-if="goldTestErrorMessage"
+            :title="goldTestErrorMessage"
+            type="error"
+            show-icon
+            :closable="false"
+            class="csv-alert"
+          />
+
+          <div v-if="goldTestPreviewList.length > 0" class="preview-section">
+            <div class="preview-title">CSV 预览（前 10 行）</div>
+            <el-table :data="goldTestPreviewList" border stripe size="small" max-height="280">
               <el-table-column prop="content" label="content" min-width="240" show-overflow-tooltip>
                 <template #default="{ row }">
                   <span :style="{ color: !row.content?.trim() ? '#f56c6c' : '' }">

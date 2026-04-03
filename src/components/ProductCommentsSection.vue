@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import {ElMessage} from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { Promotion } from '@element-plus/icons-vue'
 import {modelApi} from '@/api/model-api'
 import { userStore } from '@/stores/user'
 import type {CommentsQuerySend} from '@/Dto/SendDto/CommentsQuerySend'
@@ -125,15 +126,21 @@ onMounted(() => {
     </div>
 
     <section v-if="props.canSendComment" class="comment-send-card">
-      <el-input
-          v-model="commentContent"
-          type="textarea"
-          :rows="4"
-          resize="none"
-          placeholder="请输入评论内容"
-      />
-      <div class="send-action-row">
-        <el-button type="primary" :loading="submitLoading" @click="submitComment">发送评论</el-button>
+      <div class="send-input-row">
+        <el-input
+            v-model="commentContent"
+            type="textarea"
+            :rows="2"
+            resize="none"
+            placeholder="请输入评论内容"
+        />
+        <el-button
+          type="primary"
+          :loading="submitLoading"
+          :icon="Promotion"
+          class="send-btn"
+          @click="submitComment"
+        />
       </div>
     </section>
 
@@ -233,10 +240,20 @@ onMounted(() => {
   margin-bottom: 14px;
 }
 
-.send-action-row {
+.send-input-row {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 12px;
+  align-items: flex-end;
+  gap: 10px;
+
+  .el-textarea {
+    flex: 1;
+  }
+}
+
+.send-btn {
+  flex-shrink: 0;
+  height: 56px;
+  width: 44px;
 }
 
 .comment-list {
