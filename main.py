@@ -119,6 +119,21 @@ async def upload_model(
     return SendBody.success(message=f"模型已保存至 {lora_path}")
 
 
+@app.post("/uploadGoldTest")
+async def upload_gold_test(
+        file: UploadFile = File(...),
+        domainUrl: str = Form(...)
+):
+    base = os.path.abspath(os.path.dirname(__file__))
+    gold_dir = os.path.join(base, "GoldTest")
+    os.makedirs(gold_dir, exist_ok=True)
+    dest = os.path.join(gold_dir, f"{domainUrl}.csv")
+    with open(dest, "wb") as f:
+        content = await file.read()
+        f.write(content)
+    return SendBody.success(message=f"测试集已保存至 {dest}")
+
+
 if __name__ == "__main__":
     import uvicorn
 

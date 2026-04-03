@@ -17,7 +17,7 @@ CONFIG = {
     "NAME": "waimai",
     # 模型与数据路径
     "BERT_MODEL_PATH": r"../bert-base-chinese",
-    "DATA_DIR": "../waimai.csv",
+    "DATA_DIR": "../delivery.csv",
     # 训练超参数
     "EPOCHS": 5,
     "BATCH_SIZE": 32,
