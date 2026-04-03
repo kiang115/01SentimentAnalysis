@@ -4,15 +4,16 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.annotation.SaMode;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import org.example.sentimentanalysis.dto.requestDto.AllCommentDataListQueryRec;
 import org.example.sentimentanalysis.dto.requestDto.CommentAddRec;
 import org.example.sentimentanalysis.dto.requestDto.ProductCommentQueryRec;
+import org.example.sentimentanalysis.dto.responseDto.AllCommentDataListSend;
 import org.example.sentimentanalysis.dto.responseDto.CommentListSend;
 import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.CommentsService;
 import org.example.sentimentanalysis.service.ProductsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,6 +31,13 @@ public class CommentController {
     @PostMapping("/ProductComments")
     public Response<CommentListSend> listProductComments(@RequestBody @Valid  ProductCommentQueryRec queryRec) {
         return Response.data(productsService.listProductComments(queryRec));
+    }
+
+    @Operation(summary = "查询全部评论历史列表")
+    @SaCheckRole(value = {"admin"}, mode = SaMode.OR)
+    @PostMapping("/listAllCommentDataList")
+    public Response<AllCommentDataListSend> listAllCommentDataList(@RequestBody @Valid AllCommentDataListQueryRec queryRec) {
+        return Response.data(commentsService.listAllCommentDataList(queryRec));
     }
 
     @Operation(summary = "发布评论")

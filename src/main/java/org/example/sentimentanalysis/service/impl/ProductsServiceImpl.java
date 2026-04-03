@@ -535,7 +535,7 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
                 规则：
                 1. 输入里会给 productName、domainName、existingTags 和 comments。
                 2. 你必须结合商品名和所属领域理解评论里提到的商品属性，再进行标签归并。
-                3. 只有确实无法归并时，才允许创建新标签。新标签为中文，0-4字之间，以2字为最佳。
+                3. 只有确实无法归并时，才允许创建新标签。新标签为中文，2-4字之间，以2字为最佳。
                 4. 统计每个标签的 positiveCount、negativeCount、totalCount，且 totalCount=positiveCount+negativeCount。
                 5. 情感只有两类：正向=positive，负向=negative。
                 6. 输出必须是一个JSON对象，格式如下：

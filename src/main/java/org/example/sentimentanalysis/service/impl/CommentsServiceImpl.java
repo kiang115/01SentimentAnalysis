@@ -1,38 +1,37 @@
 package org.example.sentimentanalysis.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import org.example.sentimentanalysis.assembler.AllCommentDataListAssembler;
+import org.example.sentimentanalysis.dto.requestDto.AllCommentDataListQueryRec;
 import org.example.sentimentanalysis.dto.requestDto.CommentAddRec;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
+import org.example.sentimentanalysis.dto.responseDto.AllCommentDataListSend;
 import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
 import org.example.sentimentanalysis.dto.responseDto.InferPieChartSend;
 import org.example.sentimentanalysis.enums.CommentFinalSentimentEnum;
 import org.example.sentimentanalysis.enums.CommentStatusEnum;
 import org.example.sentimentanalysis.enums.UserTypeEnum;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
-import org.example.sentimentanalysis.model.Comments;
-import org.example.sentimentanalysis.model.Domains;
+import org.example.sentimentanalysis.model.*;
 import org.example.sentimentanalysis.mapper.CommentsMapper;
-import org.example.sentimentanalysis.model.Merchants;
-import org.example.sentimentanalysis.model.Products;
-import org.example.sentimentanalysis.model.Users;
-import org.example.sentimentanalysis.service.CommentsService;
-import org.example.sentimentanalysis.service.DomainsService;
+import org.example.sentimentanalysis.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import org.example.sentimentanalysis.service.MerchantsService;
-import org.example.sentimentanalysis.service.ProductsService;
-import org.example.sentimentanalysis.service.TrainDataService;
-import org.example.sentimentanalysis.service.UsersService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -46,6 +45,8 @@ import java.util.stream.Collectors;
 @Service
 public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> implements CommentsService {
     @Autowired
+    private AllCommentDataListAssembler allCommentDataListAssembler;
+    @Autowired
     @Lazy
     private ProductsService productsService;
     @Autowired
@@ -55,7 +56,131 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     private UsersService usersService;
     @Autowired
     private TrainDataService trainDataService;
+    @Autowired
+    @Lazy
+    private DomainsService domainsService;
+    @Autowired
+    private InferenceRecordsService inferenceRecordsService;
+    @Autowired
+    @Lazy
+    private ModelsService modelsService;
 
+
+    @Override
+    public AllCommentDataListSend listAllCommentDataList(AllCommentDataListQueryRec queryRec) {
+        int pageNum = (queryRec.getPageNum() == null || queryRec.getPageNum() <= 0) ? 1 : queryRec.getPageNum();
+        int pageSize = (queryRec.getPageSize() == null || queryRec.getPageSize() <= 0) ? 8 : queryRec.getPageSize();
+
+        if (queryRec.getDomainId() != null) {
+            domainsService.checkIdExist(queryRec.getDomainId());
+        }
+
+        LambdaQueryWrapper<Comments> wrapper = new LambdaQueryWrapper<>();
+        if (queryRec.getContent() != null && !queryRec.getContent().isBlank()) {
+            wrapper.like(Comments::getContent, queryRec.getContent().trim());
+        }
+        if (queryRec.getStatusId() != null && CommentStatusEnum.getByCode(queryRec.getStatusId()) != null) {
+            wrapper.eq(Comments::getStatus, queryRec.getStatusId());
+        }
+        if (queryRec.getLabel() != null && (queryRec.getLabel() == 0 || queryRec.getLabel() == 1)) {
+            wrapper.eq(Comments::getFinalSentiment, queryRec.getLabel());
+        }
+        if (queryRec.getDomainId() != null) {
+            wrapper.eq(Comments::getDomainId, queryRec.getDomainId());
+        }
+        if ("asc".equalsIgnoreCase(queryRec.getTimeOrder())) {
+            wrapper.orderByAsc(Comments::getPublishTime);
+        } else {
+            wrapper.orderByDesc(Comments::getPublishTime);
+        }
+
+        PageHelper.startPage(pageNum, pageSize);
+        List<Comments> commentsList = this.list(wrapper);
+        PageInfo<Comments> commentsPageInfo = new PageInfo<>(commentsList);
+
+        Set<Long> domainIds = commentsList.stream()
+                .map(Comments::getDomainId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, Domains> domainMap = domainIds.isEmpty()
+                ? Collections.emptyMap()
+                : domainsService.listByIds(domainIds).stream()
+                .collect(Collectors.toMap(Domains::getDomainId, d -> d, (a, b) -> a));
+
+        Set<Long> productIds = commentsList.stream()
+                .map(Comments::getProductId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, Products> productMap = productIds.isEmpty()
+                ? Collections.emptyMap()
+                : productsService.listByIds(productIds).stream()
+                .collect(Collectors.toMap(Products::getProductsId, p -> p, (a, b) -> a));
+
+        Set<Long> merchantIds = commentsList.stream()
+                .map(Comments::getMerchantId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, Merchants> merchantMap = merchantIds.isEmpty()
+                ? Collections.emptyMap()
+                : merchantsService.listByIds(merchantIds).stream()
+                .collect(Collectors.toMap(Merchants::getMerchantsId, m -> m, (a, b) -> a));
+
+        Set<Long> customerIds = commentsList.stream()
+                .map(Comments::getCustomerId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, Users> userMap = customerIds.isEmpty()
+                ? Collections.emptyMap()
+                : usersService.listByIds(customerIds).stream()
+                .collect(Collectors.toMap(Users::getUserId, u -> u, (a, b) -> a));
+
+        List<Long> commentIds = commentsList.stream()
+                .map(Comments::getCommentId)
+                .filter(Objects::nonNull)
+                .toList();
+        Map<Long, InferenceRecords> latestRecordMap = new LinkedHashMap<>();
+        if (!commentIds.isEmpty()) {
+            List<InferenceRecords> records = inferenceRecordsService.list(
+                    new LambdaQueryWrapper<InferenceRecords>()
+                            .in(InferenceRecords::getCommentId, commentIds)
+                            .orderByDesc(InferenceRecords::getInferenceTime)
+                            .orderByDesc(InferenceRecords::getInferenceId)
+            );
+            for (InferenceRecords record : records) {
+                latestRecordMap.putIfAbsent(record.getCommentId(), record);
+            }
+        }
+
+        List<AllCommentDataListSend.AllCommentDataInfo> infoList = allCommentDataListAssembler.toAllCommentDataInfoList(
+                commentsList,
+                domainMap,
+                productMap,
+                merchantMap,
+                userMap,
+                latestRecordMap
+        );
+
+        @SuppressWarnings("unchecked")
+        PageInfo<AllCommentDataListSend.AllCommentDataInfo> pageInfo =
+                (PageInfo<AllCommentDataListSend.AllCommentDataInfo>) (PageInfo<?>) commentsPageInfo;
+        pageInfo.setList(infoList);
+
+        return AllCommentDataListSend.builder()
+                .pageInfo(pageInfo)
+                .domains(domainsService.listAllDomainsInfo())
+                .commentStatusList(listCommentStatusInfo())
+                .build();
+    }
+
+    @Override
+    public List<AllCommentDataListSend.CommentStatusInfo> listCommentStatusInfo() {
+        return Arrays.stream(CommentStatusEnum.values())
+                .map(statusEnum -> AllCommentDataListSend.CommentStatusInfo.builder()
+                        .statusCode(statusEnum.getCode())
+                        .statusName(statusEnum.getMessage())
+                        .build())
+                .toList();
+    }
 
     @Override
     public void addComment(CommentAddRec rec) {
@@ -190,6 +315,21 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
                 .setFinalSentiment(newFinalSentiment);
         trainDataService.addCorrectedComment(comment);
         productsService.processCommentCorrection(comment, oldFinalSentiment, newFinalSentiment);
+
+//        修改model表中被correct的评论数
+        InferenceRecords record = inferenceRecordsService.lambdaQuery()
+                .eq(InferenceRecords::getCommentId, commentId)
+                .select(InferenceRecords::getModelId)
+                .last("LIMIT 1")
+                .one();
+        if (record == null || record.getModelId() == null) {
+            throw new CustomBusinessException("待修正评论没有推理相关记录或推理模型不存在！");
+        }
+        // 2. 调用 modelsService 进行原子自增
+        modelsService.lambdaUpdate()
+                .eq(Models::getModelId, record.getModelId())
+                .setSql("corrected_num = corrected_num + 1")
+                .update();
     }
 
     private Comments getReviewingCommentOrThrow(Long commentId) {

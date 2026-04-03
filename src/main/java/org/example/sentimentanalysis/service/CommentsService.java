@@ -1,11 +1,15 @@
 package org.example.sentimentanalysis.service;
 
+import org.example.sentimentanalysis.dto.requestDto.AllCommentDataListQueryRec;
 import org.example.sentimentanalysis.dto.requestDto.InferResultRec;
 import org.example.sentimentanalysis.dto.requestDto.CommentAddRec;
+import org.example.sentimentanalysis.dto.responseDto.AllCommentDataListSend;
 import org.example.sentimentanalysis.dto.responseDto.InferDataSend;
 import org.example.sentimentanalysis.dto.responseDto.InferPieChartSend;
 import org.example.sentimentanalysis.model.Comments;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
 
 /**
  * <p>
@@ -16,6 +20,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2026-02-11
  */
 public interface CommentsService extends IService<Comments> {
+
+    AllCommentDataListSend listAllCommentDataList(AllCommentDataListQueryRec queryRec);
+
+    List<AllCommentDataListSend.CommentStatusInfo> listCommentStatusInfo();
 
     void addComment(CommentAddRec rec);
 
