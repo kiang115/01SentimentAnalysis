@@ -84,6 +84,7 @@ public class TrainController {
         TrainResultRec trainRec = trainDataRec.getData();
         if (trainDataRec.getCode() != 200) {
             trainTasksService.updateById(new TrainTasks().setId(trainRec.getTaskId()).setStatus(TaskStatusEnum.FAILED.getCode()).setStatusMsg(trainDataRec.getMessage()));
+            redisTemplate.opsForSet().remove(ModelsService.ACTIVE_VERSION_KEY, trainRec.getModelVersion()+":"+trainRec.getDomainId());
             throw new CustomBusinessException("训练任务失败");
         }
 //        添加训练得到的新模型
@@ -98,7 +99,6 @@ public class TrainController {
         trainTasksService.updateByTrainRec(trainRec, modelId);
 //        训练数据表，进行更新(trainCount++)。
         trainDataService.updateTrainCount(trainRec.getResults());
-        System.out.println("训练数据表进行更新");
         return Response.success();
     }
 
