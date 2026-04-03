@@ -25,4 +25,6 @@ public class DomainAddRec {
     private String domainDescription;
 
     private MultipartFile file;
+
+    private MultipartFile goldTestFile;
 }

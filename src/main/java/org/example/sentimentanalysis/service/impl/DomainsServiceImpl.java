@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.example.sentimentanalysis.assembler.InferencePanelAssembler;
+import org.example.sentimentanalysis.config.FastApiClient;
+import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.assembler.TrainPanelAssembler;
 import org.example.sentimentanalysis.dto.commonDto.DomainsInfo;
 import org.example.sentimentanalysis.dto.requestDto.DomainAddRec;
@@ -61,6 +63,8 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
     @Autowired
     @Lazy
     private MerchantsService merchantsService;
+    @Autowired
+    private FastApiClient fastApiClient;
 
     @Override
     public InferPanelSend ListInferencePanelDto() {
@@ -270,6 +274,16 @@ public class DomainsServiceImpl extends ServiceImpl<DomainsMapper, Domains> impl
                 .setDomainImageUrl(domainAddRec.getDomainImageUrl())
                 .setDomainDescription(domainAddRec.getDomainDescription());
         this.save(domain);
+
+        MultipartFile goldTestFile = domainAddRec.getGoldTestFile();
+        if (goldTestFile == null || goldTestFile.isEmpty()) {
+            throw new CustomBusinessException("固定测试集csv文件不能为空");
+        }
+        Response<Void> goldTestResponse =
+                fastApiClient.uploadGoldTest(goldTestFile, domain.getDomainUrl());
+        if (goldTestResponse.getCode() != 200) {
+            throw new CustomBusinessException("固定测试集上传失败：" + goldTestResponse.getMessage());
+        }
 
         try {
             trainDataService.importCsv(file, domain.getDomainId(), TrainDataSourceEnum.ORIGINAL.getCode());

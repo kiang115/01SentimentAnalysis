@@ -37,6 +37,12 @@ public interface FastApiClient {
             @RequestPart("domainUrl") String domainUrl,   // 拆开传
             @RequestPart("modelVersion") String modelVersion // 拆开传
     );
+
+    @PostMapping(value = "/uploadGoldTest", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    Response<Void> uploadGoldTest(
+            @RequestPart("file") MultipartFile file,
+            @RequestPart("domainUrl") String domainUrl
+    );
 //
 //    @GetMapping("/status/{id}")
 //    String getStatus(@PathVariable("id") String id);
