@@ -191,10 +191,10 @@ class TrainEngine:
         if not os.path.exists(gold_path):
             raise FileNotFoundError(f"GoldTest 测试集不存在: {gold_path}")
         gold_df = pd.read_csv(gold_path)
-        if "data" not in gold_df.columns or "label" not in gold_df.columns:
-            raise ValueError(f"GoldTest 文件需包含 data 与 label 两列: {gold_path}")
+        if "content" not in gold_df.columns or "label" not in gold_df.columns:
+            raise ValueError(f"GoldTest 文件需包含 content 与 label 两列: {gold_path}")
         test_dataset = _TextDataset(
-            gold_df["data"].astype(str).tolist(),
+            gold_df["content"].astype(str).tolist(),
             gold_df["label"].astype(int).tolist(),
             self.tokenizer,
             max_length,
