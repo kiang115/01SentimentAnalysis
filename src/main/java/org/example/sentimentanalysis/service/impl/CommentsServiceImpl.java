@@ -151,13 +151,23 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
             }
         }
 
+        Set<Long> modelIds = latestRecordMap.values().stream()
+                .map(InferenceRecords::getModelId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, Models> modelMap = modelIds.isEmpty()
+                ? Collections.emptyMap()
+                : modelsService.listByIds(modelIds).stream()
+                .collect(Collectors.toMap(Models::getModelId, m -> m, (a, b) -> a));
+
         List<AllCommentDataListSend.AllCommentDataInfo> infoList = allCommentDataListAssembler.toAllCommentDataInfoList(
                 commentsList,
                 domainMap,
                 productMap,
                 merchantMap,
                 userMap,
-                latestRecordMap
+                latestRecordMap,
+                modelMap
         );
 
         @SuppressWarnings("unchecked")

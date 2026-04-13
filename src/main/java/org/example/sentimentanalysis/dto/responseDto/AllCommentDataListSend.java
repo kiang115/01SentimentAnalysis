@@ -202,5 +202,12 @@ public class AllCommentDataListSend {
          * 数据异常时可能为 null。
          */
         private Boolean isInspected;
+
+        /**
+         * 最新推理记录所用模型的版本号。
+         * 允许值：models.model_version；
+         * 该评论没有推理记录或模型记录缺失时为 null。
+         */
+        private String modelVersion;
     }
 }

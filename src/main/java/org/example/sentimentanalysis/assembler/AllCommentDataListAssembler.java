@@ -7,6 +7,7 @@ import org.example.sentimentanalysis.model.Comments;
 import org.example.sentimentanalysis.model.Domains;
 import org.example.sentimentanalysis.model.InferenceRecords;
 import org.example.sentimentanalysis.model.Merchants;
+import org.example.sentimentanalysis.model.Models;
 import org.example.sentimentanalysis.model.Products;
 import org.example.sentimentanalysis.model.Users;
 import org.springframework.stereotype.Component;
@@ -24,7 +25,8 @@ public class AllCommentDataListAssembler {
             Map<Long, Products> productMap,
             Map<Long, Merchants> merchantMap,
             Map<Long, Users> userMap,
-            Map<Long, InferenceRecords> latestRecordMap) {
+            Map<Long, InferenceRecords> latestRecordMap,
+            Map<Long, Models> modelMap) {
 
         if (commentsList == null) {
             return Collections.emptyList();
@@ -38,6 +40,7 @@ public class AllCommentDataListAssembler {
                     Users user = userMap == null ? null : userMap.get(comment.getCustomerId());
                     InferenceRecords record = latestRecordMap == null ? null : latestRecordMap.get(comment.getCommentId());
                     CommentStatusEnum statusEnum = comment.getStatus() == null ? null : CommentStatusEnum.getByCode(comment.getStatus());
+                    Models model = (record == null || modelMap == null) ? null : modelMap.get(record.getModelId());
 
                     return AllCommentDataListSend.AllCommentDataInfo.builder()
                             .commentId(comment.getCommentId())
@@ -62,6 +65,7 @@ public class AllCommentDataListAssembler {
                             .finalSentimentCode(comment.getFinalSentiment())
                             .finalSentimentName(CommentFinalSentimentEnum.getNameByCode(comment.getFinalSentiment()))
                             .isInspected(comment.getIsInspected())
+                            .modelVersion(model == null ? null : model.getModelVersion())
                             .build();
                 })
                 .toList();
