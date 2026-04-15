@@ -278,7 +278,7 @@ CREATE TABLE `reputation_history` (
   `comment_count` BIGINT COMMENT '总评论数',
   `rating` DECIMAL(3, 2) COMMENT '综合得分',
   `positive_rate` DECIMAL(5, 4) COMMENT '好评率',
-  `rank` BIGINT NOT NULL COMMENT '综合得分在本领域的排名',
+  `ranking` BIGINT NOT NULL DEFAULT 0 COMMENT '综合得分在本领域的排名',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间 (自动添加)',
   
   -- 索引优化：方便按目标ID和类型查询历史走势
