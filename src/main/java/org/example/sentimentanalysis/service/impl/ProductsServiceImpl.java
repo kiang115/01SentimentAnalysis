@@ -18,27 +18,13 @@ import org.example.sentimentanalysis.dto.responseDto.ProductTagAnalyzeSend;
 import org.example.sentimentanalysis.dto.responseDto.ProductTagStatsListSend;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.mapper.ProductsMapper;
-import org.example.sentimentanalysis.model.Comments;
-import org.example.sentimentanalysis.model.Domains;
-import org.example.sentimentanalysis.model.InferenceRecords;
-import org.example.sentimentanalysis.model.Inspect;
-import org.example.sentimentanalysis.model.Merchants;
-import org.example.sentimentanalysis.model.Products;
-import org.example.sentimentanalysis.model.Tag;
-import org.example.sentimentanalysis.model.Users;
-import org.example.sentimentanalysis.service.CommentsService;
-import org.example.sentimentanalysis.service.DomainsService;
-import org.example.sentimentanalysis.service.InferenceRecordsService;
-import org.example.sentimentanalysis.service.InspectService;
-import org.example.sentimentanalysis.service.MerchantAuthService;
-import org.example.sentimentanalysis.service.MerchantsService;
-import org.example.sentimentanalysis.service.ProductsService;
-import org.example.sentimentanalysis.service.TagService;
-import org.example.sentimentanalysis.service.UsersService;
+import org.example.sentimentanalysis.model.*;
+import org.example.sentimentanalysis.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -47,6 +33,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -86,6 +73,8 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
     private TagService tagService;
     @Autowired
     private InspectService inspectService;
+    @Autowired
+    private ReputationHistoryService reputationHistoryService;
 
     @Value("${llm.deepseek.api-url:https://api.deepseek.com/chat/completions}")
     private String deepSeekApiUrl;
@@ -324,7 +313,7 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
         // 5. 先按标签名查全局tag，不存在则新增
         List<String> resultTagNames = new ArrayList<>(mergedCountByTagName.keySet());
         Map<String, Tag> existingGlobalTagMap = tagService.list(new LambdaQueryWrapper<Tag>()
-                .in(Tag::getTagName, resultTagNames))
+                        .in(Tag::getTagName, resultTagNames))
                 .stream()
                 .collect(Collectors.toMap(Tag::getTagName, t -> t, (a, b) -> a));
 
@@ -716,6 +705,9 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
 
         // 4. 批量写回数据库
         this.updateBatchById(productsToUpdate);
+        //5. 写入历史口碑数据表
+        reputationHistoryService.recordProductReputation(productsToUpdate);
+
     }
 
     /**
@@ -776,7 +768,9 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
 
         // 4. 批量写回数据库
         merchantsService.updateBatchById(merchantsToUpdate);
+        reputationHistoryService.recordMerchantReputation(merchantsToUpdate);
     }
+
 
     private int calculatePositiveDelta(Integer oldFinalSentiment, Integer newFinalSentiment) {
         if (Objects.equals(oldFinalSentiment, 0) && Objects.equals(newFinalSentiment, 1)) {

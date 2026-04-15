@@ -105,7 +105,7 @@ public class InferenceController {
         inferenceTasksService.setInferenceTaskSuccess(inferResultRec);
 //        更新模型已推理评论数量
         modelsService.updateInferredNum(inferResultRec);
-//        更新商家和商品的好评率和综合得分
+//        更新商家和商品的好评率和综合得分 + 更新口碑历史数据信息
         productsService.processInferenceResults(inferResultRec.getResults());
         return Response.success();
     }

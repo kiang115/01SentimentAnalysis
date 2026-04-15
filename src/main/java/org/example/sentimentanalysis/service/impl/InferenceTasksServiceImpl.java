@@ -189,7 +189,16 @@ public class InferenceTasksServiceImpl extends ServiceImpl<InferenceTasksMapper,
         long taskDuration = inferResultRec.getTaskDuration();
         Long processCount = inferResultRec.getProcessCount();
 
-        BigDecimal avgProcessSpeed = BigDecimal.valueOf(processCount).divide(BigDecimal.valueOf(taskDuration), 2, RoundingMode.HALF_UP);
+        // 修复逻辑：检查 taskDuration 是否大于 0
+        BigDecimal avgProcessSpeed;
+        if (taskDuration > 0) {
+            avgProcessSpeed = BigDecimal.valueOf(processCount)
+                    .divide(BigDecimal.valueOf(taskDuration), 2, RoundingMode.HALF_UP);
+        } else {
+            // 如果耗时为 0，通常将其视为极速，或者直接设为 processCount 本身（代表 1秒内的处理量）
+            // 或者根据业务需求设为 BigDecimal.ZERO
+            avgProcessSpeed = BigDecimal.valueOf(processCount);
+        }
 
         this.updateById(new InferenceTasks()
                 .setTaskId(taskId)
