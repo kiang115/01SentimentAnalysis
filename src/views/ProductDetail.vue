@@ -7,6 +7,7 @@ import { userStore } from '@/stores/user'
 import type { ProductDetailRec } from '@/Dto/ReceiveDto/ProductDetailRec.ts'
 import ProductTagAnalysisSection from '@/components/ProductTagAnalysisSection.vue'
 import ProductCommentsSection from '@/components/ProductCommentsSection.vue'
+import ReputationHistoryChartDialog from '@/components/ReputationHistoryChartDialog.vue'
 import type { ReputationHistoryChangeRec } from '@/Dto/ReceiveDto/ReputationHistoryChangeRec.ts'
 import { ratingTrend, positiveRateTrend, commentCountTrend } from '@/utils/trendFormat'
 
@@ -16,6 +17,7 @@ const store = userStore()
 
 const loading = ref(false)
 const detail = ref<ProductDetailRec | null>(null)
+type HistoryMetricKey = 'rating' | 'positiveRate' | 'commentCount' | 'ranking'
 const emptyReputationChange: ReputationHistoryChangeRec = {
   ratingDiff: 0,
   positiveRateDiff: 0,
@@ -23,6 +25,8 @@ const emptyReputationChange: ReputationHistoryChangeRec = {
   rankingDiff: 0,
 }
 const reputationChange = ref<ReputationHistoryChangeRec>({ ...emptyReputationChange })
+const historyDialogVisible = ref(false)
+const historyMetric = ref<HistoryMetricKey>('rating')
 
 const scoreStars = computed(() => {
   if (!detail.value || detail.value.rating === undefined) return ''
@@ -103,6 +107,11 @@ function goMerchantDetail() {
   router.push({ name: 'merchantDetail', params: { merchantId: detail.value.merchantId } })
 }
 
+function openHistoryDialog(metric: HistoryMetricKey) {
+  historyMetric.value = metric
+  historyDialogVisible.value = true
+}
+
 onMounted(() => {
   fetchProductDetail()
 })
@@ -133,7 +142,10 @@ onMounted(() => {
 
           <div class="metrics-grid">
             <article v-if="detail.rating !== undefined" class="metric-card">
-              <p class="metric-label">综合得分</p>
+              <div class="metric-head">
+                <p class="metric-label">综合得分</p>
+                <button class="metric-history-btn" type="button" @click="openHistoryDialog('rating')">历史</button>
+              </div>
               <p class="metric-value blue">{{ detail.rating.toFixed(1) }}</p>
               <p
                 class="metric-trend"
@@ -145,7 +157,10 @@ onMounted(() => {
             </article>
 
             <article v-if="detail.positiveRate !== undefined" class="metric-card">
-              <p class="metric-label">好评率</p>
+              <div class="metric-head">
+                <p class="metric-label">好评率</p>
+                <button class="metric-history-btn" type="button" @click="openHistoryDialog('positiveRate')">历史</button>
+              </div>
               <p class="metric-value green">{{ formatPositiveRate(detail.positiveRate) }}</p>
               <p
                 class="metric-trend"
@@ -157,7 +172,10 @@ onMounted(() => {
             </article>
 
             <article v-if="detail.commentCount !== undefined" class="metric-card">
-              <p class="metric-label">评论人数</p>
+              <div class="metric-head">
+                <p class="metric-label">评论人数</p>
+                <button class="metric-history-btn" type="button" @click="openHistoryDialog('commentCount')">历史</button>
+              </div>
               <p class="metric-value">{{ formatCommentCount(detail.commentCount) }}</p>
               <p
                 class="metric-trend"
@@ -169,7 +187,10 @@ onMounted(() => {
             </article>
 
             <article v-if="detail.ranking !== undefined" class="metric-card">
-              <p class="metric-label">当前排名</p>
+              <div class="metric-head">
+                <p class="metric-label">当前排名</p>
+                <button class="metric-history-btn" type="button" @click="openHistoryDialog('ranking')">历史</button>
+              </div>
               <p class="metric-value">{{ formatRanking(detail.ranking) }}</p>
               <p
                 class="metric-trend"
@@ -201,6 +222,14 @@ onMounted(() => {
         :domain-id="detail.domainId"
         :can-send-comment="canSendComment"
         :can-view-inference-tags="canViewCommentInference"
+      />
+
+      <ReputationHistoryChartDialog
+        v-model="historyDialogVisible"
+        :target-id="detail.productId"
+        :type="1"
+        :default-metric="historyMetric"
+        :dialog-title="`${detail.name} 口碑历史走势`"
       />
     </template>
 
@@ -298,10 +327,33 @@ onMounted(() => {
   background: #fff;
 }
 
+.metric-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.metric-head .metric-label {
+  margin: 0;
+}
+
 .metric-label {
   margin: 0 0 8px;
   color: #6b7280;
   font-size: 13px;
+}
+
+.metric-history-btn {
+  border: none;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .metric-trend {

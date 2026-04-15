@@ -10,10 +10,12 @@ import type { ProductAddSend } from '@/Dto/SendDto/ProductAddSend.ts'
 import type { ProductEditSend } from '@/Dto/SendDto/ProductEditSend.ts'
 import type { ReputationHistoryChangeRec } from '@/Dto/ReceiveDto/ReputationHistoryChangeRec.ts'
 import { ratingTrend, positiveRateTrend, commentCountTrend } from '@/utils/trendFormat'
+import ReputationHistoryChartDialog from '@/components/ReputationHistoryChartDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
 const store = userStore()
+type HistoryMetricKey = 'rating' | 'positiveRate' | 'commentCount' | 'ranking'
 
 const loading = ref(false)
 const detail = ref<MerchantDetailRec | null>(null)
@@ -24,6 +26,8 @@ const emptyReputationChange: ReputationHistoryChangeRec = {
   rankingDiff: 0,
 }
 const reputationChange = ref<ReputationHistoryChangeRec>({ ...emptyReputationChange })
+const historyDialogVisible = ref(false)
+const historyMetric = ref<HistoryMetricKey>('rating')
 const addDialogVisible = ref(false)
 const addSubmitting = ref(false)
 const imageUploading = ref(false)
@@ -165,6 +169,11 @@ function formatPrice(price: number) {
 
 function goProductDetail(productId: number) {
   router.push({ name: 'productDetail', params: { productId } })
+}
+
+function openHistoryDialog(metric: HistoryMetricKey) {
+  historyMetric.value = metric
+  historyDialogVisible.value = true
 }
 
 function resetAddForm() {
@@ -328,8 +337,11 @@ onMounted(() => {
 
       <section class="metrics-grid">
         <article v-if="detail.commentCount !== undefined" class="metric-card">
+          <div class="metric-head">
+            <p class="metric-label">总评价人数</p>
+            <button class="metric-history-btn" type="button" @click="openHistoryDialog('commentCount')">历史</button>
+          </div>
           <p class="metric-value">{{ formatCommentCount(detail.commentCount) }}</p>
-          <p class="metric-label">总评价人数</p>
           <p
             class="metric-trend"
             :class="commentCountTrend(reputationChange.commentCountDiff).isUp ? 'trend-up' : 'trend-down'"
@@ -339,8 +351,11 @@ onMounted(() => {
           </p>
         </article>
         <article v-if="detail.positiveRate !== undefined" class="metric-card">
+          <div class="metric-head">
+            <p class="metric-label">好评率</p>
+            <button class="metric-history-btn" type="button" @click="openHistoryDialog('positiveRate')">历史</button>
+          </div>
           <p class="metric-value">{{ formatPositiveRate(detail.positiveRate) }}</p>
-          <p class="metric-label">好评率</p>
           <p
             class="metric-trend"
             :class="positiveRateTrend(reputationChange.positiveRateDiff).isUp ? 'trend-up' : 'trend-down'"
@@ -350,8 +365,11 @@ onMounted(() => {
           </p>
         </article>
         <article v-if="detail.rating !== undefined" class="metric-card">
+          <div class="metric-head">
+            <p class="metric-label">综合得分</p>
+            <button class="metric-history-btn" type="button" @click="openHistoryDialog('rating')">历史</button>
+          </div>
           <p class="metric-value">{{ detail.rating.toFixed(1) }}</p>
-          <p class="metric-label">综合得分</p>
           <p
             class="metric-trend"
             :class="ratingTrend(reputationChange.ratingDiff).isUp ? 'trend-up' : 'trend-down'"
@@ -361,8 +379,11 @@ onMounted(() => {
           </p>
         </article>
         <article v-if="detail.ranking !== undefined" class="metric-card">
+          <div class="metric-head">
+            <p class="metric-label">当前排名</p>
+            <button class="metric-history-btn" type="button" @click="openHistoryDialog('ranking')">历史</button>
+          </div>
           <p class="metric-value">{{ formatRanking(detail.ranking) }}</p>
-          <p class="metric-label">当前排名</p>
           <p
             class="metric-trend"
             :class="commentCountTrend(reputationChange.rankingDiff).isUp ? 'trend-up' : 'trend-down'"
@@ -489,6 +510,14 @@ onMounted(() => {
           </div>
         </template>
       </el-dialog>
+
+      <ReputationHistoryChartDialog
+        v-model="historyDialogVisible"
+        :target-id="detail.merchantId"
+        :type="0"
+        :default-metric="historyMetric"
+        :dialog-title="`${detail.name} 口碑历史走势`"
+      />
     </template>
     <el-empty v-else-if="!loading" description="暂无商铺详情数据" />
   </div>
@@ -569,6 +598,18 @@ onMounted(() => {
   padding: 20px;
 }
 
+.metric-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.metric-head .metric-label {
+  margin: 0;
+}
+
 .metric-value {
   margin: 0 0 8px;
   font-size: 22px;
@@ -581,6 +622,17 @@ onMounted(() => {
   margin: 0;
   color: #6b7280;
   font-size: 13px;
+}
+
+.metric-history-btn {
+  border: none;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .metric-trend {
