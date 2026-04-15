@@ -3,6 +3,7 @@ package org.example.sentimentanalysis.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.example.sentimentanalysis.dto.requestDto.ReputationHistoryQueryRec;
 import org.example.sentimentanalysis.dto.responseDto.ReputationHistoryChangeSend;
+import org.example.sentimentanalysis.dto.responseDto.ReputationHistoryLineChartSend;
 import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Merchants;
 import org.example.sentimentanalysis.model.Products;
@@ -18,9 +19,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -35,6 +39,7 @@ import java.util.stream.Collectors;
 public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryMapper, ReputationHistory> implements ReputationHistoryService {
     // 定义增量阈值，例如每增加 100 条评论记录一次历史
     private static final int HISTORY_THRESHOLD = 3;
+    private static final DateTimeFormatter HISTORY_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Lazy
     @Autowired
@@ -238,6 +243,46 @@ public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryM
                 .positiveRateDiff(positiveRateDiff)
                 .commentCountDiff(commentCountDiff)
                 .rankingDiff(rankingDiff)
+                .build();
+    }
+
+    @Override
+    public ReputationHistoryLineChartSend getReputationLineChart(ReputationHistoryQueryRec rec) {
+        List<ReputationHistory> historyList = this.lambdaQuery()
+                .eq(ReputationHistory::getTargetId, rec.getTargetId())
+                .eq(ReputationHistory::getType, rec.getType())
+                .orderByAsc(ReputationHistory::getCreateTime)
+                .orderByAsc(ReputationHistory::getId)
+                .list();
+
+        if (historyList.isEmpty()) {
+            return ReputationHistoryLineChartSend.builder()
+                    .timeList(Collections.emptyList())
+                    .ratingList(Collections.emptyList())
+                    .positiveRateList(Collections.emptyList())
+                    .commentCountList(Collections.emptyList())
+                    .rankingList(Collections.emptyList())
+                    .build();
+        }
+
+        return ReputationHistoryLineChartSend.builder()
+                .timeList(historyList.stream()
+                        .map(history -> Optional.ofNullable(history.getCreateTime())
+                                .map(time -> time.format(HISTORY_TIME_FORMATTER))
+                                .orElse(""))
+                        .toList())
+                .ratingList(historyList.stream()
+                        .map(history -> Optional.ofNullable(history.getRating()).orElse(BigDecimal.ZERO))
+                        .toList())
+                .positiveRateList(historyList.stream()
+                        .map(history -> Optional.ofNullable(history.getPositiveRate()).orElse(BigDecimal.ZERO))
+                        .toList())
+                .commentCountList(historyList.stream()
+                        .map(history -> Optional.ofNullable(history.getCommentCount()).orElse(0L))
+                        .toList())
+                .rankingList(historyList.stream()
+                        .map(history -> Optional.ofNullable(history.getRanking()).orElse(0L))
+                        .toList())
                 .build();
     }
 }

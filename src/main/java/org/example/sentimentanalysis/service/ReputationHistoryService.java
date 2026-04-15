@@ -2,6 +2,7 @@ package org.example.sentimentanalysis.service;
 
 import org.example.sentimentanalysis.dto.requestDto.ReputationHistoryQueryRec;
 import org.example.sentimentanalysis.dto.responseDto.ReputationHistoryChangeSend;
+import org.example.sentimentanalysis.dto.responseDto.ReputationHistoryLineChartSend;
 import org.example.sentimentanalysis.model.Merchants;
 import org.example.sentimentanalysis.model.Products;
 import org.example.sentimentanalysis.model.ReputationHistory;
@@ -29,4 +30,6 @@ public interface ReputationHistoryService extends IService<ReputationHistory> {
      * @param rec 包含 targetId（商铺或商品ID）和 type（0=商铺, 1=商品）
      */
     ReputationHistoryChangeSend getReputationChange(ReputationHistoryQueryRec rec);
+
+    ReputationHistoryLineChartSend getReputationLineChart(ReputationHistoryQueryRec rec);
 }

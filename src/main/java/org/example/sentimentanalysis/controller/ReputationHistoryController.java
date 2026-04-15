@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.example.sentimentanalysis.dto.requestDto.ReputationHistoryQueryRec;
 import org.example.sentimentanalysis.dto.responseDto.ReputationHistoryChangeSend;
+import org.example.sentimentanalysis.dto.responseDto.ReputationHistoryLineChartSend;
 import org.example.sentimentanalysis.response.Response;
 import org.example.sentimentanalysis.service.ReputationHistoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,5 +26,13 @@ public class ReputationHistoryController {
     public Response<ReputationHistoryChangeSend> getReputationChange(
             @RequestBody @Valid ReputationHistoryQueryRec rec) {
         return Response.data(reputationHistoryService.getReputationChange(rec));
+    }
+
+    @Operation(summary = "查询口碑历史折线图数据")
+    @SaCheckRole(value = {"consumer", "merchant", "admin"}, mode = SaMode.OR)
+    @PostMapping("/ReputationHistory/LineChart")
+    public Response<ReputationHistoryLineChartSend> getReputationLineChart(
+            @RequestBody @Valid ReputationHistoryQueryRec rec) {
+        return Response.data(reputationHistoryService.getReputationLineChart(rec));
     }
 }
