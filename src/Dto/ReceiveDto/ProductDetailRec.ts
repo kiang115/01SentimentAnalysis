@@ -13,4 +13,5 @@ export interface ProductDetailRec {
   merchantName: string
   domainId: number
   positiveRate: number
+  ranking: number
 }

@@ -43,6 +43,11 @@ export interface MerchantDetailRec {
     positiveRate: number;
 
     /**
+     * 商铺当前领域排名
+     */
+    ranking: number;
+
+    /**
      * 商铺头像/封面图url (可能为 null)
      */
     avatarUrl: string | null;

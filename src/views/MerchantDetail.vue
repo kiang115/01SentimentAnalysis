@@ -17,7 +17,13 @@ const store = userStore()
 
 const loading = ref(false)
 const detail = ref<MerchantDetailRec | null>(null)
-const reputationChange = ref<ReputationHistoryChangeRec | null>(null)
+const emptyReputationChange: ReputationHistoryChangeRec = {
+  ratingDiff: 0,
+  positiveRateDiff: 0,
+  commentCountDiff: 0,
+  rankingDiff: 0,
+}
+const reputationChange = ref<ReputationHistoryChangeRec>({ ...emptyReputationChange })
 const addDialogVisible = ref(false)
 const addSubmitting = ref(false)
 const imageUploading = ref(false)
@@ -130,7 +136,7 @@ async function fetchMerchantDetail() {
       const changeRes = await modelApi.getReputationChange({ targetId: merchantId, type: 0 })
       reputationChange.value = changeRes.data
     } catch {
-      reputationChange.value = null
+      reputationChange.value = { ...emptyReputationChange }
     }
   } catch {
     detail.value = null
@@ -147,6 +153,10 @@ function formatPositiveRate(rate: number) {
 
 function formatCommentCount(count: number) {
   return count.toLocaleString()
+}
+
+function formatRanking(ranking: number) {
+  return `第${formatCommentCount(ranking)}名`
 }
 
 function formatPrice(price: number) {
@@ -321,7 +331,6 @@ onMounted(() => {
           <p class="metric-value">{{ formatCommentCount(detail.commentCount) }}</p>
           <p class="metric-label">总评价人数</p>
           <p
-            v-if="reputationChange?.hasHistory"
             class="metric-trend"
             :class="commentCountTrend(reputationChange.commentCountDiff).isUp ? 'trend-up' : 'trend-down'"
           >
@@ -333,7 +342,6 @@ onMounted(() => {
           <p class="metric-value">{{ formatPositiveRate(detail.positiveRate) }}</p>
           <p class="metric-label">好评率</p>
           <p
-            v-if="reputationChange?.hasHistory"
             class="metric-trend"
             :class="positiveRateTrend(reputationChange.positiveRateDiff).isUp ? 'trend-up' : 'trend-down'"
           >
@@ -345,12 +353,22 @@ onMounted(() => {
           <p class="metric-value">{{ detail.rating.toFixed(1) }}</p>
           <p class="metric-label">综合得分</p>
           <p
-            v-if="reputationChange?.hasHistory"
             class="metric-trend"
             :class="ratingTrend(reputationChange.ratingDiff).isUp ? 'trend-up' : 'trend-down'"
           >
             {{ ratingTrend(reputationChange.ratingDiff).arrow }}
             {{ ratingTrend(reputationChange.ratingDiff).formatted }}
+          </p>
+        </article>
+        <article v-if="detail.ranking !== undefined" class="metric-card">
+          <p class="metric-value">{{ formatRanking(detail.ranking) }}</p>
+          <p class="metric-label">当前排名</p>
+          <p
+            class="metric-trend"
+            :class="commentCountTrend(reputationChange.rankingDiff).isUp ? 'trend-up' : 'trend-down'"
+          >
+            {{ commentCountTrend(reputationChange.rankingDiff).arrow }}
+            {{ commentCountTrend(reputationChange.rankingDiff).formatted }}
           </p>
         </article>
       </section>
@@ -540,7 +558,7 @@ onMounted(() => {
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -764,6 +782,10 @@ onMounted(() => {
 @media (max-width: 1200px) {
   .merchant-name {
     font-size: 22px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .metric-value,
