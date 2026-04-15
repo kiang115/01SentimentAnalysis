@@ -149,6 +149,12 @@ export interface AllCommentDataItem {
      * 允许值：true=已分析，false=未分析；异常情况下可能为 null。
      */
     isInspected: boolean | null;
+
+    /**
+     * 最新推理记录所用模型的版本号。
+     * 没有推理记录或模型记录缺失时为 null。
+     */
+    modelVersion: string | null;
 }
 
 /**

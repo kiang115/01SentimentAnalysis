@@ -38,6 +38,8 @@ import type {MerchantCreateRec} from "@/Dto/SendDto/MerchantCreateSend.ts";
 import type {DomainsInfoRec} from "@/Dto/ReceiveDto/DomainsInfoRec.ts";
 import type {AddMerchantRec} from "@/Dto/ReceiveDto/AddMerchantRec.ts";
 import type { DomainDataListRec } from "@/Dto/ReceiveDto/DomainDataListRec";
+import type { ReputationHistoryQuerySend } from "@/Dto/SendDto/ReputationHistoryQuerySend.ts";
+import type { ReputationHistoryChangeRec } from "@/Dto/ReceiveDto/ReputationHistoryChangeRec.ts";
 // 定义标准返回类型
 // todo 把vue接收到的非标准的api返回值统一处理为ApiResponse<T>类型 特别是train.vue中的ListTrainTasksRes类型需要被替代
 export interface ApiResponse<T = unknown> {
@@ -254,6 +256,12 @@ export const modelApi = {
     listAllCommentDataList: (para: AllCommentDataListQuerySend) => {
         return post("/listAllCommentDataList", para) as Promise<
             ApiResponse<AllCommentDataListRec>
+        >;
+    },
+    // 查询口碑变化差额（当前值与最新历史快照之差）
+    getReputationChange: (para: ReputationHistoryQuerySend) => {
+        return post("/ReputationHistory/Change", para) as Promise<
+            ApiResponse<ReputationHistoryChangeRec>
         >;
     },
 };

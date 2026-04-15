@@ -7,6 +7,8 @@ import { userStore } from '@/stores/user'
 import type { ProductDetailRec } from '@/Dto/ReceiveDto/ProductDetailRec.ts'
 import ProductTagAnalysisSection from '@/components/ProductTagAnalysisSection.vue'
 import ProductCommentsSection from '@/components/ProductCommentsSection.vue'
+import type { ReputationHistoryChangeRec } from '@/Dto/ReceiveDto/ReputationHistoryChangeRec.ts'
+import { ratingTrend, positiveRateTrend, commentCountTrend } from '@/utils/trendFormat'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,6 +16,7 @@ const store = userStore()
 
 const loading = ref(false)
 const detail = ref<ProductDetailRec | null>(null)
+const reputationChange = ref<ReputationHistoryChangeRec | null>(null)
 
 const scoreStars = computed(() => {
   if (!detail.value || detail.value.rating === undefined) return ''
@@ -57,6 +60,13 @@ async function fetchProductDetail() {
   try {
     const res = await modelApi.getProductDetailData(productId)
     detail.value = res.data
+    // 查询口碑变化趋势（不阻塞主流程）
+    try {
+      const changeRes = await modelApi.getReputationChange({ targetId: productId, type: 1 })
+      reputationChange.value = changeRes.data
+    } catch {
+      reputationChange.value = null
+    }
   } catch {
     detail.value = null
     ElMessage.error('获取商品详情失败')
@@ -115,16 +125,40 @@ onMounted(() => {
             <article v-if="detail.rating !== undefined" class="metric-card">
               <p class="metric-label">综合得分</p>
               <p class="metric-value blue">{{ detail.rating.toFixed(1) }}</p>
+              <p
+                v-if="reputationChange?.hasHistory"
+                class="metric-trend"
+                :class="ratingTrend(reputationChange.ratingDiff).isUp ? 'trend-up' : 'trend-down'"
+              >
+                {{ ratingTrend(reputationChange.ratingDiff).arrow }}
+                {{ ratingTrend(reputationChange.ratingDiff).formatted }}
+              </p>
             </article>
 
             <article v-if="detail.positiveRate !== undefined" class="metric-card">
               <p class="metric-label">好评率</p>
               <p class="metric-value green">{{ formatPositiveRate(detail.positiveRate) }}</p>
+              <p
+                v-if="reputationChange?.hasHistory"
+                class="metric-trend"
+                :class="positiveRateTrend(reputationChange.positiveRateDiff).isUp ? 'trend-up' : 'trend-down'"
+              >
+                {{ positiveRateTrend(reputationChange.positiveRateDiff).arrow }}
+                {{ positiveRateTrend(reputationChange.positiveRateDiff).formatted }}
+              </p>
             </article>
 
             <article v-if="detail.commentCount !== undefined" class="metric-card">
               <p class="metric-label">评论人数</p>
               <p class="metric-value">{{ formatCommentCount(detail.commentCount) }}</p>
+              <p
+                v-if="reputationChange?.hasHistory"
+                class="metric-trend"
+                :class="commentCountTrend(reputationChange.commentCountDiff).isUp ? 'trend-up' : 'trend-down'"
+              >
+                {{ commentCountTrend(reputationChange.commentCountDiff).arrow }}
+                {{ commentCountTrend(reputationChange.commentCountDiff).formatted }}
+              </p>
             </article>
 
             <article v-if="detail.price !== undefined" class="metric-card">
@@ -249,6 +283,21 @@ onMounted(() => {
   margin: 0 0 8px;
   color: #6b7280;
   font-size: 13px;
+}
+
+.metric-trend {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.trend-up {
+  color: #22c55e;
+}
+
+.trend-down {
+  color: #ef4444;
 }
 
 .metric-value {

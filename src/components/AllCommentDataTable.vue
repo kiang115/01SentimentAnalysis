@@ -271,6 +271,11 @@ onMounted(() => {
           {{ row.domainName || '--' }}
         </template>
       </el-table-column>
+      <el-table-column prop="modelVersion" label="模型版本" width="120" align="center">
+        <template #default="{ row }">
+          {{ row.modelVersion ?? '--' }}
+        </template>
+      </el-table-column>
       <el-table-column prop="productName" label="商品名称" min-width="190">
         <template #default="{ row }">
           <div class="name-cell">
