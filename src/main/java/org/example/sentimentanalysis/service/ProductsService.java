@@ -40,4 +40,6 @@ public interface ProductsService extends IService<Products> {
     ProductTagAnalyzeSend analyzeProductTags(Long productId);
 
     List<ProductTagStatsListSend.ProductTagStats> listProductTagStats(Long productId);
+
+    Long getProductDomainRanking(Products product);
 }

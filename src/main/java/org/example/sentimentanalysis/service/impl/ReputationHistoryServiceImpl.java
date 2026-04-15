@@ -86,14 +86,15 @@ public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryM
             }
 
             if (shouldRecord) {
+                Long ranking = productsService.getProductDomainRanking(product);
                 ReputationHistory newHistory = new ReputationHistory()
                         .setTargetId(product.getProductsId())
                         .setType((byte) 1)
                         .setInferredCount(currentInferredCount)
                         .setCommentCount(product.getCommentCount()) // 使用商品表当前总评论数
                         .setRating(product.getRating())
-                        .setPositiveRate(product.getPositiveRate());
-                // rank 暂不处理
+                        .setPositiveRate(product.getPositiveRate())
+                        .setRanking(ranking);
                 historiesToSave.add(newHistory);
             }
         }
@@ -144,13 +145,15 @@ public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryM
             }
 
             if (shouldRecord) {
+                Long ranking = merchantsService.getMerchantDomainRanking(merchant);
                 ReputationHistory history = new ReputationHistory()
                         .setTargetId(merchant.getMerchantsId())
                         .setType((byte) 0) // 商家类型
                         .setInferredCount(currentInferredCount)
                         .setCommentCount(merchant.getCommentCount()) // 商家总评论数
                         .setRating(merchant.getRating())
-                        .setPositiveRate(merchant.getPositiveRate());
+                        .setPositiveRate(merchant.getPositiveRate())
+                        .setRanking(ranking);
                 historiesToSave.add(history);
             }
         }
@@ -163,28 +166,11 @@ public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryM
 
     @Override
     public ReputationHistoryChangeSend getReputationChange(ReputationHistoryQueryRec rec) {
-        // 1. 查询该 targetId + type 的最新一条历史记录（id 最大）
-        ReputationHistory latest = this.lambdaQuery()
-                .eq(ReputationHistory::getTargetId, rec.getTargetId())
-                .eq(ReputationHistory::getType, rec.getType())
-                .orderByDesc(ReputationHistory::getId)
-                .last("LIMIT 1")
-                .one();
-
-        // 2. 无历史记录 → 返回全零结果
-        if (latest == null) {
-            return ReputationHistoryChangeSend.builder()
-                    .hasHistory(false)
-                    .ratingDiff(BigDecimal.ZERO)
-                    .positiveRateDiff(BigDecimal.ZERO)
-                    .commentCountDiff(0L)
-                    .build();
-        }
-
-        // 3. 有历史记录 → 获取当前实际值并计算差额
+        // 1. 先获取当前实际值
         BigDecimal currentRating;
         BigDecimal currentPositiveRate;
         Long currentCommentCount;
+        Long currentRanking;
 
         if (rec.getType() == 0) {
             // 商铺
@@ -195,6 +181,7 @@ public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryM
             currentRating = merchant.getRating();
             currentPositiveRate = merchant.getPositiveRate();
             currentCommentCount = merchant.getCommentCount();
+            currentRanking = merchantsService.getMerchantDomainRanking(merchant);
         } else {
             // 商品
             Products product = productsService.getById(rec.getTargetId());
@@ -204,6 +191,29 @@ public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryM
             currentRating = product.getRating();
             currentPositiveRate = product.getPositiveRate();
             currentCommentCount = product.getCommentCount();
+            currentRanking = productsService.getProductDomainRanking(product);
+        }
+
+        BigDecimal safeCurrentRating = currentRating == null ? BigDecimal.ZERO : currentRating;
+        BigDecimal safeCurrentPositiveRate = currentPositiveRate == null ? BigDecimal.ZERO : currentPositiveRate;
+        Long safeCurrentCommentCount = currentCommentCount == null ? 0L : currentCommentCount;
+
+        // 2. 查询该 targetId + type 的最新一条历史记录（id 最大）
+        ReputationHistory latest = this.lambdaQuery()
+                .eq(ReputationHistory::getTargetId, rec.getTargetId())
+                .eq(ReputationHistory::getType, rec.getType())
+                .orderByDesc(ReputationHistory::getId)
+                .last("LIMIT 1")
+                .one();
+
+        // 3. 无历史记录 → 历史值按 0 处理，rankingDiff 固定返回 0
+        if (latest == null) {
+            return ReputationHistoryChangeSend.builder()
+                    .ratingDiff(safeCurrentRating)
+                    .positiveRateDiff(safeCurrentPositiveRate)
+                    .commentCountDiff(safeCurrentCommentCount)
+                    .rankingDiff(0L)
+                    .build();
         }
 
         // 4. 计算差值（当前 - 历史快照），任一字段为 null 时差值取 0
@@ -219,11 +229,15 @@ public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryM
                 ? currentCommentCount - latest.getCommentCount()
                 : 0L;
 
+        Long rankingDiff = (currentRanking != null && latest.getRanking() != null)
+                ? currentRanking - latest.getRanking()
+                : 0L;
+
         return ReputationHistoryChangeSend.builder()
-                .hasHistory(true)
                 .ratingDiff(ratingDiff)
                 .positiveRateDiff(positiveRateDiff)
                 .commentCountDiff(commentCountDiff)
+                .rankingDiff(rankingDiff)
                 .build();
     }
 }

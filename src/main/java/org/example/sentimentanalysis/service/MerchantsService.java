@@ -22,4 +22,6 @@ public interface MerchantsService extends IService<Merchants> {
     MerchantsSend listMerchants(MerchantsQueryRec queryRec);
 
     MerchantDetailSend getMerchantDetail(Long merchantId);
+
+    Long getMerchantDomainRanking(Merchants merchant);
 }

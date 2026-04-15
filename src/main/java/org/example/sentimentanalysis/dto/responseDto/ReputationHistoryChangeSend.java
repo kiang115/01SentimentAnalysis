@@ -13,9 +13,6 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class ReputationHistoryChangeSend {
 
-    /** 是否存在历史快照；false 时其余字段均为 0，前端不展示趋势 */
-    private Boolean hasHistory;
-
     /** 综合得分差值（当前值 - 历史快照值） */
     private BigDecimal ratingDiff;
 
@@ -24,4 +21,7 @@ public class ReputationHistoryChangeSend {
 
     /** 评论数差值（当前值 - 历史快照值） */
     private Long commentCountDiff;
+
+    /** 排名差值（当前值 - 历史快照值） */
+    private Long rankingDiff;
 }

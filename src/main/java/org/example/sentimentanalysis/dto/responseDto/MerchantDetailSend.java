@@ -21,6 +21,7 @@ public class MerchantDetailSend {
     private BigDecimal rating;//商铺综合评分
     private Long commentCount;//商铺总评论人数
     private BigDecimal positiveRate;//商铺好评率
+    private Long ranking;//当前领域排名
     private String avatarUrl;//商铺头像/封面图url
     private List<ProductBriefSend> products;//该商铺下的商品列表
 

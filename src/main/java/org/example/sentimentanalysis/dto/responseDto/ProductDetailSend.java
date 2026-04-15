@@ -23,4 +23,5 @@ public class ProductDetailSend {
     private String merchantName;//商铺名字
     private BigDecimal positiveRate;//好评率
     private Long domainId;//领域id
+    private Long ranking;//当前领域排名
 }

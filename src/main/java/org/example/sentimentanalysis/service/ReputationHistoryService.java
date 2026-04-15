@@ -23,7 +23,8 @@ public interface ReputationHistoryService extends IService<ReputationHistory> {
 
     /**
      * 查询指定商铺/商品的口碑变化差额（当前值与最新历史快照之差）。
-     * 无历史记录时返回 hasHistory=false、所有差值为 0 的结果。
+     * 无历史记录时，rating/positiveRate/commentCount 的差值按当前值返回，
+     * rankingDiff 固定返回 0。
      *
      * @param rec 包含 targetId（商铺或商品ID）和 type（0=商铺, 1=商品）
      */

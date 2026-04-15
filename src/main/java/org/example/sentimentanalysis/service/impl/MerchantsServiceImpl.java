@@ -27,8 +27,10 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -199,9 +201,43 @@ public class MerchantsServiceImpl extends ServiceImpl<MerchantsMapper, Merchants
                 .rating(merchant.getRating())
                 .commentCount(merchant.getCommentCount())
                 .positiveRate(merchant.getPositiveRate())
+                .ranking(getMerchantDomainRanking(merchant))
                 .avatarUrl(merchant.getAvatarUrl())
                 .products(productSends)
                 .build();
+    }
+
+    @Override
+    public Long getMerchantDomainRanking(Merchants merchant) {
+        Long domainId = merchant.getDomainId();
+        Long merchantId = merchant.getMerchantsId();
+
+        // 1. 预处理评分：将 null 视为 0，并判断是否为零分
+        BigDecimal targetRating = Optional.ofNullable(merchant.getRating()).orElse(BigDecimal.ZERO);
+        boolean isZeroRating = targetRating.compareTo(BigDecimal.ZERO) == 0;
+
+        // 2. 构建查询：统计在同一领域内，排在当前商家之前的数量
+        LambdaQueryWrapper<Merchants> query = new LambdaQueryWrapper<Merchants>()
+                .eq(Merchants::getDomainId, domainId)
+                .and(mainWrapper -> mainWrapper
+                        // 情况 A：评分更高
+                        .gt(Merchants::getRating, targetRating)
+                        .or()
+                        // 情况 B：评分相同，但 ID 更小（Tie-breaking 规则：先入驻的排前面）
+                        .nested(sameRatingWrapper -> {
+                            if (isZeroRating) {
+                                // 零分特殊处理：数据库中的 0 或 NULL 都视为同分
+                                sameRatingWrapper.and(zw -> zw.eq(Merchants::getRating, BigDecimal.ZERO).or().isNull(Merchants::getRating));
+                            } else {
+                                sameRatingWrapper.eq(Merchants::getRating, targetRating);
+                            }
+                            // ID 比较逻辑
+                            sameRatingWrapper.lt(Merchants::getMerchantsId, merchantId);
+                        })
+                );
+
+        // 3. 排名 = 前面的人数 + 1
+        return this.count(query) + 1;
     }
 
 }

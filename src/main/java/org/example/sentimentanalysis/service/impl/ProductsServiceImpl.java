@@ -34,14 +34,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -106,7 +99,8 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
                 .commentCount(product.getCommentCount())
                 .positiveRate(product.getPositiveRate())
                 .domainId(product.getDomainId())
-                .merchantId(product.getMerchantId());
+                .merchantId(product.getMerchantId())
+                .ranking(getProductDomainRanking(product));
 
         if (product.getMerchantId() != null) {
             Merchants merchant = merchantsService.getById(product.getMerchantId());
@@ -116,6 +110,37 @@ public class ProductsServiceImpl extends ServiceImpl<ProductsMapper, Products> i
         }
 
         return builder.build();
+    }
+
+    @Override
+    public Long getProductDomainRanking(Products product) {
+        Long domainId = product.getDomainId();
+        Long productId = product.getProductsId();
+        // 1. 统一分数值（处理 null 为 0）
+        BigDecimal targetRating = Optional.ofNullable(product.getRating()).orElse(BigDecimal.ZERO);
+        boolean isZeroRating = targetRating.compareTo(BigDecimal.ZERO) == 0;
+
+        // 2. 构建查询：统计排在当前商品之前的记录数
+        LambdaQueryWrapper<Products> query = new LambdaQueryWrapper<Products>()
+                .eq(Products::getDomainId, domainId)
+                .and(w -> w
+                        // 情况A：评分更高
+                        .gt(Products::getRating, targetRating)
+                        .or()
+                        // 情况B：评分相同，但 ID 更小（Tie-breaking）
+                        .nested(sameRatingWrapper -> {
+                            // 核心逻辑：同分判定
+                            if (isZeroRating) {
+                                sameRatingWrapper.and(nw -> nw.eq(Products::getRating, BigDecimal.ZERO).or().isNull(Products::getRating));
+                            } else {
+                                sameRatingWrapper.eq(Products::getRating, targetRating);
+                            }
+                            // ID 比较
+                            sameRatingWrapper.lt(Products::getProductsId, productId);
+                        })
+                );
+
+        return this.count(query) + 1;
     }
 
     @Override
