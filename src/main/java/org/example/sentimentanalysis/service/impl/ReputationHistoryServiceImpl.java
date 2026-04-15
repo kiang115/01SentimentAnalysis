@@ -21,7 +21,6 @@ import org.springframework.util.CollectionUtils;
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -203,16 +202,16 @@ public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryM
         BigDecimal safeCurrentPositiveRate = currentPositiveRate == null ? BigDecimal.ZERO : currentPositiveRate;
         Long safeCurrentCommentCount = currentCommentCount == null ? 0L : currentCommentCount;
 
-        // 2. 查询该 targetId + type 的最新一条历史记录（id 最大）
-        ReputationHistory latest = this.lambdaQuery()
+        // 2. 查询最新两条历史记录
+        List<ReputationHistory> latestTwoHistoryList = this.lambdaQuery()
                 .eq(ReputationHistory::getTargetId, rec.getTargetId())
                 .eq(ReputationHistory::getType, rec.getType())
                 .orderByDesc(ReputationHistory::getId)
-                .last("LIMIT 1")
-                .one();
+                .last("LIMIT 2")
+                .list();
 
         // 3. 无历史记录 → 历史值按 0 处理，rankingDiff 固定返回 0
-        if (latest == null) {
+        if (latestTwoHistoryList.isEmpty()) {
             return ReputationHistoryChangeSend.builder()
                     .ratingDiff(safeCurrentRating)
                     .positiveRateDiff(safeCurrentPositiveRate)
@@ -221,21 +220,47 @@ public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryM
                     .build();
         }
 
-        // 4. 计算差值（当前 - 历史快照），任一字段为 null 时差值取 0
-        BigDecimal ratingDiff = (currentRating != null && latest.getRating() != null)
-                ? currentRating.subtract(latest.getRating())
+        ReputationHistory baseline = latestTwoHistoryList.get(0);
+        BigDecimal baselineRating = baseline.getRating() == null ? BigDecimal.ZERO : baseline.getRating();
+        BigDecimal baselinePositiveRate = baseline.getPositiveRate() == null ? BigDecimal.ZERO : baseline.getPositiveRate();
+        Long baselineCommentCount = baseline.getCommentCount() == null ? 0L : baseline.getCommentCount();
+
+        boolean sameAsLatest = safeCurrentRating.compareTo(baselineRating) == 0
+                && safeCurrentPositiveRate.compareTo(baselinePositiveRate) == 0
+                && safeCurrentCommentCount.equals(baselineCommentCount);
+
+        if (sameAsLatest) {
+            if (latestTwoHistoryList.size() == 1) {
+                return ReputationHistoryChangeSend.builder()
+                        .ratingDiff(safeCurrentRating)
+                        .positiveRateDiff(safeCurrentPositiveRate)
+                        .commentCountDiff(safeCurrentCommentCount)
+                        .rankingDiff(0L)
+                        .build();
+            }
+            baseline = latestTwoHistoryList.get(1);
+        }
+
+        // 4. 计算差值（当前 - 基线历史快照），任一字段为 null 时差值取 0
+        BigDecimal baselineHistoryRating = baseline.getRating();
+        BigDecimal baselineHistoryPositiveRate = baseline.getPositiveRate();
+        Long baselineHistoryCommentCount = baseline.getCommentCount();
+        Long baselineHistoryRanking = baseline.getRanking();
+
+        BigDecimal ratingDiff = (currentRating != null && baselineHistoryRating != null)
+                ? currentRating.subtract(baselineHistoryRating)
                 : BigDecimal.ZERO;
 
-        BigDecimal positiveRateDiff = (currentPositiveRate != null && latest.getPositiveRate() != null)
-                ? currentPositiveRate.subtract(latest.getPositiveRate())
+        BigDecimal positiveRateDiff = (currentPositiveRate != null && baselineHistoryPositiveRate != null)
+                ? currentPositiveRate.subtract(baselineHistoryPositiveRate)
                 : BigDecimal.ZERO;
 
-        Long commentCountDiff = (currentCommentCount != null && latest.getCommentCount() != null)
-                ? currentCommentCount - latest.getCommentCount()
+        Long commentCountDiff = (currentCommentCount != null && baselineHistoryCommentCount != null)
+                ? currentCommentCount - baselineHistoryCommentCount
                 : 0L;
 
-        Long rankingDiff = (currentRanking != null && latest.getRanking() != null)
-                ? currentRanking - latest.getRanking()
+        Long rankingDiff = (currentRanking != null && baselineHistoryRanking != null)
+                ? currentRanking - baselineHistoryRanking
                 : 0L;
 
         return ReputationHistoryChangeSend.builder()
@@ -248,6 +273,31 @@ public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryM
 
     @Override
     public ReputationHistoryLineChartSend getReputationLineChart(ReputationHistoryQueryRec rec) {
+        BigDecimal currentRating;
+        BigDecimal currentPositiveRate;
+        Long currentCommentCount;
+        Long currentRanking;
+
+        if (rec.getType() == 0) {
+            Merchants merchant = merchantsService.getById(rec.getTargetId());
+            if (merchant == null) {
+                throw new CustomBusinessException("商铺不存在, merchantId=" + rec.getTargetId());
+            }
+            currentRating = merchant.getRating();
+            currentPositiveRate = merchant.getPositiveRate();
+            currentCommentCount = merchant.getCommentCount();
+            currentRanking = merchantsService.getMerchantDomainRanking(merchant);
+        } else {
+            Products product = productsService.getById(rec.getTargetId());
+            if (product == null) {
+                throw new CustomBusinessException("商品不存在, productId=" + rec.getTargetId());
+            }
+            currentRating = product.getRating();
+            currentPositiveRate = product.getPositiveRate();
+            currentCommentCount = product.getCommentCount();
+            currentRanking = productsService.getProductDomainRanking(product);
+        }
+
         List<ReputationHistory> historyList = this.lambdaQuery()
                 .eq(ReputationHistory::getTargetId, rec.getTargetId())
                 .eq(ReputationHistory::getType, rec.getType())
@@ -255,34 +305,36 @@ public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryM
                 .orderByAsc(ReputationHistory::getId)
                 .list();
 
-        if (historyList.isEmpty()) {
-            return ReputationHistoryLineChartSend.builder()
-                    .timeList(Collections.emptyList())
-                    .ratingList(Collections.emptyList())
-                    .positiveRateList(Collections.emptyList())
-                    .commentCountList(Collections.emptyList())
-                    .rankingList(Collections.emptyList())
-                    .build();
-        }
+        List<String> timeList = new ArrayList<>(historyList.stream()
+                .map(history -> Optional.ofNullable(history.getCreateTime())
+                        .map(time -> time.format(HISTORY_TIME_FORMATTER))
+                        .orElse(""))
+                .toList());
+        List<BigDecimal> ratingList = new ArrayList<>(historyList.stream()
+                .map(history -> Optional.ofNullable(history.getRating()).orElse(BigDecimal.ZERO))
+                .toList());
+        List<BigDecimal> positiveRateList = new ArrayList<>(historyList.stream()
+                .map(history -> Optional.ofNullable(history.getPositiveRate()).orElse(BigDecimal.ZERO))
+                .toList());
+        List<Long> commentCountList = new ArrayList<>(historyList.stream()
+                .map(history -> Optional.ofNullable(history.getCommentCount()).orElse(0L))
+                .toList());
+        List<Long> rankingList = new ArrayList<>(historyList.stream()
+                .map(history -> Optional.ofNullable(history.getRanking()).orElse(0L))
+                .toList());
+
+        timeList.add("当前");
+        ratingList.add(Optional.ofNullable(currentRating).orElse(BigDecimal.ZERO));
+        positiveRateList.add(Optional.ofNullable(currentPositiveRate).orElse(BigDecimal.ZERO));
+        commentCountList.add(Optional.ofNullable(currentCommentCount).orElse(0L));
+        rankingList.add(Optional.ofNullable(currentRanking).orElse(0L));
 
         return ReputationHistoryLineChartSend.builder()
-                .timeList(historyList.stream()
-                        .map(history -> Optional.ofNullable(history.getCreateTime())
-                                .map(time -> time.format(HISTORY_TIME_FORMATTER))
-                                .orElse(""))
-                        .toList())
-                .ratingList(historyList.stream()
-                        .map(history -> Optional.ofNullable(history.getRating()).orElse(BigDecimal.ZERO))
-                        .toList())
-                .positiveRateList(historyList.stream()
-                        .map(history -> Optional.ofNullable(history.getPositiveRate()).orElse(BigDecimal.ZERO))
-                        .toList())
-                .commentCountList(historyList.stream()
-                        .map(history -> Optional.ofNullable(history.getCommentCount()).orElse(0L))
-                        .toList())
-                .rankingList(historyList.stream()
-                        .map(history -> Optional.ofNullable(history.getRanking()).orElse(0L))
-                        .toList())
+                .timeList(timeList)
+                .ratingList(ratingList)
+                .positiveRateList(positiveRateList)
+                .commentCountList(commentCountList)
+                .rankingList(rankingList)
                 .build();
     }
 }
