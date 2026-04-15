@@ -1,16 +1,23 @@
 package org.example.sentimentanalysis.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.example.sentimentanalysis.dto.requestDto.ReputationHistoryQueryRec;
+import org.example.sentimentanalysis.dto.responseDto.ReputationHistoryChangeSend;
+import org.example.sentimentanalysis.exception.CustomBusinessException;
 import org.example.sentimentanalysis.model.Merchants;
 import org.example.sentimentanalysis.model.Products;
 import org.example.sentimentanalysis.model.ReputationHistory;
 import org.example.sentimentanalysis.mapper.ReputationHistoryMapper;
+import org.example.sentimentanalysis.service.MerchantsService;
+import org.example.sentimentanalysis.service.ProductsService;
 import org.example.sentimentanalysis.service.ReputationHistoryService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +35,14 @@ import java.util.stream.Collectors;
 public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryMapper, ReputationHistory> implements ReputationHistoryService {
     // 定义增量阈值，例如每增加 100 条评论记录一次历史
     private static final int HISTORY_THRESHOLD = 3;
+
+    @Lazy
+    @Autowired
+    private MerchantsService merchantsService;
+
+    @Lazy
+    @Autowired
+    private ProductsService productsService;
 
     @Override
     public void recordProductReputation(List<Products> updatedProducts) {
@@ -144,5 +159,71 @@ public class ReputationHistoryServiceImpl extends ServiceImpl<ReputationHistoryM
         if (!historiesToSave.isEmpty()) {
             this.saveBatch(historiesToSave);
         }
+    }
+
+    @Override
+    public ReputationHistoryChangeSend getReputationChange(ReputationHistoryQueryRec rec) {
+        // 1. 查询该 targetId + type 的最新一条历史记录（id 最大）
+        ReputationHistory latest = this.lambdaQuery()
+                .eq(ReputationHistory::getTargetId, rec.getTargetId())
+                .eq(ReputationHistory::getType, rec.getType())
+                .orderByDesc(ReputationHistory::getId)
+                .last("LIMIT 1")
+                .one();
+
+        // 2. 无历史记录 → 返回全零结果
+        if (latest == null) {
+            return ReputationHistoryChangeSend.builder()
+                    .hasHistory(false)
+                    .ratingDiff(BigDecimal.ZERO)
+                    .positiveRateDiff(BigDecimal.ZERO)
+                    .commentCountDiff(0L)
+                    .build();
+        }
+
+        // 3. 有历史记录 → 获取当前实际值并计算差额
+        BigDecimal currentRating;
+        BigDecimal currentPositiveRate;
+        Long currentCommentCount;
+
+        if (rec.getType() == 0) {
+            // 商铺
+            Merchants merchant = merchantsService.getById(rec.getTargetId());
+            if (merchant == null) {
+                throw new CustomBusinessException("商铺不存在, merchantId=" + rec.getTargetId());
+            }
+            currentRating = merchant.getRating();
+            currentPositiveRate = merchant.getPositiveRate();
+            currentCommentCount = merchant.getCommentCount();
+        } else {
+            // 商品
+            Products product = productsService.getById(rec.getTargetId());
+            if (product == null) {
+                throw new CustomBusinessException("商品不存在, productId=" + rec.getTargetId());
+            }
+            currentRating = product.getRating();
+            currentPositiveRate = product.getPositiveRate();
+            currentCommentCount = product.getCommentCount();
+        }
+
+        // 4. 计算差值（当前 - 历史快照），任一字段为 null 时差值取 0
+        BigDecimal ratingDiff = (currentRating != null && latest.getRating() != null)
+                ? currentRating.subtract(latest.getRating())
+                : BigDecimal.ZERO;
+
+        BigDecimal positiveRateDiff = (currentPositiveRate != null && latest.getPositiveRate() != null)
+                ? currentPositiveRate.subtract(latest.getPositiveRate())
+                : BigDecimal.ZERO;
+
+        Long commentCountDiff = (currentCommentCount != null && latest.getCommentCount() != null)
+                ? currentCommentCount - latest.getCommentCount()
+                : 0L;
+
+        return ReputationHistoryChangeSend.builder()
+                .hasHistory(true)
+                .ratingDiff(ratingDiff)
+                .positiveRateDiff(positiveRateDiff)
+                .commentCountDiff(commentCountDiff)
+                .build();
     }
 }
