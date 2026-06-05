@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -311,8 +311,18 @@ async function handleDeleteProduct(productId: number) {
 }
 
 onMounted(() => {
-  fetchMerchantDetail()
+  void fetchMerchantDetail()
 })
+
+watch(
+  () => route.params.merchantId,
+  (newMerchantId, oldMerchantId) => {
+    if (newMerchantId === oldMerchantId) {
+      return
+    }
+    void fetchMerchantDetail()
+  },
+)
 </script>
 
 <template>

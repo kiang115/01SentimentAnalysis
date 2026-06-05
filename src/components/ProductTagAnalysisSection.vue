@@ -83,7 +83,7 @@ watch(
 <template>
   <section class="tag-analysis-section">
     <div class="section-header">
-      <h2 class="section-title">评论标签分析</h2>
+      <h2 class="section-title">评论属性分析</h2>
       <el-button
         v-if="props.canAnalyzeTags"
         type="primary"
@@ -91,7 +91,7 @@ watch(
         :disabled="analyzeLoading"
         @click="analyzeProductTags"
       >
-        分析评论标签属性
+        分析评论属性
       </el-button>
     </div>
 

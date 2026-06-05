@@ -177,7 +177,7 @@ onMounted(() => {
               v-if="item.confidence != null || item.positiveProb != null || item.negativeProb != null"
               class="comment-tag-row comment-prob-row"
             >
-              <el-tag v-if="item.confidence != null" effect="light">置信度：{{ formatPercent(item.confidence) }}</el-tag>
+<!--              <el-tag v-if="item.confidence != null" effect="light">置信度：{{ formatPercent(item.confidence) }}</el-tag>-->
               <el-tag v-if="item.positiveProb != null" type="success" effect="light">
                 正向概率：{{ formatPercent(item.positiveProb) }}
               </el-tag>

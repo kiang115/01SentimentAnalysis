@@ -25,10 +25,10 @@ const activeTab = computed({
   <div class="model-manage-page">
     <el-tabs v-model="activeTab" class="model-tabs">
       <el-tab-pane label="训练和推理" name="Task" />
-      <el-tab-pane label="审核中心" name="auditCenter" />
-      <el-tab-pane label="模型数据" name="modelData" />
+      <el-tab-pane label="评论中心" name="auditCenter" />
+      <el-tab-pane label="模型信息管理" name="modelData" />
       <el-tab-pane label="训练数据" name="trainData" />
-      <el-tab-pane label="领域扩展" name="domainData" />
+      <el-tab-pane label="领域管理" name="domainData" />
     </el-tabs>
     <div class="page-content">
       <router-view />

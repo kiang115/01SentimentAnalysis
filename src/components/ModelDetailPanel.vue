@@ -3,7 +3,7 @@
     <div class="panel-body">
       <div class="panel-left">
         <div class="line-chart-header">
-          <span class="section-title">模型准确率折线图</span>
+          <span class="section-title">模型实际准确率折线图</span>
           <el-select
             v-model="selectedDomain"
             placeholder="选择领域"

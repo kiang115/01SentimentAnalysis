@@ -89,7 +89,7 @@ async function handleMerchantEntry() {
 }
 
 function goModelPage() {
-  router.push('/model')
+  router.push({ name: 'Task' })
 }
 
 function openMerchantAvatarPicker() {

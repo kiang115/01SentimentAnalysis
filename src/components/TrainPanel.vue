@@ -27,7 +27,7 @@
 
       <div class="slider-block">
         <div class="slider-item">
-          <div class="slider-title">人工修正数据 (correctedNum)</div>
+          <div class="slider-title">人工修正数据</div>
           <el-slider
             v-model="counts.correctedCount"
             :min="0"
@@ -37,7 +37,7 @@
           />
         </div>
         <div class="slider-item">
-          <div class="slider-title">手动上传数据 (uploadNum)</div>
+          <div class="slider-title">手动上传数据</div>
           <el-slider
             v-model="counts.uploadCount"
             :min="0"
@@ -47,7 +47,7 @@
           />
         </div>
         <div class="slider-item">
-          <div class="slider-title">模型初始数据 (originalNum)</div>
+          <div class="slider-title">模型初始数据</div>
           <el-slider
             v-model="counts.originalCount"
             :min="0"
@@ -122,14 +122,14 @@
       </el-collapse>
 
       <div class="panel-row-single mt16">
-        <span class="row-label">是否覆盖训练：</span>
+        <span class="row-label">是否增量训练：</span>
         <el-radio-group v-model="overwriteTrain">
-          <el-radio :label="true">是</el-radio>
+          <el-radio :label="true">否</el-radio>
           <el-radio
             :label="false"
             :disabled="(currentDomain?.modelVersionAndIdList?.length ?? 0) === 0"
           >
-            否
+            是
           </el-radio>
         </el-radio-group>
       </div>

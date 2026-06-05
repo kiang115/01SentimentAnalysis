@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { modelApi } from '@/api/model-api.ts'
@@ -113,8 +113,18 @@ function openHistoryDialog(metric: HistoryMetricKey) {
 }
 
 onMounted(() => {
-  fetchProductDetail()
+  void fetchProductDetail()
 })
+
+watch(
+  () => route.params.productId,
+  (newProductId, oldProductId) => {
+    if (newProductId === oldProductId) {
+      return
+    }
+    void fetchProductDetail()
+  },
+)
 </script>
 
 <template>
