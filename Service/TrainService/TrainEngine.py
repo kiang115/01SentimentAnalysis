@@ -332,10 +332,12 @@ class TrainEngine:
                 model.save_pretrained(save_dir)
         # 总体训练结束
         print("**********************训练结束")
-        # ---- 训练结束：在 GoldTest 测试集上评估，得到最终测试指标（14-17 字段）----
+        # ---- 训练结束：加载验证集最优权重，在 GoldTest 测试集上评估，得到最终测试指标（14-17 字段）----
         duration = round(time.time() - start_time)
+        best_model = PeftModel.from_pretrained(base_model, save_dir)
+        best_model = best_model.to(self.device)
         test_acc, test_precision, test_recall, test_f1, _ = _evaluate_bert(
-            model, test_loader, criterion, self.device
+            best_model, test_loader, criterion, self.device
         )
         end_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print("**********************训练返回")
